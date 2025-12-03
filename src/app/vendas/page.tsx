@@ -7,20 +7,29 @@ import { Button } from "@/components/ui/button";
 import { Download, PlusCircle, Search } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
-import { Sale } from "@/lib/types";
+import { Sale, Student } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
+import { SaleFormDialog } from "@/components/sales/sale-form-dialog";
 
 export default function VendasPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const salesCollection = useMemoFirebase(() => {
         if (!firestore) return null;
         return collection(firestore, 'sales');
     }, [firestore]);
+    
+    const studentsCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'students');
+    }, [firestore]);
 
-    const { data: sales, isLoading } = useCollection<Sale>(salesCollection);
+    const { data: sales, isLoading: isLoadingSales } = useCollection<Sale>(salesCollection);
+    const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
+
 
     const filteredSales = (sales || []).filter(sale =>
         sale.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -32,7 +41,7 @@ export default function VendasPage() {
             <div className="flex items-center justify-between gap-4">
                 <h1 className="text-lg font-semibold md:text-2xl">Vendas Gerais</h1>
                 <div className="flex items-center gap-2">
-                     <Button>
+                     <Button onClick={() => setIsDialogOpen(true)}>
                         <PlusCircle className="h-4 w-4 mr-2" />
                         Nova Venda
                     </Button>
@@ -58,9 +67,17 @@ export default function VendasPage() {
              <div className="flex flex-1 rounded-lg shadow-sm mt-4">
                 <SalesTable 
                     sales={filteredSales}
-                    isLoading={isLoading}
+                    isLoading={isLoadingSales}
+                    allStudents={students || []}
                 />
             </div>
+             <SaleFormDialog
+                isOpen={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                allStudents={students || []}
+            />
         </>
     );
 }
+
+    

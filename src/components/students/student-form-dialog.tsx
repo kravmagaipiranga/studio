@@ -8,7 +8,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { Student } from "@/lib/types"
-import { StudentForm } from "@/components/auth/student-form"
+import { StudentForm } from "@/components/auth/registration-form"
 
 interface StudentFormDialogProps {
   isOpen: boolean;

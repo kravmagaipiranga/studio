@@ -51,7 +51,7 @@ export type Exam = {
   paymentStatus: 'Pago' | 'Pendente';
   paymentDate?: string;
   paymentAmount: number;
-  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro';
+  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
 };
 
 export type Seminar = {
@@ -65,7 +65,7 @@ export type Seminar = {
   paymentStatus: 'Pago' | 'Pendente';
   paymentDate?: string;
   paymentAmount: number;
-  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro';
+  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
 };
 
 export type PrivateClass = {
@@ -77,7 +77,7 @@ export type PrivateClass = {
   paymentStatus: 'Pago' | 'Pendente';
   paymentDate?: string;
   paymentAmount: number;
-  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro';
+  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
 };
 
 export type Appointment = {
@@ -97,6 +97,8 @@ export type Sale = {
   item: string;
   value: number;
   date: string;
-  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro';
+  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
   paymentStatus: 'Pago' | 'Pendente';
 };
+
+    

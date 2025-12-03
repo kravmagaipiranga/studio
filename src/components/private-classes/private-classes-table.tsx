@@ -26,15 +26,23 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { PrivateClass } from "@/lib/types"
+import { PrivateClass, Student } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
+import { useState } from "react"
+import { PrivateClassFormDialog } from "./private-class-form-dialog"
 
 interface PrivateClassesTableProps {
   privateClasses: PrivateClass[];
   isLoading: boolean;
+  allStudents: Student[];
 }
 
-export function PrivateClassesTable({ privateClasses, isLoading }: PrivateClassesTableProps) {
+export function PrivateClassesTable({ privateClasses, isLoading, allStudents }: PrivateClassesTableProps) {
+  const [editingClass, setEditingClass] = useState<PrivateClass | null>(null);
+
+  const handleEdit = (pc: PrivateClass) => {
+    setEditingClass(pc);
+  };
   
   return (
     <>
@@ -103,8 +111,8 @@ export function PrivateClassesTable({ privateClasses, isLoading }: PrivateClasse
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem>
-                          Registrar Pagamento
+                        <DropdownMenuItem onClick={() => handleEdit(pc)}>
+                          Editar/Registrar Pagamento
                         </DropdownMenuItem>
                         <DropdownMenuItem>Ver Detalhes do Aluno</DropdownMenuItem>
                          <DropdownMenuItem className="text-destructive">
@@ -127,6 +135,16 @@ export function PrivateClassesTable({ privateClasses, isLoading }: PrivateClasse
           </Table>
         </CardContent>
       </Card>
+      {editingClass && (
+        <PrivateClassFormDialog
+          isOpen={!!editingClass}
+          onOpenChange={(isOpen) => !isOpen && setEditingClass(null)}
+          privateClass={editingClass}
+          allStudents={allStudents}
+        />
+      )}
     </>
   )
 }
+
+    

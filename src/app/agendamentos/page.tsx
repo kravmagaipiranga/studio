@@ -10,10 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Appointment } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
+import { AppointmentFormDialog } from "@/components/appointments/appointment-form-dialog";
 
 export default function AgendamentosPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const appointmentsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -32,7 +34,7 @@ export default function AgendamentosPage() {
             <div className="flex items-center justify-between gap-4">
                 <h1 className="text-lg font-semibold md:text-2xl">Agendamentos</h1>
                 <div className="flex items-center gap-2">
-                     <Button>
+                     <Button onClick={() => setIsDialogOpen(true)}>
                         <PlusCircle className="h-4 w-4 mr-2" />
                         Novo Agendamento
                     </Button>
@@ -61,6 +63,12 @@ export default function AgendamentosPage() {
                     isLoading={isLoading}
                 />
             </div>
+            <AppointmentFormDialog
+                isOpen={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+            />
         </>
     );
 }
+
+    

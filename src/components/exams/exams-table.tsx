@@ -26,15 +26,23 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Exam } from "@/lib/types"
+import { Exam, Student } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
+import { useState } from "react"
+import { ExamFormDialog } from "./exam-form-dialog"
 
 interface ExamsTableProps {
   exams: Exam[];
   isLoading: boolean;
+  allStudents: Student[];
 }
 
-export function ExamsTable({ exams, isLoading }: ExamsTableProps) {
+export function ExamsTable({ exams, isLoading, allStudents }: ExamsTableProps) {
+  const [editingExam, setEditingExam] = useState<Exam | null>(null);
+
+  const handleEdit = (exam: Exam) => {
+    setEditingExam(exam);
+  };
   
   return (
     <>
@@ -110,8 +118,8 @@ export function ExamsTable({ exams, isLoading }: ExamsTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem>
-                          Registrar Pagamento
+                        <DropdownMenuItem onClick={() => handleEdit(exam)}>
+                          Editar/Registrar Pagamento
                         </DropdownMenuItem>
                         <DropdownMenuItem>Ver Detalhes do Aluno</DropdownMenuItem>
                       </DropdownMenuContent>
@@ -131,6 +139,16 @@ export function ExamsTable({ exams, isLoading }: ExamsTableProps) {
           </Table>
         </CardContent>
       </Card>
+      {editingExam && (
+        <ExamFormDialog
+            isOpen={!!editingExam}
+            onOpenChange={(isOpen) => !isOpen && setEditingExam(null)}
+            exam={editingExam}
+            allStudents={allStudents}
+        />
+      )}
     </>
   )
 }
+
+    

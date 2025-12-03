@@ -7,20 +7,28 @@ import { Button } from "@/components/ui/button";
 import { Download, PlusCircle, Search } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
-import { Seminar } from "@/lib/types";
+import { Seminar, Student } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
+import { SeminarFormDialog } from "@/components/seminars/seminar-form-dialog";
 
 export default function SeminariosPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const seminarsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
         return collection(firestore, 'seminars');
     }, [firestore]);
 
-    const { data: seminars, isLoading } = useCollection<Seminar>(seminarsCollection);
+    const studentsCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'students');
+    }, [firestore]);
+
+    const { data: seminars, isLoading: isLoadingSeminars } = useCollection<Seminar>(seminarsCollection);
+    const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
 
     const filteredSeminars = (seminars || []).filter(seminar =>
         seminar.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -32,7 +40,7 @@ export default function SeminariosPage() {
             <div className="flex items-center justify-between gap-4">
                 <h1 className="text-lg font-semibold md:text-2xl">Seminários e Cursos</h1>
                 <div className="flex items-center gap-2">
-                     <Button>
+                     <Button onClick={() => setIsDialogOpen(true)}>
                         <PlusCircle className="h-4 w-4 mr-2" />
                         Nova Inscrição
                     </Button>
@@ -58,9 +66,17 @@ export default function SeminariosPage() {
              <div className="flex flex-1 rounded-lg shadow-sm mt-4">
                 <SeminarsTable 
                     seminars={filteredSeminars}
-                    isLoading={isLoading}
+                    isLoading={isLoadingSeminars}
+                    allStudents={students || []}
                 />
             </div>
+             <SeminarFormDialog
+                isOpen={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                allStudents={students || []}
+            />
         </>
     );
 }
+
+    

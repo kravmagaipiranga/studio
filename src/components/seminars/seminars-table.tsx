@@ -26,15 +26,23 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Seminar } from "@/lib/types"
+import { Seminar, Student } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
+import { useState } from "react"
+import { SeminarFormDialog } from "./seminar-form-dialog"
 
 interface SeminarsTableProps {
   seminars: Seminar[];
   isLoading: boolean;
+  allStudents: Student[];
 }
 
-export function SeminarsTable({ seminars, isLoading }: SeminarsTableProps) {
+export function SeminarsTable({ seminars, isLoading, allStudents }: SeminarsTableProps) {
+  const [editingSeminar, setEditingSeminar] = useState<Seminar | null>(null);
+
+  const handleEdit = (seminar: Seminar) => {
+    setEditingSeminar(seminar);
+  };
   
   return (
     <>
@@ -107,8 +115,8 @@ export function SeminarsTable({ seminars, isLoading }: SeminarsTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem>
-                          Registrar Pagamento
+                        <DropdownMenuItem onClick={() => handleEdit(seminar)}>
+                          Editar/Registrar Pagamento
                         </DropdownMenuItem>
                         <DropdownMenuItem>Ver Detalhes do Aluno</DropdownMenuItem>
                       </DropdownMenuContent>
@@ -128,6 +136,16 @@ export function SeminarsTable({ seminars, isLoading }: SeminarsTableProps) {
           </Table>
         </CardContent>
       </Card>
+      {editingSeminar && (
+        <SeminarFormDialog
+          isOpen={!!editingSeminar}
+          onOpenChange={(isOpen) => !isOpen && setEditingSeminar(null)}
+          seminar={editingSeminar}
+          allStudents={allStudents}
+        />
+      )}
     </>
   )
 }
+
+    

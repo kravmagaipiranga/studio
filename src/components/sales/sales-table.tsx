@@ -26,15 +26,23 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Sale } from "@/lib/types"
+import { Sale, Student } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
+import { useState } from "react"
+import { SaleFormDialog } from "./sale-form-dialog"
 
 interface SalesTableProps {
   sales: Sale[];
   isLoading: boolean;
+  allStudents: Student[];
 }
 
-export function SalesTable({ sales, isLoading }: SalesTableProps) {
+export function SalesTable({ sales, isLoading, allStudents }: SalesTableProps) {
+  const [editingSale, setEditingSale] = useState<Sale | null>(null);
+
+  const handleEdit = (sale: Sale) => {
+    setEditingSale(sale);
+  };
   
   return (
     <>
@@ -101,8 +109,8 @@ export function SalesTable({ sales, isLoading }: SalesTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem>
-                          Registrar Pagamento
+                        <DropdownMenuItem onClick={() => handleEdit(sale)}>
+                          Editar/Registrar Pagamento
                         </DropdownMenuItem>
                          <DropdownMenuItem className="text-destructive">
                           Cancelar Venda
@@ -124,6 +132,16 @@ export function SalesTable({ sales, isLoading }: SalesTableProps) {
           </Table>
         </CardContent>
       </Card>
+      {editingSale && (
+        <SaleFormDialog
+            isOpen={!!editingSale}
+            onOpenChange={(isOpen) => !isOpen && setEditingSale(null)}
+            sale={editingSale}
+            allStudents={allStudents}
+        />
+      )}
     </>
   )
 }
+
+    
