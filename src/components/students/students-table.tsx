@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { students } from "@/lib/data"
 import { MoreHorizontal } from "lucide-react"
 import {
   DropdownMenu,
@@ -30,7 +29,11 @@ import {
 import { Student } from "@/lib/types"
 import Link from "next/link"
 
-export function StudentsTable() {
+interface StudentsTableProps {
+  students: Student[];
+}
+
+export function StudentsTable({ students }: StudentsTableProps) {
   
   return (
     <Card className="w-full">
