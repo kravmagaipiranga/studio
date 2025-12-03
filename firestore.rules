@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -58,8 +59,8 @@ service cloud.firestore {
       // Admins can create students. A user can create their own profile.
       allow create: if (isOwner(studentId) && request.resource.data.id == studentId) || isAdmin();
       
-      // Only Admins can update student profiles.
-      allow update: if isAdmin();
+      // Admins can update student profiles, users can update their own.
+      allow update: if isOwner(studentId) || isAdmin();
       
       // Only Admins can delete students.
       allow delete: if isAdmin();
