@@ -55,7 +55,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
     return <EditStudentSkeleton />;
   }
 
-  if (!student) {
+  if (!isLoading && !student) {
     return (
         <div className="flex flex-col items-center justify-center text-center py-10">
             <Card className="w-full max-w-md">
@@ -92,11 +92,11 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl">Editar Cadastro do Aluno</CardTitle>
                     <CardDescription>
-                        Altere as informações de {student.name}.
+                        Altere as informações de {student?.name}.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <StudentForm student={student} isEditing={true} />
+                    {student && <StudentForm student={student} isEditing={true} />}
                 </CardContent>
             </Card>
         </div>
