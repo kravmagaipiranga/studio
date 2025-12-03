@@ -1,4 +1,5 @@
-import { AppLayout } from "@/components/dashboard/dashboard-page";
+
+import { AppLayout } from "@/components/layout/app-layout";
 import { StudentsTable } from "@/components/students/students-table";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
