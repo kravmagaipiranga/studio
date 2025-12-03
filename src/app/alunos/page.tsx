@@ -62,13 +62,17 @@ export default function AlunosPage() {
 
                     if (firestore && studentsCollection) {
                         const newStudentId = doc(studentsCollection).id;
+                        
+                        const beltValue = studentData.belt || 'Branca';
+                        const formattedBelt = beltValue.charAt(0).toUpperCase() + beltValue.slice(1).toLowerCase();
+
                         const newStudent: Omit<Student, 'id'> = {
                             name: studentData.name || '',
                             email: studentData.email || '',
                             dob: studentData.dob || '',
                             cpf: studentData.cpf || '',
                             phone: studentData.phone || '',
-                            belt: studentData.belt || 'Branca',
+                            belt: formattedBelt,
                             avatar: `https://picsum.photos/seed/${newStudentId}/100/100`,
                             status: 'Ativo',
                             paymentStatus: 'Pendente',
@@ -117,7 +121,7 @@ export default function AlunosPage() {
                     </Button>
                     <input 
                         type="file" 
-                        ref={fileInputRef} 
+                        ref={fileInputref} 
                         className="hidden" 
                         accept=".csv"
                         onChange={handleFileChange}
