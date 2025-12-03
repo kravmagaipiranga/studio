@@ -1,7 +1,5 @@
-import { FistIcon } from "@/components/icons";
 import { RegistrationForm } from "@/components/auth/registration-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AppLayout } from "@/components/layout/app-layout";
 import Link from "next/link";
 
 export default function RegisterPage() {
@@ -9,7 +7,6 @@ export default function RegisterPage() {
     <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40 p-4">
         <div className="w-full max-w-lg mx-auto">
             <div className="mb-8 flex flex-col items-center gap-2 text-primary">
-                <FistIcon className="h-10 w-10" />
                 <h1 className="text-3xl font-bold">Krav Magá IPIRANGA</h1>
             </div>
             <Card>

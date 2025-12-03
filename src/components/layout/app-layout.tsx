@@ -20,7 +20,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button";
-import { FistIcon } from "@/components/icons";
 import { UserNav } from "@/components/user-nav";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +37,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/" className="flex items-center gap-2 font-semibold">
-              <FistIcon className="h-6 w-6" />
               <span className="">Krav Magá IPIRANGA</span>
             </Link>
             <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
@@ -103,7 +101,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   href="#"
                   className="flex items-center gap-2 text-lg font-semibold mb-4"
                 >
-                  <FistIcon className="h-6 w-6" />
                   <span>Krav Magá IPIRANGA</span>
                 </Link>
                 <NavItem href="/dashboard" isMobile>
