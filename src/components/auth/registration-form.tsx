@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -69,11 +70,11 @@ const formSchema = z.object({
 });
 
 interface StudentFormProps {
-  student?: Student;
-  isEditing?: boolean;
+  student?: Student | null;
+  isEditing: boolean;
 }
 
-export function StudentForm({ student, isEditing = false }: StudentFormProps) {
+export function StudentForm({ student, isEditing }: StudentFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const firestore = useFirestore();
