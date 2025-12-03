@@ -42,11 +42,11 @@ export default function VendasPage() {
                 <h1 className="text-lg font-semibold md:text-2xl">Vendas Gerais</h1>
                 <div className="flex items-center gap-2">
                      <Button onClick={() => setIsDialogOpen(true)}>
-                        <PlusCircle className="h-4 w-4 mr-2" />
+                        <PlusCircle className="mr-2 h-4 w-4" />
                         Nova Venda
                     </Button>
                     <Button variant="outline">
-                        <Download className="h-4 w-4 mr-2" />
+                        <Download className="mr-2 h-4 w-4" />
                         Gerar Relatório
                     </Button>
                 </div>

@@ -233,5 +233,4 @@ export function PrivateClassFormDialog({
     </Dialog>
   )
 }
-
     

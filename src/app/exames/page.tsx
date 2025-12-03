@@ -9,7 +9,7 @@ import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { Exam, Student } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, query, where } from "firebase/firestore";
 import { ExamFormDialog } from "@/components/exams/exam-form-dialog";
 
 export default function ExamesPage() {
@@ -17,6 +17,7 @@ export default function ExamesPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+    // This fetches all exams. For a large number of exams, consider pagination or querying by date range.
     const examsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
         return collection(firestore, 'exams');
@@ -41,11 +42,11 @@ export default function ExamesPage() {
                 <h1 className="text-lg font-semibold md:text-2xl">Exames de Faixa</h1>
                 <div className="flex items-center gap-2">
                      <Button onClick={() => setIsDialogOpen(true)}>
-                        <PlusCircle className="h-4 w-4 mr-2" />
+                        <PlusCircle className="mr-2 h-4 w-4" />
                         Agendar Exame
                     </Button>
                     <Button variant="outline">
-                        <Download className="h-4 w-4 mr-2" />
+                        <Download className="mr-2 h-4 w-4" />
                         Gerar Relatório
                     </Button>
                 </div>

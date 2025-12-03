@@ -150,5 +150,4 @@ export function ExamsTable({ exams, isLoading, allStudents }: ExamsTableProps) {
     </>
   )
 }
-
     

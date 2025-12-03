@@ -147,5 +147,4 @@ export function SeminarsTable({ seminars, isLoading, allStudents }: SeminarsTabl
     </>
   )
 }
-
     

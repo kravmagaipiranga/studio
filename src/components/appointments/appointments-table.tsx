@@ -139,5 +139,4 @@ export function AppointmentsTable({ appointments, isLoading }: AppointmentsTable
     </>
   )
 }
-
     

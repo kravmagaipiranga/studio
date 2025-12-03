@@ -146,5 +146,4 @@ export function PrivateClassesTable({ privateClasses, isLoading, allStudents }: 
     </>
   )
 }
-
     

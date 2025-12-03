@@ -36,7 +36,7 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { Sale, Student } from "@/lib/types"
 import { Combobox } from "@/components/ui/combobox"
-import { useFirestore, setDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase"
+import { useFirestore, setDocumentNonBlocking } from "@/firebase"
 
 const formSchema = z.object({
   studentId: z.string({ required_error: "É necessário selecionar um aluno." }),
@@ -249,5 +249,4 @@ export function SaleFormDialog({
     </Dialog>
   )
 }
-
     

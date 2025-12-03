@@ -143,5 +143,4 @@ export function SalesTable({ sales, isLoading, allStudents }: SalesTableProps) {
     </>
   )
 }
-
     

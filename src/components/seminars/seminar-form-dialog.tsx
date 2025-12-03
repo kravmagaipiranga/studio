@@ -108,7 +108,12 @@ export function SeminarFormDialog({
     const seminarId = isEditing ? seminar.id : doc(collection(firestore, "seminars")).id;
     const seminarRef = doc(firestore, 'seminars', seminarId);
 
-    const studentAge = differenceInYears(new Date(), new Date(student.dob));
+    let studentAge = 0;
+    try {
+      studentAge = differenceInYears(new Date(), new Date(student.dob));
+    } catch (e) {
+      console.warn("Could not calculate student age due to invalid dob", student.dob);
+    }
 
     const seminarData: Seminar = {
         ...values,
@@ -234,5 +239,4 @@ export function SeminarFormDialog({
     </Dialog>
   )
 }
-
     
