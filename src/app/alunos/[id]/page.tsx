@@ -131,8 +131,8 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-4">
               <Avatar className="h-20 w-20 border">
-                <AvatarImage src={student.avatar} alt={student.name} data-ai-hint="person face" />
-                <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                <AvatarImage src={student.avatar || `https://picsum.photos/seed/${student.id}/100/100`} alt={student.name || 'Avatar do Aluno'} data-ai-hint="person face" />
+                <AvatarFallback>{student.name ? student.name.charAt(0) : 'A'}</AvatarFallback>
               </Avatar>
               <div>
                 <CardTitle className="text-3xl">{student.name}</CardTitle>
@@ -294,3 +294,5 @@ function InfoList({ icon, label, value }: { icon?: React.ReactNode, label: strin
     </div>
   );
 }
+
+    
