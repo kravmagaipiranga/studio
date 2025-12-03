@@ -26,7 +26,7 @@ export type Student = {
   fikmAnnuityPaid?: boolean;
 
   // Dados Financeiros
-  planType?: 'Mensal' | 'Trimestral';
+  planType?: 'Mensal' | 'Trimestral' | 'Bolsa';
   planValue?: number;
   lastPaymentDate?: string;
   planExpirationDate?: string;
