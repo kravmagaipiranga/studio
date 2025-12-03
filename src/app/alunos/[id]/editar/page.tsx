@@ -31,7 +31,8 @@ function EditStudentSkeleton() {
     );
 }
 
-export default function EditStudentPage({ params: { id } }: { params: { id: string } }) {
+export default function EditStudentPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const firestore = useFirestore();
 
   const studentRef = useMemoFirebase(() => {
