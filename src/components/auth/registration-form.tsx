@@ -72,13 +72,13 @@ const formSchema = z.object({
 
 interface StudentFormProps {
   student?: Student | null;
-  isEditing: boolean;
 }
 
-export function StudentForm({ student, isEditing }: StudentFormProps) {
+export function StudentForm({ student }: StudentFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const firestore = useFirestore();
+  const isEditing = !!student;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -139,7 +139,7 @@ export function StudentForm({ student, isEditing }: StudentFormProps) {
       return;
     }
     
-    const studentId = isEditing && student ? student.id : doc(collection(firestore, "students")).id;
+    const studentId = isEditing ? student.id : doc(collection(firestore, "students")).id;
     
     const studentData: Partial<Student> = {
         ...values,
@@ -148,7 +148,7 @@ export function StudentForm({ student, isEditing }: StudentFormProps) {
         planValue: values.planValue, 
     };
 
-    if (isEditing && student) {
+    if (isEditing) {
       studentData.lastPaymentDate = student.lastPaymentDate;
       studentData.planExpirationDate = student.planExpirationDate;
       studentData.paymentStatus = student.paymentStatus;

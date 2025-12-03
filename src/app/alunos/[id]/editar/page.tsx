@@ -1,3 +1,4 @@
+
 "use client";
 
 import { doc } from "firebase/firestore";
@@ -34,7 +35,7 @@ function EditStudentSkeleton() {
 
 
 export default function EditStudentPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+  const id = params.id;
   const firestore = useFirestore();
   const isCreating = id === 'novo';
 
@@ -62,7 +63,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
             </CardDescription>
         </CardHeader>
         <CardContent>
-            <StudentForm student={student} isEditing={!isCreating} />
+            <StudentForm student={student} />
         </CardContent>
     </Card>
   )
