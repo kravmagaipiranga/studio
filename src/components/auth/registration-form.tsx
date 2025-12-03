@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select"
 import { useFirestore, setDocumentNonBlocking } from "@/firebase"
 import { Student } from "@/lib/types"
+import { Switch } from "../ui/switch"
 
 // Schema de validação completo para a ficha do aluno
 const formSchema = z.object({
@@ -40,6 +41,7 @@ const formSchema = z.object({
   email: z.string().email("Por favor, insira um endereço de e-mail válido."),
   
   // Controle Interno
+  startDate: z.string().optional(),
   belt: z.string().min(1, "A faixa é obrigatória"),
   status: z.string().min(1, "O status do aluno é obrigatório"),
   
@@ -58,6 +60,11 @@ const formSchema = z.object({
     z.number({ invalid_type_error: "O valor deve ser um número" }).optional()
   ),
   
+  // Anuidade
+  fikmAnnuityPaid: z.boolean().optional(),
+  fikmAnnuityPaymentDate: z.string().optional(),
+  fikmAnnuityPaymentMethod: z.enum(["Pix", "Cartão", "Dinheiro", "Pendente"]).optional(),
+
   // Campos Opcionais
   emergencyContacts: z.string().optional(),
   medicalHistory: z.string().optional(),
@@ -88,10 +95,14 @@ export function StudentForm({ student }: StudentFormProps) {
       emergencyContacts: student?.emergencyContacts || "",
       belt: student?.belt || 'Branca',
       status: student?.status || 'Ativo',
+      startDate: student?.startDate ? student.startDate.split('T')[0] : '',
       generalNotes: student?.generalNotes || "",
       medicalHistory: student?.medicalHistory || "",
       planType: student?.planType || 'Mensal',
       planValue: student?.planValue ?? 0,
+      fikmAnnuityPaid: student?.fikmAnnuityPaid || false,
+      fikmAnnuityPaymentDate: student?.fikmAnnuityPaymentDate ? student.fikmAnnuityPaymentDate.split('T')[0] : '',
+      fikmAnnuityPaymentMethod: student?.fikmAnnuityPaymentMethod || 'Pendente',
     }
   });
 
@@ -110,7 +121,6 @@ export function StudentForm({ student }: StudentFormProps) {
     const studentData: Partial<Student> = {
         ...values,
         id: studentId,
-        avatar: student?.avatar || `https://picsum.photos/seed/${studentId}/100/100`,
         registrationDate: student?.registrationDate || new Date().toISOString(),
         planValue: values.planValue, // Garante que pode ser undefined se não preenchido
     };
@@ -165,7 +175,7 @@ export function StudentForm({ student }: StudentFormProps) {
                 <FormItem>
                 <FormLabel>Data de Nascimento</FormLabel>
                 <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="date" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -216,8 +226,8 @@ export function StudentForm({ student }: StudentFormProps) {
         </div>
         
         {/* --- Controle Interno e Financeiro --- */}
-        <h3 className="text-lg font-medium border-b pb-2 pt-4">Controle Interno e Financeiro</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <h3 className="text-lg font-medium border-b pb-2 pt-4">Controle Interno</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <FormField
                 control={form.control}
                 name="belt"
@@ -264,8 +274,23 @@ export function StudentForm({ student }: StudentFormProps) {
                 </FormItem>
               )}
             />
+            <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Início dos Treinos</FormLabel>
+                    <FormControl>
+                        <Input type="date" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
         </div>
 
+        {/* --- Financeiro --- */}
+        <h3 className="text-lg font-medium border-b pb-2 pt-4">Financeiro (Plano)</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
               control={form.control}
@@ -302,6 +327,62 @@ export function StudentForm({ student }: StudentFormProps) {
                 </FormItem>
               )}
             />
+        </div>
+
+        {/* --- Anuidade --- */}
+        <h3 className="text-lg font-medium border-b pb-2 pt-4">Anuidade FIKM</h3>
+         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
+            <FormField
+                control={form.control}
+                name="fikmAnnuityPaid"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col rounded-lg border p-3 shadow-sm">
+                    <div className="flex flex-row items-center justify-between">
+                         <FormLabel>Anuidade Paga?</FormLabel>
+                        <FormControl>
+                            <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            />
+                        </FormControl>
+                    </div>
+                    </FormItem>
+                )}
+            />
+             <FormField
+                control={form.control}
+                name="fikmAnnuityPaymentDate"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Data Pgto. Anuidade</FormLabel>
+                    <FormControl>
+                        <Input type="date" {...field} value={field.value ?? ''} disabled={!form.watch('fikmAnnuityPaid')} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+             <FormField
+                control={form.control}
+                name="fikmAnnuityPaymentMethod"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Forma Pgto. Anuidade</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!form.watch('fikmAnnuityPaid')}>
+                        <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            <SelectItem value="Pendente">Pendente</SelectItem>
+                            <SelectItem value="Pix">Pix</SelectItem>
+                            <SelectItem value="Cartão">Cartão</SelectItem>
+                            <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
         </div>
         
         {/* --- Uniforme --- */}
@@ -342,8 +423,7 @@ export function StudentForm({ student }: StudentFormProps) {
               name="pantsSize"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tamanho da Calça</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormLabel>Tamanho da Calça</FormLabel>                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione..." />

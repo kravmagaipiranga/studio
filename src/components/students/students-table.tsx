@@ -2,7 +2,6 @@
 "use client"
 
 import { useState } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Card,
   CardContent,
@@ -77,9 +76,6 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="hidden w-[100px] sm:table-cell">
-                  <span className="sr-only">Avatar</span>
-                </TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Graduação</TableHead>
                 <TableHead>Status</TableHead>
@@ -92,9 +88,6 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
             <TableBody>
               {isLoading && Array.from({ length: 3 }).map((_, index) => (
                   <TableRow key={index}>
-                    <TableCell className="hidden sm:table-cell">
-                      <Skeleton className="h-9 w-9 rounded-full" />
-                    </TableCell>
                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
@@ -104,12 +97,6 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
               ))}
               {!isLoading && students.map((student: Student) => (
                 <TableRow key={student.id}>
-                  <TableCell className="hidden sm:table-cell">
-                    <Avatar className="h-9 w-9">
-                        <AvatarImage src={student.avatar} alt="Avatar" data-ai-hint="person face" />
-                        <AvatarFallback>{student.name ? student.name.charAt(0) : '?'}</AvatarFallback>
-                    </Avatar>
-                  </TableCell>
                   <TableCell className="font-medium">{student.name}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{student.belt}</Badge>

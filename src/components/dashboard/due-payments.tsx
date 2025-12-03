@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -85,10 +86,6 @@ export function DuePayments() {
               <TableRow key={student.id}>
                 <TableCell>
                   <div className="flex items-center gap-4">
-                    <Avatar className="hidden h-9 w-9 sm:flex">
-                      <AvatarImage src={student.avatar} alt="Avatar" data-ai-hint="person face" />
-                      <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
                     <div className="grid gap-1">
                       <p className="text-sm font-medium leading-none">
                         {student.name}

@@ -4,7 +4,6 @@ export type Student = {
   id: string;
   name: string;
   email: string;
-  avatar: string;
   plan?: 'Básico' | 'Intermediário' | 'Avançado';
   registrationDate: string;
   status: 'Ativo' | 'Inativo' | 'Pendente';
@@ -26,6 +25,9 @@ export type Student = {
   medicalHistory?: string;
   generalNotes?: string;
   fikmAnnuityPaid?: boolean;
+  fikmAnnuityPaymentDate?: string;
+  fikmAnnuityPaymentMethod?: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+
 
   // Dados Financeiros
   planType?: 'Mensal' | 'Trimestral' | 'Bolsa';

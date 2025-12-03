@@ -1,7 +1,6 @@
 
 "use client"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Card,
   CardContent,
@@ -95,13 +94,7 @@ export function PaymentsTable({ students, isLoading }: PaymentsTableProps) {
               {!isLoading && students.map((student: Student) => (
                 <TableRow key={student.id}>
                   <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="hidden h-9 w-9 sm:flex">
-                          <AvatarImage src={student.avatar} alt="Avatar" data-ai-hint="person face" />
-                          <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                       <div className="font-medium">{student.name}</div>
-                    </div>
+                    <div className="font-medium">{student.name}</div>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <Badge variant="outline">{student.planType || 'N/A'}</Badge>

@@ -2,13 +2,12 @@
 'use client';
 
 import { useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Student } from "@/lib/types";
-import { ArrowLeft, Edit, FileText, Gift, Hash, Phone, Shirt, Trash2, User, DollarSign, Calendar, CreditCard, Star } from "lucide-react";
+import { ArrowLeft, Edit, FileText, Gift, Hash, Phone, Shirt, Trash2, User, DollarSign, Calendar, CreditCard, Star, Banknote } from "lucide-react";
 import Link from "next/link";
 import { notFound, useRouter } from "next/navigation";
 import { useDoc, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from "@/firebase";
@@ -78,6 +77,7 @@ function StudentDetailSkeleton() {
 }
 
 function InfoItem({ icon, label, value }: { icon?: React.ReactNode, label: string; value: string | number | React.ReactNode; }) {
+  if (value === undefined || value === null || value === '') return null;
   return (
     <div className="flex items-start justify-between">
       <div className="flex items-center gap-3">
@@ -165,10 +165,6 @@ export function StudentDetailContent({ studentId }: { studentId: string }) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-4">
-              <Avatar className="h-20 w-20 border">
-                <AvatarImage src={student.avatar || `https://picsum.photos/seed/${student.id}/100/100`} alt={student.name || 'Avatar do Aluno'} data-ai-hint="person face" />
-                <AvatarFallback>{student.name ? student.name.charAt(0).toUpperCase() : 'A'}</AvatarFallback>
-              </Avatar>
               <div>
                 <CardTitle className="text-3xl">{student.name}</CardTitle>
                 <CardDescription>{student.email}</CardDescription>
@@ -212,11 +208,11 @@ export function StudentDetailContent({ studentId }: { studentId: string }) {
             <CardContent className="space-y-4">
               <InfoItem icon={<Star />} label="Graduação (Faixa)" value={student.belt} />
               <Separator />
+               <InfoItem icon={<Calendar />} label="Data de Início" value={student.startDate ? new Date(student.startDate).toLocaleDateString('pt-BR') : 'Não definido'} />
+              <Separator />
               <InfoItem icon={<Calendar />} label="Data de Cadastro" value={student.registrationDate ? new Date(student.registrationDate).toLocaleDateString('pt-BR') : 'Não definido'} />
               <Separator />
               <InfoItem icon={<Calendar />} label="Último Exame" value={student.lastExamDate ? new Date(student.lastExamDate).toLocaleDateString('pt-BR') : 'Não definido'} />
-              <Separator />
-              <InfoItem label="Anuidade FIKM" value={student.fikmAnnuityPaid ? "Paga" : "Pendente"} />
             </CardContent>
           </Card>
         </div>
@@ -234,6 +230,19 @@ export function StudentDetailContent({ studentId }: { studentId: string }) {
                     <InfoItem icon={<Calendar />} label="Último Pagamento" value={student.lastPaymentDate ? new Date(student.lastPaymentDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'Nenhum'} />
                     <Separator />
                     <InfoItem icon={<Calendar />} label="Vencimento" value={student.planExpirationDate ? new Date(student.planExpirationDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'} />
+                </CardContent>
+            </Card>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>Anuidade FIKM</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <InfoItem icon={<CreditCard />} label="Status" value={student.fikmAnnuityPaid ? "Paga" : "Pendente"} />
+                    <Separator />
+                    <InfoItem icon={<Calendar />} label="Data de Pagamento" value={student.fikmAnnuityPaymentDate ? new Date(student.fikmAnnuityPaymentDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'} />
+                    <Separator />
+                    <InfoItem icon={<Banknote />} label="Forma de Pagamento" value={student.fikmAnnuityPaymentMethod || 'N/A'} />
                 </CardContent>
             </Card>
 

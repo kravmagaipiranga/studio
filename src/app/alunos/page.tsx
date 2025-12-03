@@ -85,7 +85,6 @@ export default function AlunosPage() {
                             cpf: studentData.cpf || '',
                             phone: studentData.phone || '',
                             belt: formattedBelt,
-                            avatar: `https://picsum.photos/seed/${newStudentId}/100/100`,
                             status: studentData.status || 'Ativo',
                             paymentStatus: studentData.paymentStatus || 'Pendente',
                             registrationDate: new Date().toISOString(),
