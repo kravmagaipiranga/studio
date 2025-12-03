@@ -54,7 +54,7 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
     return <EditExamSkeleton />;
   }
 
-  if (!exam || !students) {
+  if (!isLoading && (!exam || !students)) {
      notFound();
   }
 
@@ -68,7 +68,7 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
                 </Button>
             </Link>
         </div>
-        <ExamForm exam={exam} allStudents={students} />
+        <ExamForm exam={exam!} allStudents={students!} />
     </>
   );
 }

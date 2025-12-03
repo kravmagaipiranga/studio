@@ -54,7 +54,7 @@ export default function EditSeminarPage({ params }: { params: { id: string } }) 
     return <EditSeminarSkeleton />;
   }
 
-  if (!seminar || !students) {
+  if (!isLoading && (!seminar || !students)) {
      notFound();
   }
 
@@ -68,7 +68,7 @@ export default function EditSeminarPage({ params }: { params: { id: string } }) 
                 </Button>
             </Link>
         </div>
-        <SeminarForm seminar={seminar} allStudents={students} />
+        <SeminarForm seminar={seminar!} allStudents={students!} />
     </>
   );
 }

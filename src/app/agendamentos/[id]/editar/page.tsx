@@ -46,7 +46,7 @@ export default function EditAppointmentPage({ params }: { params: { id: string }
     return <EditAppointmentSkeleton />;
   }
 
-  if (!appointment) {
+  if (!isLoading && !appointment) {
     notFound();
   }
 
@@ -60,7 +60,7 @@ export default function EditAppointmentPage({ params }: { params: { id: string }
                 </Button>
             </Link>
         </div>
-        <AppointmentForm appointment={appointment} />
+        <AppointmentForm appointment={appointment!} />
     </>
   );
 }

@@ -54,7 +54,7 @@ export default function EditPrivateClassPage({ params }: { params: { id: string 
     return <EditPrivateClassSkeleton />;
   }
 
-  if (!privateClass || !students) {
+  if (!isLoading && (!privateClass || !students)) {
      notFound();
   }
 
@@ -68,7 +68,7 @@ export default function EditPrivateClassPage({ params }: { params: { id: string 
                 </Button>
             </Link>
         </div>
-        <PrivateClassForm privateClass={privateClass} allStudents={students} />
+        <PrivateClassForm privateClass={privateClass!} allStudents={students!} />
     </>
   );
 }

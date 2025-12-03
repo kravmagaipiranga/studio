@@ -54,7 +54,7 @@ export default function EditSalePage({ params }: { params: { id: string } }) {
     return <EditSaleSkeleton />;
   }
 
-  if (!sale || !students) {
+  if (!isLoading && (!sale || !students)) {
      notFound();
   }
 
@@ -68,7 +68,7 @@ export default function EditSalePage({ params }: { params: { id: string } }) {
                 </Button>
             </Link>
         </div>
-        <SaleForm sale={sale} allStudents={students} />
+        <SaleForm sale={sale!} allStudents={students!} />
     </>
   );
 }
