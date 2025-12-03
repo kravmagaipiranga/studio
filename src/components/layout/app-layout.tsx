@@ -8,7 +8,6 @@ import {
   Users,
   CreditCard,
   ShieldCheck,
-  Settings,
   Menu,
 } from "lucide-react";
 import {
@@ -17,13 +16,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { FistIcon } from "@/components/icons";
 import { UserNav } from "@/components/user-nav";
 import { cn } from "@/lib/utils";
@@ -68,26 +60,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <ShieldCheck className="h-4 w-4" />
                 Exames
               </NavItem>
-              <NavItem href="/configuracoes">
-                <Settings className="h-4 w-4" />
-                Configurações
-              </NavItem>
             </nav>
-          </div>
-          <div className="mt-auto p-4">
-            <Card x-chunk="dashboard-02-chunk-0">
-              <CardHeader className="p-2 pt-0 md:p-4">
-                <CardTitle>Precisa de Ajuda?</CardTitle>
-                <CardDescription>
-                  Entre em contato com o suporte para mais informações.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
-                <Button size="sm" className="w-full">
-                  Contatar Suporte
-                </Button>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
@@ -128,10 +101,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                  <NavItem href="/exames" isMobile>
                   <ShieldCheck className="h-5 w-5" />
                   Exames
-                </NavItem>
-                <NavItem href="/configuracoes" isMobile>
-                  <Settings className="h-5 w-5" />
-                  Configurações
                 </NavItem>
               </nav>
             </SheetContent>
