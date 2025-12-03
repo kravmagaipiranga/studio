@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { doc } from "firebase/firestore";
@@ -60,7 +61,7 @@ export default function EditAppointmentPage({ params }: { params: { id: string }
                 </Button>
             </Link>
         </div>
-        <AppointmentForm appointment={appointment!} />
+        {appointment && <AppointmentForm appointment={appointment} />}
     </>
   );
 }

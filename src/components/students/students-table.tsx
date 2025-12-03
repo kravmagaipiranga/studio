@@ -90,7 +90,7 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && Array.from({ length: 3 }).map((_, index) => (
+              {isLoading && Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={index}>
                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-20" /></TableCell>
@@ -138,13 +138,15 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
                   </TableCell>
                 </TableRow>
               ))}
+               {!isLoading && students.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                        Nenhum aluno encontrado.
+                    </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
-          {!isLoading && students.length === 0 && (
-            <div className="text-center py-10 text-muted-foreground">
-              Nenhum aluno encontrado.
-            </div>
-          )}
         </CardContent>
       </Card>
       <AlertDialog open={!!deletingStudent} onOpenChange={(isOpen) => !isOpen && setDeletingStudent(null)}>

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { doc, collection } from "firebase/firestore";
@@ -68,7 +69,7 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
                 </Button>
             </Link>
         </div>
-        <ExamForm exam={exam!} allStudents={students!} />
+        {exam && students && <ExamForm exam={exam} allStudents={students} />}
     </>
   );
 }

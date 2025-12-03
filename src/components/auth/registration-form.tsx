@@ -83,7 +83,7 @@ export function StudentForm({ student }: StudentFormProps) {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: isEditing ? student : {
       name: "",
       dob: "",
       cpf: "",
@@ -98,7 +98,7 @@ export function StudentForm({ student }: StudentFormProps) {
       generalNotes: "",
       medicalHistory: "",
       planType: 'Mensal',
-      planValue: undefined,
+      planValue: 200,
       fikmAnnuityPaid: false,
       fikmAnnuityPaymentDate: "",
       fikmAnnuityPaymentMethod: 'Pendente',
@@ -122,7 +122,7 @@ export function StudentForm({ student }: StudentFormProps) {
         generalNotes: student.generalNotes || "",
         medicalHistory: student.medicalHistory || "",
         planType: student.planType || 'Mensal',
-        planValue: student.planValue ?? undefined,
+        planValue: student.planValue ?? 200,
         fikmAnnuityPaid: student.fikmAnnuityPaid || false,
         fikmAnnuityPaymentDate: student.fikmAnnuityPaymentDate ? student.fikmAnnuityPaymentDate.split('T')[0] : '',
         fikmAnnuityPaymentMethod: student.fikmAnnuityPaymentMethod || 'Pendente',
@@ -167,6 +167,7 @@ export function StudentForm({ student }: StudentFormProps) {
     })
     
     router.push(`/alunos`);
+    router.refresh(); // Força a atualização dos dados na página de lista
   }
 
   return (
@@ -342,7 +343,7 @@ export function StudentForm({ student }: StudentFormProps) {
                     <Input 
                       type="number" 
                       step="0.01" 
-                      placeholder="Ex: 200.00" 
+                      placeholder="200.00" 
                       {...field} 
                       value={field.value ?? ''}
                       onChange={event => field.onChange(event.target.value === '' ? undefined : parseFloat(event.target.value))} 

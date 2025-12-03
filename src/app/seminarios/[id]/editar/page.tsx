@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { doc, collection } from "firebase/firestore";
@@ -61,14 +62,14 @@ export default function EditSeminarPage({ params }: { params: { id: string } }) 
   return (
     <>
         <div className="flex items-center justify-between mb-4">
-            <Link href={`/seminarios`}>_
+            <Link href={`/seminarios`}>
                 <Button variant="outline">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Voltar para Seminários
                 </Button>
             </Link>
         </div>
-        <SeminarForm seminar={seminar!} allStudents={students!} />
+        {seminar && students && <SeminarForm seminar={seminar} allStudents={students} />}
     </>
   );
 }

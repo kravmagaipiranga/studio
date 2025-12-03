@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { doc, collection } from "firebase/firestore";
@@ -68,7 +69,7 @@ export default function EditPrivateClassPage({ params }: { params: { id: string 
                 </Button>
             </Link>
         </div>
-        <PrivateClassForm privateClass={privateClass!} allStudents={students!} />
+        {privateClass && students && <PrivateClassForm privateClass={privateClass} allStudents={students} />}
     </>
   );
 }
