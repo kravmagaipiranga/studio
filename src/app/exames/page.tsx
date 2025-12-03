@@ -38,7 +38,7 @@ export default function ExamesPage() {
                             Agendar Exame
                         </Button>
                      </Link>
-                    <Button variant_1="outline">
+                    <Button variant="outline">
                         <Download className="mr-2 h-4 w-4" />
                         Gerar Relatório
                     </Button>
