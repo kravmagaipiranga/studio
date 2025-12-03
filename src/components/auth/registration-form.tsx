@@ -147,8 +147,8 @@ export function StudentForm({ student }: StudentFormProps) {
       description: isEditing ? `Os dados de ${values.name} foram atualizados.` : `${values.name} foi adicionado com sucesso.`,
     })
     
-    // Redireciona para a página de detalhes do aluno após criar ou editar
-    router.push(`/alunos/${studentId}`);
+    // Redireciona para a página de listagem de alunos
+    router.push('/alunos');
   }
 
   return (
@@ -346,8 +346,8 @@ export function StudentForm({ student }: StudentFormProps) {
                 control={form.control}
                 name="fikmAnnuityPaid"
                 render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm sm:col-span-1 h-[58px]">
-                        <FormLabel className="mr-4">Anuidade Paga?</FormLabel>
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm sm:col-span-1 h-[58px] mt-2">
+                        <FormLabel className="mr-4">Paga?</FormLabel>
                         <FormControl>
                             <Switch
                             checked={field.value}

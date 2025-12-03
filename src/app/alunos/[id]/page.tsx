@@ -1,8 +1,7 @@
+// This file is no longer used and can be deleted.
+// For now, it will redirect to the students list page.
+import { redirect } from 'next/navigation';
 
-import { StudentDetailContent } from "@/components/students/student-detail-content";
-
-export default async function StudentDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
-
-  return <StudentDetailContent studentId={id} />;
+export default function StudentDetailPage() {
+  redirect('/alunos');
 }

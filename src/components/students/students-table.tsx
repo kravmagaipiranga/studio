@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Trash2, Edit } from "lucide-react"
+import { MoreHorizontal, Trash2 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +35,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useFirestore, deleteDocumentNonBlocking } from "@/firebase"
 import { doc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
-import { useRouter } from "next/navigation"
 
 interface StudentsTableProps {
   students: Student[];
@@ -45,7 +44,6 @@ interface StudentsTableProps {
 export function StudentsTable({ students, isLoading }: StudentsTableProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const router = useRouter();
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
 
   const handleDelete = (student: Student) => {
@@ -121,9 +119,6 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/alunos/${student.id}`}>Ver Detalhes</Link>
-                        </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                            <Link href={`/alunos/${student.id}/editar`}>
                             Editar
