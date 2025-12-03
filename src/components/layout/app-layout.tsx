@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -39,14 +40,16 @@ import { UserNav } from "@/components/user-nav";
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-        <Sidebar>
-            <AppSidebar />
-        </Sidebar>
-        <div className="flex flex-col">
-          <AppHeader />
-          <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-            {children}
-          </main>
+        <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+            <Sidebar>
+                <AppSidebar />
+            </Sidebar>
+            <div className="flex flex-col">
+              <AppHeader />
+              <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
+                {children}
+              </main>
+            </div>
         </div>
     </SidebarProvider>
   );
@@ -58,7 +61,7 @@ function AppSidebar() {
   return (
     <>
       <SidebarHeader>
-        <Link className="flex items-center gap-2 font-semibold" href="/">
+        <Link className="flex items-center gap-2 font-semibold" href="/dashboard">
           <FistIcon className="h-6 w-6" />
           <span className="">Krav Magá IPIRANGA</span>
         </Link>
@@ -66,13 +69,13 @@ function AppSidebar() {
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton href="/" isActive={pathname === '/'}>
+            <SidebarMenuButton href="/dashboard" isActive={pathname === '/dashboard'}>
               <Home className="h-4 w-4" />
               Painel
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="/alunos" isActive={pathname.startsWith('/alunos')}>
+            <SidebarMenuButton href="/dashboard/alunos" isActive={pathname.startsWith('/dashboard/alunos')}>
               <Users className="h-4 w-4" />
               Alunos
             </SidebarMenuButton>
