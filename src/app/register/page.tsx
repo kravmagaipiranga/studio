@@ -1,4 +1,4 @@
-import { RegistrationForm } from "@/components/auth/registration-form";
+import { StudentForm } from "@/components/auth/student-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 
@@ -17,7 +17,7 @@ export default function RegisterPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <RegistrationForm />
+                    <StudentForm />
                 </CardContent>
             </Card>
             <div className="mt-6 text-center text-sm text-muted-foreground">

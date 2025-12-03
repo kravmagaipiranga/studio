@@ -1,10 +1,9 @@
-
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { collection, doc, setDoc } from 'firebase/firestore'
+import { collection, doc } from 'firebase/firestore'
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -40,17 +39,32 @@ const formSchema = z.object({
   email: z.string().email("Por favor, insira um endereço de e-mail válido."),
   tshirtSize: z.string().min(1, "Selecione um tamanho de camiseta."),
   pantsSize: z.string().min(1, "Selecione um tamanho de calça."),
-  emergencyContacts: z.string().min(10, "Por favor, insira pelo menos um contato de emergência.")
+  emergencyContacts: z.string().min(10, "Por favor, insira pelo menos um contato de emergência."),
+  belt: z.string().min(1, "A faixa é obrigatória"),
+  status: z.string().min(1, "O status é obrigatório"),
+  paymentStatus: z.string().min(1, "O status de pagamento é obrigatório."),
+  generalNotes: z.string().optional(),
+  medicalHistory: z.string().optional(),
 })
 
-export function RegistrationForm() {
+interface StudentFormProps {
+  student?: Student;
+  onFinished?: () => void;
+}
+
+export function StudentForm({ student, onFinished }: StudentFormProps) {
   const { toast } = useToast()
   const router = useRouter()
   const firestore = useFirestore();
 
+  const isEditing = !!student;
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: student ? {
+        ...student,
+        dob: student.dob ? student.dob.split('T')[0] : '',
+    } : {
       name: "",
       dob: "",
       cpf: "",
@@ -59,6 +73,11 @@ export function RegistrationForm() {
       tshirtSize: "",
       pantsSize: "",
       emergencyContacts: "",
+      belt: 'Branca',
+      status: 'Ativo',
+      paymentStatus: 'Pendente',
+      generalNotes: "",
+      medicalHistory: "",
     },
   })
 
@@ -72,28 +91,28 @@ export function RegistrationForm() {
       return;
     }
     
-    const studentsCollection = collection(firestore, "students");
-    const newStudentId = doc(studentsCollection).id;
+    const studentId = isEditing ? student.id : doc(collection(firestore, "students")).id;
+    
+    const studentData: Partial<Student> = {
+        ...values,
+        id: studentId,
+        avatar: student?.avatar || `https://picsum.photos/seed/${studentId}/100/100`,
+        registrationDate: student?.registrationDate || new Date().toISOString(),
+    }
 
-    const newStudent: Omit<Student, 'id'> = {
-      ...values,
-      belt: 'Branca',
-      avatar: `https://picsum.photos/seed/${newStudentId}/100/100`,
-      status: 'Ativo',
-      paymentStatus: 'Pendente',
-      registrationDate: new Date().toISOString(),
-    };
-
-    const docRef = doc(firestore, 'students', newStudentId);
-    setDocumentNonBlocking(docRef, { ...newStudent, id: newStudentId }, { merge: true });
+    const docRef = doc(firestore, 'students', studentId);
+    setDocumentNonBlocking(docRef, studentData, { merge: true });
 
     toast({
-      title: "Cadastro Enviado com Sucesso!",
-      description: "Seus dados foram recebidos. Em breve, você estará pronto para começar.",
+      title: isEditing ? "Aluno Atualizado!" : "Cadastro Enviado com Sucesso!",
+      description: isEditing ? "Os dados do aluno foram atualizados." : "O novo aluno foi adicionado.",
     })
-    form.reset();
     
-    router.push('/alunos');
+    if (onFinished) {
+        onFinished();
+    } else {
+        router.push('/alunos');
+    }
   }
 
   return (
@@ -106,7 +125,7 @@ export function RegistrationForm() {
             <FormItem>
               <FormLabel>Nome Completo</FormLabel>
               <FormControl>
-                <Input placeholder="Seu nome completo" {...field} />
+                <Input placeholder="Nome completo do aluno" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -140,6 +159,72 @@ export function RegistrationForm() {
             )}
           />
         </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                  <FormItem>
+                  <FormLabel>Telefone / WhatsApp</FormLabel>
+                  <FormControl>
+                      <Input type="tel" placeholder="(11) 99999-9999" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                  </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                  <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                      <Input type="email" placeholder="aluno@email.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                  </FormItem>
+              )}
+            />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField
+                control={form.control}
+                name="belt"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Faixa</FormLabel>
+                    <Input placeholder="Ex: Branca, Amarela, etc." {...field} />
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status do Aluno</FormLabel>
+                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Ativo">Ativo</SelectItem>
+                      <SelectItem value="Inativo">Inativo</SelectItem>
+                      <SelectItem value="Pendente">Pendente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
               control={form.control}
@@ -175,7 +260,7 @@ export function RegistrationForm() {
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
+                      </Trierigger>
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="36">36</SelectItem>
@@ -192,34 +277,7 @@ export function RegistrationForm() {
               )}
             />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                  <FormItem>
-                  <FormLabel>Telefone / WhatsApp</FormLabel>
-                  <FormControl>
-                      <Input type="tel" placeholder="(11) 99999-9999" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                  </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                  <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                      <Input type="email" placeholder="seu@email.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                  </FormItem>
-              )}
-            />
-        </div>
+        
         <FormField
           control={form.control}
           name="emergencyContacts"
@@ -233,7 +291,34 @@ export function RegistrationForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full mt-4">Finalizar Cadastro</Button>
+        <FormField
+          control={form.control}
+          name="medicalHistory"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Histórico Médico</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Alergias, condições pré-existentes, etc." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="generalNotes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Anotações Gerais</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Qualquer outra observação relevante." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Button type="submit" className="w-full mt-4">{isEditing ? "Salvar Alterações" : "Finalizar Cadastro"}</Button>
       </form>
     </Form>
   )

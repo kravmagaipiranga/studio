@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,13 +9,29 @@ import { Separator } from "@/components/ui/separator";
 import { Student } from "@/lib/types";
 import { ArrowLeft, Edit, FileText, Gift, Hash, Phone, Shirt, Trash2, User } from "lucide-react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { notFound, useRouter } from "next/navigation";
+import { useDoc, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StudentFormDialog } from "@/components/students/student-form-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useToast } from "@/hooks/use-toast";
 
 export default function StudentDetailPage({ params }: { params: { id: string } }) {
   const firestore = useFirestore();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const studentRef = useMemoFirebase(() => {
     if (!firestore || !params.id) return null;
@@ -22,6 +39,16 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
   }, [firestore, params.id]);
 
   const { data: student, isLoading } = useDoc<Student>(studentRef);
+
+  const handleDeleteStudent = () => {
+    if (!studentRef) return;
+    deleteDocumentNonBlocking(studentRef);
+    toast({
+      title: "Aluno Excluído",
+      description: "O aluno foi removido do sistema.",
+    });
+    router.push("/alunos");
+  };
 
   if (isLoading) {
     return (
@@ -70,7 +97,6 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
                 </Card>
             </div>
         </div>
-
       </>
     );
   }
@@ -89,11 +115,11 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
           </Button>
         </Link>
         <div className="flex items-center gap-2">
-           <Button>
+           <Button onClick={() => setIsEditDialogOpen(true)}>
             <Edit className="mr-2 h-4 w-4" />
             Editar Aluno
            </Button>
-            <Button variant="destructive">
+            <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Excluir
             </Button>
@@ -190,6 +216,30 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
             </Card>
         </div>
       </div>
+
+       <StudentFormDialog
+        isOpen={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        student={student}
+      />
+
+       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso irá excluir permanentemente o
+              aluno do banco de dados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteStudent}>
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
