@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 
 function EditStudentSkeleton() {
     return (
-        <Card className="w-full max-w-2xl mx-auto">
+        <Card className="w-full max-w-4xl mx-auto">
             <CardHeader>
                 <Skeleton className="h-8 w-48" />
                 <Skeleton className="h-4 w-72" />
@@ -45,14 +45,17 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
 
   const { data: student, isLoading } = useDoc<Student>(studentRef);
 
+  // First, handle the loading state to prevent premature rendering or 404s.
   if (isLoading) {
     return <EditStudentSkeleton />;
   }
 
+  // After loading is complete, check if the document was found in edit mode.
   if (!isCreating && !student) {
-    notFound();
+    return notFound();
   }
 
+  // Now it's safe to render the form for either creating or editing.
   return (
     <Card className="w-full max-w-4xl mx-auto">
         <CardHeader>
@@ -62,6 +65,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
             </CardDescription>
         </CardHeader>
         <CardContent>
+            {/* Pass the loaded student data for editing, or null for creation */}
             <StudentForm student={student} isEditing={!isCreating} />
         </CardContent>
     </Card>
