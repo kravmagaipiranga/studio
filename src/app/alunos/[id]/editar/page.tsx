@@ -1,4 +1,3 @@
-
 'use client';
 
 import { doc } from "firebase/firestore";
@@ -10,7 +9,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { notFound } from "next/navigation";
 
 function EditStudentSkeleton() {
     return (
@@ -42,7 +40,6 @@ function EditStudentSkeleton() {
     );
 }
 
-
 export default function EditStudentPage({ params }: { params: { id: string } }) {
   const id = params.id;
   const firestore = useFirestore();
@@ -58,8 +55,26 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
     return <EditStudentSkeleton />;
   }
 
-  if (!isLoading && !student) {
-    notFound();
+  if (!student) {
+    return (
+        <div className="flex flex-col items-center justify-center text-center py-10">
+            <Card className="w-full max-w-md">
+                <CardHeader>
+                    <CardTitle>Erro 404</CardTitle>
+                    <CardDescription>Aluno não encontrado</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="mb-4">O aluno que você está tentando editar não foi encontrado. Ele pode ter sido excluído.</p>
+                     <Link href="/alunos">
+                        <Button variant="outline">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Voltar para a Lista de Alunos
+                        </Button>
+                    </Link>
+                </CardContent>
+            </Card>
+        </div>
+    );
   }
 
   return (
@@ -77,7 +92,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl">Editar Cadastro do Aluno</CardTitle>
                     <CardDescription>
-                        Altere as informações de {student?.name}.
+                        Altere as informações de {student.name}.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
