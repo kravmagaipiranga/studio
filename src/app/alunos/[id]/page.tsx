@@ -102,6 +102,7 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
     );
   }
 
+  // Only call notFound if loading is finished and student is still null
   if (!student) {
     notFound();
   }
