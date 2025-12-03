@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   Home,
@@ -23,25 +23,39 @@ import { Button } from "@/components/ui/button";
 import { UserNav } from "@/components/user-nav";
 import { cn } from "@/lib/utils";
 import { useAuth, useUser } from "@/firebase";
-import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 import { useEffect } from "react";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
-      initiateAnonymousSignIn(auth);
+    // If auth is still loading, do nothing.
+    if (isUserLoading) return;
+    
+    // If not loading and there's no user, redirect to login page.
+    // Allow access to public pages like register and login itself.
+    if (!user && pathname !== '/login' && pathname !== '/register') {
+      router.push('/login');
     }
-  }, [isUserLoading, user, auth]);
+  }, [isUserLoading, user, pathname, router]);
 
-
-  // Don't show layout for public registration page
-  if (pathname === '/register') {
+  // Don't show layout for public pages
+  if (pathname === '/register' || pathname === '/login') {
     return <>{children}</>;
   }
+  
+  // While loading auth state, you can show a loader or null
+  if (isUserLoading) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          Carregando...
+        </div>
+      );
+  }
+
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
