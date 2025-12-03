@@ -75,8 +75,8 @@ export function StudentForm({ student }: StudentFormProps) {
       cpf: "",
       phone: "",
       email: "",
-      tshirtSize: "",
-      pantsSize: "",
+      tshirtSize: "M",
+      pantsSize: "M",
       emergencyContacts: "",
       belt: 'Branca',
       status: 'Ativo',
@@ -109,15 +109,12 @@ export function StudentForm({ student }: StudentFormProps) {
     setDocumentNonBlocking(docRef, studentData, { merge: true });
 
     toast({
-      title: isEditing ? "Aluno Atualizado!" : "Cadastro Enviado com Sucesso!",
-      description: isEditing ? "Os dados do aluno foram atualizados." : "O novo aluno foi adicionado.",
+      title: isEditing ? "Aluno Atualizado!" : "Cadastro Realizado!",
+      description: isEditing ? `Os dados de ${values.name} foram atualizados.` : `${values.name} foi adicionado com sucesso.`,
     })
     
-    if (isEditing) {
-        router.push(`/alunos/${studentId}`);
-    } else {
-        router.push('/alunos');
-    }
+    router.push(isEditing ? `/alunos/${studentId}` : '/alunos');
+    router.refresh();
   }
 
   return (
@@ -343,10 +340,8 @@ export function StudentForm({ student }: StudentFormProps) {
           )}
         />
 
-        <Button type="submit" className="w-full mt-4">{isEditing ? "Salvar Alterações" : "Finalizar Cadastro"}</Button>
+        <Button type="submit" className="w-full mt-4">{isEditing ? "Salvar Alterações" : "Adicionar Aluno"}</Button>
       </form>
     </Form>
   )
 }
-
-    

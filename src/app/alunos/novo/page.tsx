@@ -18,12 +18,12 @@ export default function NewStudentPage() {
                 </Button>
             </Link>
         </div>
-        <div className="w-full max-w-xl mx-auto">
+        <div className="w-full max-w-2xl mx-auto">
             <Card>
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl">Adicionar Novo Aluno</CardTitle>
                     <CardDescription>
-                        Preencha os dados para adicionar um novo aluno ao sistema.
+                        Preencha os dados abaixo para adicionar um novo aluno ao sistema.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -34,4 +34,3 @@ export default function NewStudentPage() {
     </>
   );
 }
-
