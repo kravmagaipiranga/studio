@@ -112,12 +112,14 @@ export function ExamFormDialog({
     const examRef = doc(firestore, 'exams', examId);
     
     let studentAge = 0;
-    try {
-      studentAge = differenceInYears(new Date(), new Date(student.dob));
-    } catch (e) {
-      // Handle invalid date format for dob gracefully
-      console.warn("Could not calculate student age due to invalid dob", student.dob);
+    if (student.dob) {
+      try {
+        studentAge = differenceInYears(new Date(), new Date(student.dob));
+      } catch (e) {
+        console.warn("Could not calculate student age due to invalid dob", student.dob);
+      }
     }
+
 
     const examData: Exam = {
         ...values,

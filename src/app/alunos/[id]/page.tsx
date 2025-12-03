@@ -270,7 +270,7 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
   );
 }
 
-function InfoItem({ icon, label, value }: { icon?: React.ReactNode, label: string; value: string | React.ReactNode; }) {
+function InfoItem({ icon, label, value }: { icon?: React.ReactNode, label: string; value: string | number | React.ReactNode; }) {
   return (
     <div className="flex items-start justify-between">
       <div className="flex items-center gap-3">
