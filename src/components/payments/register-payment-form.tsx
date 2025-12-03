@@ -65,6 +65,13 @@ export function RegisterPaymentForm({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+        studentId: '',
+        planType: "Mensal",
+        planValue: 0,
+        paymentDate: format(new Date(), 'yyyy-MM-dd'),
+        paymentCredits: "",
+    },
   });
 
   useEffect(() => {

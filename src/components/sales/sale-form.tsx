@@ -32,7 +32,7 @@ const formSchema = z.object({
   item: z.string().min(2, "O nome do item é obrigatório."),
   value: z.preprocess(
     (a) => parseFloat(z.string().parse(a)),
-    z.number().positive("O valor deve ser positivo.")
+    z.number().min(0, "O valor não pode ser negativo.")
   ),
   date: z.string().refine((val) => val, { message: "A data da venda é obrigatória." }),
   paymentStatus: z.enum(["Pago", "Pendente"]),
@@ -238,3 +238,5 @@ export function SaleForm({ sale, allStudents }: SaleFormProps) {
     </Card>
   )
 }
+
+    

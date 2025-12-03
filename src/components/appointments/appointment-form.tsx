@@ -48,6 +48,8 @@ export function AppointmentForm({ appointment }: AppointmentFormProps) {
     defaultValues: appointment ? {
       ...appointment,
       classDate: appointment.classDate ? format(new Date(appointment.classDate + 'T00:00:00'), 'yyyy-MM-dd') : '',
+      email: appointment.email || '',
+      notes: appointment.notes || '',
     } : {
       name: "",
       whatsapp: "",
@@ -65,6 +67,7 @@ export function AppointmentForm({ appointment }: AppointmentFormProps) {
     const appointmentData: Omit<Appointment, 'id'> = {
         ...values,
         email: values.email || '',
+        notes: values.notes || '',
     };
     
     const docRef = doc(firestore, 'appointments', appointmentId);
@@ -180,3 +183,5 @@ export function AppointmentForm({ appointment }: AppointmentFormProps) {
     </Card>
   )
 }
+
+    

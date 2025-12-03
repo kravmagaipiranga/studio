@@ -66,6 +66,9 @@ export function StudentForm({ student }: StudentFormProps) {
         dob: student.dob ? student.dob.split('T')[0] : '',
         status: student.status || 'Ativo',
         paymentStatus: student.paymentStatus || 'Pendente',
+        emergencyContacts: student.emergencyContacts || '',
+        generalNotes: student.generalNotes || '',
+        medicalHistory: student.medicalHistory || '',
     } : {
       name: "",
       dob: "",
