@@ -33,7 +33,7 @@ function EditExamSkeleton() {
 }
 
 export default function EditExamPage({ params }: { params: { id: string } }) {
-  const id = params.id;
+  const { id } = params;
   const firestore = useFirestore();
 
   const examRef = useMemoFirebase(() => {

@@ -34,7 +34,7 @@ function EditStudentSkeleton() {
 
 
 export default function EditStudentPage({ params }: { params: { id: string } }) {
-  const id = params.id;
+  const { id } = params;
   const firestore = useFirestore();
   const isCreating = id === 'novo';
 

@@ -32,7 +32,7 @@ function EditAppointmentSkeleton() {
 }
 
 export default function EditAppointmentPage({ params }: { params: { id: string } }) {
-  const id = params.id;
+  const { id } = params;
   const firestore = useFirestore();
 
   const appointmentRef = useMemoFirebase(() => {

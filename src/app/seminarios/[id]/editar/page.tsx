@@ -33,7 +33,7 @@ function EditSeminarSkeleton() {
 }
 
 export default function EditSeminarPage({ params }: { params: { id: string } }) {
-  const id = params.id;
+  const { id } = params;
   const firestore = useFirestore();
 
   const seminarRef = useMemoFirebase(() => {
