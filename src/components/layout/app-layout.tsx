@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   Menu,
   BookCopy,
-  ClipboardUser,
+  ClipboardList,
 } from "lucide-react";
 import {
   Sheet,
@@ -67,7 +67,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 Seminários
               </NavItem>
                <NavItem href="/aulas">
-                <ClipboardUser className="h-4 w-4" />
+                <ClipboardList className="h-4 w-4" />
                 Aulas Particulares
               </NavItem>
             </nav>
@@ -117,7 +117,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   Seminários
                 </NavItem>
                 <NavItem href="/aulas" isMobile>
-                  <ClipboardUser className="h-5 w-5" />
+                  <ClipboardList className="h-5 w-5" />
                   Aulas Particulares
                 </NavItem>
               </nav>
