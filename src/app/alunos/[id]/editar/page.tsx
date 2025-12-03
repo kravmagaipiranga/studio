@@ -45,17 +45,14 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
 
   const { data: student, isLoading } = useDoc<Student>(studentRef);
 
-  // First, handle the loading state to prevent premature rendering or 404s.
   if (isLoading) {
     return <EditStudentSkeleton />;
   }
 
-  // After loading is complete, check if the document was found in edit mode.
-  if (!isCreating && !student) {
-    return notFound();
+  if (!isCreating && !isLoading && !student) {
+    notFound();
   }
 
-  // Now it's safe to render the form for either creating or editing.
   return (
     <Card className="w-full max-w-4xl mx-auto">
         <CardHeader>
@@ -65,7 +62,6 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
             </CardDescription>
         </CardHeader>
         <CardContent>
-            {/* Pass the loaded student data for editing, or null for creation */}
             <StudentForm student={student} isEditing={!isCreating} />
         </CardContent>
     </Card>
