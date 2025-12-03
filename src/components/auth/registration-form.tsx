@@ -47,7 +47,11 @@ const formSchema = z.object({
   medicalHistory: z.string().optional(),
   planType: z.enum(["Mensal", "Trimestral", "Bolsa"]).optional(),
   planValue: z.preprocess(
-    (a) => a ? parseFloat(z.string().parse(a)) : undefined,
+    (a) => {
+        if (typeof a === 'string' && a.trim() !== '') return parseFloat(a);
+        if (typeof a === 'number') return a;
+        return undefined;
+    },
     z.number().optional()
   ),
 })
@@ -65,31 +69,22 @@ export function StudentForm({ student }: StudentFormProps) {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: student ? {
-        ...student,
-        dob: student.dob ? student.dob.split('T')[0] : '',
-        status: student.status || 'Ativo',
-        emergencyContacts: student.emergencyContacts || '',
-        generalNotes: student.generalNotes || '',
-        medicalHistory: student.medicalHistory || '',
-        planType: student.planType || 'Mensal',
-        planValue: student.planValue || 0,
-    } : {
-      name: "",
-      dob: "",
-      cpf: "",
-      phone: "",
-      email: "",
-      tshirtSize: "M",
-      pantsSize: "M",
-      emergencyContacts: "",
-      belt: 'Branca',
-      status: 'Ativo',
-      generalNotes: "",
-      medicalHistory: "",
-      planType: 'Mensal',
-      planValue: 0
-    },
+    defaultValues: {
+      name: student?.name || "",
+      dob: student?.dob ? student.dob.split('T')[0] : '',
+      cpf: student?.cpf || "",
+      phone: student?.phone || "",
+      email: student?.email || "",
+      tshirtSize: student?.tshirtSize || "M",
+      pantsSize: student?.pantsSize || "M",
+      emergencyContacts: student?.emergencyContacts || "",
+      belt: student?.belt || 'Branca',
+      status: student?.status || 'Ativo',
+      generalNotes: student?.generalNotes || "",
+      medicalHistory: student?.medicalHistory || "",
+      planType: student?.planType || 'Mensal',
+      planValue: student?.planValue || 0,
+    }
   })
 
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -105,14 +100,21 @@ export function StudentForm({ student }: StudentFormProps) {
     const studentId = isEditing ? student.id : doc(collection(firestore, "students")).id;
     
     const studentData: Partial<Student> = {
+        ...values,
         id: studentId,
         avatar: student?.avatar || `https://picsum.photos/seed/${studentId}/100/100`,
         registrationDate: student?.registrationDate || new Date().toISOString(),
-        ...values,
+        // Ensure planValue is a number or undefined
+        planValue: values.planValue ?? undefined,
+    };
+
+    if (isEditing) {
+      // Preserve fields not in the form when editing
+      studentData.lastPaymentDate = student.lastPaymentDate;
+      studentData.planExpirationDate = student.planExpirationDate;
+      studentData.paymentStatus = student.paymentStatus;
+      studentData.paymentCredits = student.paymentCredits;
     }
-    // Remove paymentStatus as it's not in the form
-    // The status is derived from financial data, which is handled separately.
-    // delete (studentData as any).paymentStatus;
 
     const docRef = doc(firestore, 'students', studentId);
     setDocumentNonBlocking(docRef, studentData, { merge: true });
@@ -124,7 +126,6 @@ export function StudentForm({ student }: StudentFormProps) {
     
     // Redirect to the detail page after creating or editing
     router.push(`/alunos/${studentId}`);
-    router.refresh();
   }
 
   return (
@@ -340,7 +341,7 @@ export function StudentForm({ student }: StudentFormProps) {
                 <FormItem>
                   <FormLabel>Valor do Plano (R$)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.01" placeholder="Ex: 200.00" {...field} onChange={event => field.onChange(+event.target.value)} />
+                    <Input type="number" placeholder="Ex: 200.00" {...field} value={field.value ?? ''} onChange={event => field.onChange(event.target.value === '' ? undefined : Number(event.target.value))} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -355,7 +356,7 @@ export function StudentForm({ student }: StudentFormProps) {
             <FormItem>
               <FormLabel>Contatos de Emergência (Opcional)</FormLabel>
               <FormControl>
-                <Textarea placeholder="Nome, parentesco e telefone de um ou mais contatos" {...field} />
+                <Textarea placeholder="Nome, parentesco e telefone de um ou mais contatos" {...field} value={field.value ?? ''}/>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -368,7 +369,7 @@ export function StudentForm({ student }: StudentFormProps) {
             <FormItem>
               <FormLabel>Histórico Médico (Opcional)</FormLabel>
               <FormControl>
-                <Textarea placeholder="Alergias, condições pré-existentes, etc." {...field} />
+                <Textarea placeholder="Alergias, condições pré-existentes, etc." {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -381,7 +382,7 @@ export function StudentForm({ student }: StudentFormProps) {
             <FormItem>
               <FormLabel>Anotações Gerais (Opcional)</FormLabel>
               <FormControl>
-                <Textarea placeholder="Qualquer outra observação relevante." {...field} />
+                <Textarea placeholder="Qualquer outra observação relevante." {...field} value={field.value ?? ''}/>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -393,3 +394,5 @@ export function StudentForm({ student }: StudentFormProps) {
     </Form>
   )
 }
+
+    
