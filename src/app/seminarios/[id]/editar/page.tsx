@@ -53,12 +53,8 @@ export default function EditSeminarPage({ params }: { params: { id: string } }) 
     return <EditSeminarSkeleton />;
   }
 
-  if (!seminar && !isLoading) {
-    notFound();
-  }
-  
   if (!seminar || !students) {
-     return <EditSeminarSkeleton />;
+     notFound();
   }
 
   return (

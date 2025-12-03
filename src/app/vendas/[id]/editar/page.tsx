@@ -53,12 +53,8 @@ export default function EditSalePage({ params }: { params: { id: string } }) {
     return <EditSaleSkeleton />;
   }
 
-  if (!sale && !isLoading) {
-    notFound();
-  }
-  
   if (!sale || !students) {
-     return <EditSaleSkeleton />;
+     notFound();
   }
 
   return (

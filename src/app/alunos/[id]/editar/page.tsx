@@ -45,12 +45,8 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
     return <EditStudentSkeleton />;
   }
 
-  if (!student && !isLoading) {
-    notFound();
-  }
-
   if (!student) {
-    return <EditStudentSkeleton />;
+    notFound();
   }
 
   return (
@@ -67,5 +63,3 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
     </>
   );
 }
-
-    

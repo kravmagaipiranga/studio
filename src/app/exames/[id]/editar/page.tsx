@@ -53,12 +53,8 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
     return <EditExamSkeleton />;
   }
 
-  if (!exam && !isLoading) {
-    notFound();
-  }
-  
   if (!exam || !students) {
-     return <EditExamSkeleton />;
+     notFound();
   }
 
   return (

@@ -53,12 +53,8 @@ export default function EditPrivateClassPage({ params }: { params: { id: string 
     return <EditPrivateClassSkeleton />;
   }
 
-  if (!privateClass && !isLoading) {
-    notFound();
-  }
-  
   if (!privateClass || !students) {
-     return <EditPrivateClassSkeleton />;
+     notFound();
   }
 
   return (

@@ -45,12 +45,8 @@ export default function EditAppointmentPage({ params }: { params: { id: string }
     return <EditAppointmentSkeleton />;
   }
 
-  if (!appointment && !isLoading) {
-    notFound();
-  }
-
   if (!appointment) {
-    return <EditAppointmentSkeleton />;
+    notFound();
   }
 
   return (
