@@ -81,10 +81,10 @@ service cloud.firestore {
     match /privateClasses/{docId} {
       allow read, write: if isAdmin();
     }
-     match /seminars/{docId} {
+    match /seminars/{docId} {
       allow read, write: if isAdmin();
     }
-     match /sales/{docId} {
+    match /sales/{docId} {
       allow read, write: if isAdmin();
     }
     match /exams/{examId} {

@@ -49,6 +49,7 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
     router.push("/alunos");
   };
 
+  // While loading, show a skeleton UI
   if (isLoading) {
     return (
       <>
@@ -100,16 +101,12 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
     );
   }
 
-  // Only call notFound if loading is finished and student is still null
-  if (!isLoading && !student) {
+  // After loading, if student is not found, show 404 page
+  if (!student) {
     notFound();
   }
-  
-  if (!student) {
-    // This part should ideally not be reached if notFound() is called, but it's a safe fallback.
-    return null;
-  }
 
+  // If student is found, render the details
   return (
     <>
       <div className="flex items-center justify-between mb-4">
