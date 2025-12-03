@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/tooltip"
 
 export function DuePayments() {
-  const overdueStudents = students.filter(s => s.paymentStatus === 'Overdue');
+  const overdueStudents = students.filter(s => s.paymentStatus === 'Vencido');
 
   const openWhatsApp = (studentName: string) => {
     const message = encodeURIComponent(`Olá ${studentName}, este é um lembrete amigável sobre seu pagamento pendente para o Krav Magá IPIRANGA.`);

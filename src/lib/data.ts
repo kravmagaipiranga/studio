@@ -3,8 +3,8 @@ import type { Student, RevenueData } from "./types";
 export const students: Student[] = [
   {
     id: "1",
-    name: "John Doe",
-    email: "john.doe@example.com",
+    name: "João da Silva",
+    email: "joao.silva@example.com",
     avatar: "https://picsum.photos/seed/avatar1/100/100",
     plan: "Intermediário",
     registrationDate: "2023-01-15",
@@ -13,8 +13,8 @@ export const students: Student[] = [
   },
   {
     id: "2",
-    name: "Jane Smith",
-    email: "jane.smith@example.com",
+    name: "Maria Oliveira",
+    email: "maria.oliveira@example.com",
     avatar: "https://picsum.photos/seed/avatar2/100/100",
     plan: "Avançado",
     registrationDate: "2022-11-20",
@@ -24,8 +24,8 @@ export const students: Student[] = [
   },
   {
     id: "3",
-    name: "Michael Johnson",
-    email: "michael.j@example.com",
+    name: "Carlos Pereira",
+    email: "carlos.p@example.com",
     avatar: "https://picsum.photos/seed/avatar3/100/100",
     plan: "Básico",
     registrationDate: "2023-03-01",
@@ -34,8 +34,8 @@ export const students: Student[] = [
   },
   {
     id: "4",
-    name: "Emily Davis",
-    email: "emily.d@example.com",
+    name: "Ana Costa",
+    email: "ana.c@example.com",
     avatar: "https://picsum.photos/seed/avatar4/100/100",
     plan: "Intermediário",
     registrationDate: "2023-09-10",
@@ -44,8 +44,8 @@ export const students: Student[] = [
   },
   {
     id: "5",
-    name: "David Wilson",
-    email: "david.w@example.com",
+    name: "Pedro Santos",
+    email: "pedro.s@example.com",
     avatar: "https://picsum.photos/seed/avatar5/100/100",
     plan: "Avançado",
     registrationDate: "2021-07-22",
@@ -55,8 +55,8 @@ export const students: Student[] = [
   },
   {
     id: "6",
-    name: "Sarah Brown",
-    email: "sarah.b@example.com",
+    name: "Sofia Lima",
+    email: "sofia.l@example.com",
     avatar: "https://picsum.photos/seed/avatar6/100/100",
     plan: "Básico",
     registrationDate: "2024-04-05",

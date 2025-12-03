@@ -19,7 +19,9 @@ import { Textarea } from "@/components/ui/textarea"
 
 const formSchema = z.object({
   fullName: z.string().min(2, "O nome completo deve ter pelo menos 2 caracteres."),
-  dob: z.string().refine((val) => !isNaN(Date.parse(val)), "Por favor, insira uma data válida."),
+  dob: z.string().refine((val) => val && !isNaN(Date.parse(val)), {
+    message: "Por favor, insira uma data válida.",
+  }),
   cpf: z.string().min(11, "CPF deve ter 11 dígitos.").max(14, "CPF inválido."),
   tshirtSize: z.string().min(1, "Selecione o tamanho da camiseta."),
   pantsSize: z.string().min(1, "Selecione o tamanho da calça."),
@@ -35,6 +37,7 @@ export function RegistrationForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       fullName: "",
+      dob: "",
       email: "",
       phone: "",
       cpf: "",

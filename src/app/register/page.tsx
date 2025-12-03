@@ -21,7 +21,7 @@ export default function RegisterPage() {
           <RegistrationForm />
           <div className="mt-4 text-center text-sm">
             Já possui uma conta?{" "}
-            <Link href="#" className="underline">
+            <Link href="/" className="underline">
               Entrar
             </Link>
           </div>
