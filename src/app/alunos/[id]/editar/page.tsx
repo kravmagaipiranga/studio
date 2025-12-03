@@ -9,31 +9,39 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 function EditStudentSkeleton() {
     return (
         <div className="space-y-4">
-            <Skeleton className="h-10 w-36" />
-            <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-6">
-                 <div className="space-y-2">
-                    <Skeleton className="h-4 w-1/4" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Skeleton className="h-4 w-1/2" />
-                        <Skeleton className="h-10 w-full" />
-                    </div>
-                     <div className="space-y-2">
-                        <Skeleton className="h-4 w-1/2" />
-                        <Skeleton className="h-10 w-full" />
-                    </div>
-                </div>
-                 <div className="space-y-2">
-                    <Skeleton className="h-4 w-1/4" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
-                 <Skeleton className="h-10 w-full" />
+            <div className="w-full max-w-3xl mx-auto">
+                <Card>
+                    <CardHeader className="text-center">
+                        <Skeleton className="h-8 w-1/2 mx-auto" />
+                        <Skeleton className="h-4 w-3/4 mx-auto" />
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="space-y-2">
+                            <Skeleton className="h-4 w-1/4" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-1/2" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-1/2" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Skeleton className="h-4 w-1/4" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                        <Skeleton className="h-12 w-full mt-6" />
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );
@@ -50,12 +58,10 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
 
   const { data: student, isLoading } = useDoc<Student>(studentRef);
 
-  // First, handle the loading state to prevent premature notFound() calls.
   if (isLoading) {
     return <EditStudentSkeleton />;
   }
 
-  // After loading is complete, if student is still null, then it's a 404.
   if (!student) {
     notFound();
   }
@@ -71,7 +77,17 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
             </Link>
         </div>
         <div className="w-full max-w-3xl mx-auto">
-             <StudentForm student={student} />
+             <Card>
+                <CardHeader className="text-center">
+                    <CardTitle className="text-2xl">Editar Aluno</CardTitle>
+                    <CardDescription>
+                        Altere os dados cadastrais de {student?.name}.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <StudentForm student={student} />
+                </CardContent>
+            </Card>
         </div>
     </>
   );

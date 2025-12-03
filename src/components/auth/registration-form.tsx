@@ -30,7 +30,6 @@ import { useFirestore, setDocumentNonBlocking } from "@/firebase"
 import { Student } from "@/lib/types"
 import { Switch } from "../ui/switch"
 
-// Schema de validação completo para a ficha do aluno
 const formSchema = z.object({
   name: z.string().min(2, "O nome completo deve ter pelo menos 2 caracteres."),
   dob: z.string().refine((val) => val, {
@@ -40,16 +39,13 @@ const formSchema = z.object({
   phone: z.string().min(10, "O número de telefone/WhatsApp é obrigatório."),
   email: z.string().email("Por favor, insira um endereço de e-mail válido."),
   
-  // Controle Interno
   startDate: z.string().optional(),
   belt: z.string().min(1, "A faixa é obrigatória"),
   status: z.string().min(1, "O status do aluno é obrigatório"),
   
-  // Uniforme
   tshirtSize: z.string().min(1, "Selecione um tamanho de camiseta."),
   pantsSize: z.string().min(1, "Selecione um tamanho de calça."),
 
-  // Financeiro
   planType: z.enum(["Mensal", "Trimestral", "Bolsa"]).optional(),
   planValue: z.preprocess(
     (a) => {
@@ -63,12 +59,10 @@ const formSchema = z.object({
     z.number({ invalid_type_error: "O valor deve ser um número." }).optional()
   ),
   
-  // Anuidade
   fikmAnnuityPaid: z.boolean().optional(),
   fikmAnnuityPaymentDate: z.string().optional(),
   fikmAnnuityPaymentMethod: z.enum(["Pix", "Cartão", "Dinheiro", "Pendente"]).optional(),
 
-  // Campos Opcionais
   emergencyContacts: z.string().optional(),
   medicalHistory: z.string().optional(),
   generalNotes: z.string().optional(),
@@ -102,7 +96,7 @@ export function StudentForm({ student }: StudentFormProps) {
       generalNotes: student?.generalNotes || "",
       medicalHistory: student?.medicalHistory || "",
       planType: student?.planType || 'Mensal',
-      planValue: student?.planValue || 0,
+      planValue: student?.planValue ?? undefined,
       fikmAnnuityPaid: student?.fikmAnnuityPaid || false,
       fikmAnnuityPaymentDate: student?.fikmAnnuityPaymentDate ? student.fikmAnnuityPaymentDate.split('T')[0] : '',
       fikmAnnuityPaymentMethod: student?.fikmAnnuityPaymentMethod || 'Pendente',
@@ -125,17 +119,15 @@ export function StudentForm({ student }: StudentFormProps) {
         ...values,
         id: studentId,
         registrationDate: student?.registrationDate || new Date().toISOString(),
-        planValue: values.planValue, // Garante que pode ser undefined se não preenchido
+        planValue: values.planValue, 
     };
 
-    // Ao editar, preserva campos que não estão no formulário
     if (isEditing) {
       studentData.lastPaymentDate = student.lastPaymentDate;
       studentData.planExpirationDate = student.planExpirationDate;
       studentData.paymentStatus = student.paymentStatus;
       studentData.paymentCredits = student.paymentCredits;
     } else {
-      // Ao criar, define valores padrão para campos financeiros e de status
       studentData.paymentStatus = 'Pendente';
     }
 
@@ -147,7 +139,6 @@ export function StudentForm({ student }: StudentFormProps) {
       description: isEditing ? `Os dados de ${values.name} foram atualizados.` : `${values.name} foi adicionado com sucesso.`,
     })
     
-    // Redireciona para a página de listagem de alunos
     router.push('/alunos');
   }
 
@@ -155,7 +146,6 @@ export function StudentForm({ student }: StudentFormProps) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         
-        {/* --- Informações Pessoais --- */}
         <h3 className="text-lg font-medium border-b pb-2">Informações Pessoais</h3>
         <FormField
           control={form.control}
@@ -228,7 +218,6 @@ export function StudentForm({ student }: StudentFormProps) {
             />
         </div>
         
-        {/* --- Controle Interno e Financeiro --- */}
         <h3 className="text-lg font-medium border-b pb-2 pt-4">Controle Interno</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <FormField
@@ -292,7 +281,6 @@ export function StudentForm({ student }: StudentFormProps) {
             />
         </div>
 
-        {/* --- Financeiro --- */}
         <h3 className="text-lg font-medium border-b pb-2 pt-4">Financeiro (Plano)</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
@@ -339,7 +327,6 @@ export function StudentForm({ student }: StudentFormProps) {
             />
         </div>
 
-        {/* --- Anuidade --- */}
         <h3 className="text-lg font-medium border-b pb-2 pt-4">Anuidade FIKM</h3>
          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
             <FormField
@@ -393,7 +380,6 @@ export function StudentForm({ student }: StudentFormProps) {
                 />
         </div>
         
-        {/* --- Uniforme --- */}
         <h3 className="text-lg font-medium border-b pb-2 pt-4">Uniforme</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
@@ -454,7 +440,6 @@ export function StudentForm({ student }: StudentFormProps) {
             />
         </div>
 
-        {/* --- Informações Adicionais --- */}
         <h3 className="text-lg font-medium border-b pb-2 pt-4">Informações Adicionais (Opcional)</h3>
         <FormField
           control={form.control}
