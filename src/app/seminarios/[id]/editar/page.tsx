@@ -60,7 +60,7 @@ export default function EditSeminarPage({ params: { id } }: { params: { id: stri
   return (
     <>
         <div className="flex items-center justify-between mb-4">
-            <Link href={`/seminarios`}>
+            <Link href={`/seminarios`}>_
                 <Button variant="outline">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Voltar para Seminários
