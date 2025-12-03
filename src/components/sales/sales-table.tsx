@@ -1,0 +1,109 @@
+
+"use client"
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { MoreHorizontal } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Sale } from "@/lib/types"
+
+interface SalesTableProps {
+  sales: Sale[];
+}
+
+export function SalesTable({ sales }: SalesTableProps) {
+  
+  return (
+    <>
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Histórico de Vendas</CardTitle>
+          <CardDescription>
+            Vendas de produtos como uniformes, equipamentos, etc.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Aluno</TableHead>
+                <TableHead>Item</TableHead>
+                <TableHead className="hidden sm:table-cell">Data</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="hidden md:table-cell">Forma Pgto.</TableHead>
+                <TableHead className="text-right">Valor</TableHead>
+                <TableHead>
+                  <span className="sr-only">Ações</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sales.map((sale: Sale) => (
+                <TableRow key={sale.id}>
+                  <TableCell className="font-medium">{sale.studentName}</TableCell>
+                  <TableCell>{sale.item}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {new Date(sale.date + "T00:00:00").toLocaleDateString('pt-BR')}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={sale.paymentStatus === 'Pago' ? 'outline' : 'destructive'}>
+                      {sale.paymentStatus}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                     {sale.paymentMethod}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {`R$ ${sale.value.toFixed(2)}`}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end">
+                     <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Abrir menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                        <DropdownMenuItem>
+                          Registrar Pagamento
+                        </DropdownMenuItem>
+                         <DropdownMenuItem className="text-destructive">
+                          Cancelar Venda
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </>
+  )
+}

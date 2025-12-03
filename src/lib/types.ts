@@ -87,3 +87,14 @@ export type Appointment = {
   classTime: string;
   notes?: string;
 };
+
+export type Sale = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  item: string;
+  value: number;
+  date: string;
+  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro';
+  paymentStatus: 'Pago' | 'Pendente';
+};

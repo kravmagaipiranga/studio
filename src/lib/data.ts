@@ -1,4 +1,4 @@
-import type { Student, RevenueData, Exam, Seminar, PrivateClass, Appointment } from "./types";
+import type { Student, RevenueData, Exam, Seminar, PrivateClass, Appointment, Sale } from "./types";
 
 function calculateAge(dob: string) {
   const birthDate = new Date(dob);
@@ -256,4 +256,37 @@ export const appointments: Appointment[] = [
     classTime: '18:30',
     notes: 'Interessada em defesa pessoal feminina.'
   },
+];
+
+export const sales: Sale[] = [
+  {
+    id: 'sale-1',
+    studentId: '1',
+    studentName: 'João da Silva',
+    item: 'Camiseta Krav Magá (M)',
+    value: 75.00,
+    date: '2024-05-10',
+    paymentMethod: 'Pix',
+    paymentStatus: 'Pago',
+  },
+  {
+    id: 'sale-2',
+    studentId: '3',
+    studentName: 'Carlos Pereira',
+    item: 'Calça Krav Magá (44)',
+    value: 120.00,
+    date: '2024-05-12',
+    paymentMethod: 'Cartão',
+    paymentStatus: 'Pendente',
+  },
+  {
+    id: 'sale-3',
+    studentId: '2',
+    studentName: 'Maria Oliveira',
+    item: 'Luva de Treino',
+    value: 95.50,
+    date: '2024-06-01',
+    paymentMethod: 'Dinheiro',
+    paymentStatus: 'Pago',
+  }
 ];

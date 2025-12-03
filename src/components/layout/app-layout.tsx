@@ -12,6 +12,7 @@ import {
   BookCopy,
   ClipboardList,
   CalendarPlus,
+  ShoppingCart,
 } from "lucide-react";
 import {
   Sheet,
@@ -75,6 +76,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <ClipboardList className="h-4 w-4" />
                 Aulas Particulares
               </NavItem>
+               <NavItem href="/vendas">
+                <ShoppingCart className="h-4 w-4" />
+                Vendas
+              </NavItem>
             </nav>
           </div>
         </div>
@@ -128,6 +133,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <NavItem href="/aulas" isMobile>
                   <ClipboardList className="h-5 w-5" />
                   Aulas Particulares
+                </NavItem>
+                 <NavItem href="/vendas" isMobile>
+                  <ShoppingCart className="h-5 w-5" />
+                  Vendas
                 </NavItem>
               </nav>
             </SheetContent>
