@@ -9,7 +9,8 @@ import {
   CreditCard,
   ShieldCheck,
   Menu,
-  BookCopy
+  BookCopy,
+  ClipboardUser,
 } from "lucide-react";
 import {
   Sheet,
@@ -65,6 +66,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <BookCopy className="h-4 w-4" />
                 Seminários
               </NavItem>
+               <NavItem href="/aulas">
+                <ClipboardUser className="h-4 w-4" />
+                Aulas Particulares
+              </NavItem>
             </nav>
           </div>
         </div>
@@ -110,6 +115,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <NavItem href="/seminarios" isMobile>
                   <BookCopy className="h-5 w-5" />
                   Seminários
+                </NavItem>
+                <NavItem href="/aulas" isMobile>
+                  <ClipboardUser className="h-5 w-5" />
+                  Aulas Particulares
                 </NavItem>
               </nav>
             </SheetContent>

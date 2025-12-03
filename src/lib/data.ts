@@ -1,4 +1,4 @@
-import type { Student, RevenueData, Exam, Seminar } from "./types";
+import type { Student, RevenueData, Exam, Seminar, PrivateClass } from "./types";
 
 function calculateAge(dob: string) {
   const birthDate = new Date(dob);
@@ -210,5 +210,29 @@ export const seminars: Seminar[] = [
     paymentDate: '2024-05-20',
     paymentAmount: 80,
     paymentMethod: 'Dinheiro',
+  },
+];
+
+export const privateClasses: PrivateClass[] = [
+  {
+    id: 'pc-1',
+    studentId: '2',
+    studentName: 'Maria Oliveira',
+    studentBelt: 'Verde',
+    classDate: '2024-06-25',
+    paymentStatus: 'Pago',
+    paymentDate: '2024-06-20',
+    paymentAmount: 120,
+    paymentMethod: 'Pix',
+  },
+  {
+    id: 'pc-2',
+    studentId: '5',
+    studentName: 'Pedro Santos',
+    studentBelt: 'Marrom',
+    classDate: '2024-07-02',
+    paymentStatus: 'Pendente',
+    paymentAmount: 150,
+    paymentMethod: 'Cartão',
   },
 ];

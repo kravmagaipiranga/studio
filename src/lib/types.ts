@@ -65,3 +65,15 @@ export type Seminar = {
   paymentAmount: number;
   paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro';
 };
+
+export type PrivateClass = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentBelt: string;
+  classDate: string;
+  paymentStatus: 'Pago' | 'Pendente';
+  paymentDate?: string;
+  paymentAmount: number;
+  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro';
+};
