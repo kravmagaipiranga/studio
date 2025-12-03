@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { PT_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 import { AppLayout } from "@/components/layout/app-layout";
 
-const inter = Inter({ subsets: ["latin"] });
+const ptSans = PT_Sans({
+  subsets: ["latin"],
+  weight: ['400', '700'] 
+});
 
 export const metadata: Metadata = {
   title: "Krav Magá IPIRANGA - Gestão",
@@ -18,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={ptSans.className}>
         <AppLayout>{children}</AppLayout>
         <Toaster />
       </body>
