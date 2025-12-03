@@ -47,13 +47,9 @@ export function StudentsTable() {
                 <span className="sr-only">Avatar</span>
               </TableHead>
               <TableHead>Nome</TableHead>
-              <TableHead>Plano</TableHead>
-              <TableHead className="hidden md:table-cell">
-                Status
-              </TableHead>
-              <TableHead className="hidden md:table-cell">
-                Data de Inscrição
-              </TableHead>
+              <TableHead>Graduação</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Pagamento</TableHead>
               <TableHead>
                 <span className="sr-only">Ações</span>
               </TableHead>
@@ -68,25 +64,19 @@ export function StudentsTable() {
                       <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                 </TableCell>
-                <TableCell className="font-medium">{student.name}
-                  <div className="text-sm text-muted-foreground md:hidden">
-                    {student.email}
-                  </div>
-                </TableCell>
+                <TableCell className="font-medium">{student.name}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">{student.plan}</Badge>
+                  <Badge variant="secondary">{student.belt}</Badge>
                 </TableCell>
-                 <TableCell className="hidden md:table-cell">
-                    <Badge variant={
-                        student.status === 'Ativo' ? 'default' : 
-                        student.status === 'Inativo' ? 'secondary': 
-                        'destructive'
-                    }>
+                 <TableCell>
+                    <Badge variant={student.status === 'Ativo' ? 'default' : 'secondary'}>
                         {student.status}
                     </Badge>
                 </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  {new Date(student.registrationDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                <TableCell>
+                  <Badge variant={student.paymentStatus === 'Pago' ? 'outline' : 'destructive'}>
+                    {student.paymentStatus}
+                  </Badge>
                 </TableCell>
                 <TableCell>
                    <DropdownMenu>

@@ -20,7 +20,7 @@ export type Student = {
   // Dados de controle interno
   startDate?: string;
   lastExamDate?: string;
-  belt?: string; // cor
+  belt: string; // cor
   medicalHistory?: string;
   generalNotes?: string;
   fikmAnnuityPaid?: boolean;
