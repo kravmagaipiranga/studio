@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -28,12 +29,14 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Student } from "@/lib/types"
 import Link from "next/link"
+import { Skeleton } from "../ui/skeleton"
 
 interface StudentsTableProps {
   students: Student[];
+  isLoading: boolean;
 }
 
-export function StudentsTable({ students }: StudentsTableProps) {
+export function StudentsTable({ students, isLoading }: StudentsTableProps) {
   
   return (
     <Card className="w-full">
@@ -60,12 +63,36 @@ export function StudentsTable({ students }: StudentsTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {students.map((student: Student) => (
+            {isLoading && (
+              <>
+                <TableRow>
+                  <TableCell className="hidden sm:table-cell">
+                    <Skeleton className="h-9 w-9 rounded-full" />
+                  </TableCell>
+                  <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="hidden sm:table-cell">
+                    <Skeleton className="h-9 w-9 rounded-full" />
+                  </TableCell>
+                  <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                </TableRow>
+              </>
+            )}
+            {!isLoading && students.map((student: Student) => (
               <TableRow key={student.id}>
                 <TableCell className="hidden sm:table-cell">
                   <Avatar className="h-9 w-9">
                       <AvatarImage src={student.avatar} alt="Avatar" data-ai-hint="person face" />
-                      <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                      <AvatarFallback>{student.name ? student.name.charAt(0) : '?'}</AvatarFallback>
                   </Avatar>
                 </TableCell>
                 <TableCell className="font-medium">{student.name}</TableCell>
@@ -104,6 +131,11 @@ export function StudentsTable({ students }: StudentsTableProps) {
             ))}
           </TableBody>
         </Table>
+         {!isLoading && students.length === 0 && (
+          <div className="text-center py-10 text-muted-foreground">
+            Nenhum aluno encontrado.
+          </div>
+        )}
       </CardContent>
     </Card>
   )

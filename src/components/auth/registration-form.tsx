@@ -1,8 +1,11 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
+import { collection, doc, setDoc } from 'firebase/firestore'
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -23,7 +26,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useRouter } from "next/navigation"
+import { useFirestore, setDocumentNonBlocking } from "@/firebase"
+import { Student } from "@/lib/types"
 
 
 const formSchema = z.object({
@@ -42,6 +46,7 @@ const formSchema = z.object({
 export function RegistrationForm() {
   const { toast } = useToast()
   const router = useRouter()
+  const firestore = useFirestore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -58,15 +63,37 @@ export function RegistrationForm() {
   })
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Dados do formulário:", values)
+    if (!firestore) {
+      toast({
+        variant: "destructive",
+        title: "Erro de Conexão",
+        description: "Não foi possível conectar ao banco de dados. Tente novamente.",
+      });
+      return;
+    }
+    
+    const studentsCollection = collection(firestore, "students");
+    const newStudentId = doc(studentsCollection).id;
+
+    const newStudent: Omit<Student, 'id'> = {
+      ...values,
+      belt: 'Branca',
+      avatar: `https://picsum.photos/seed/${newStudentId}/100/100`,
+      status: 'Ativo',
+      paymentStatus: 'Pendente',
+      registrationDate: new Date().toISOString(),
+    };
+
+    const docRef = doc(firestore, 'students', newStudentId);
+    setDocumentNonBlocking(docRef, { ...newStudent, id: newStudentId }, { merge: true });
+
     toast({
       title: "Cadastro Enviado com Sucesso!",
       description: "Seus dados foram recebidos. Em breve, você estará pronto para começar.",
     })
     form.reset();
     
-    // Opcional: redirecionar para uma página de agradecimento ou de volta ao painel
-    // router.push('/dashboard');
+    router.push('/alunos');
   }
 
   return (

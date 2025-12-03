@@ -1,18 +1,27 @@
+
 "use client";
 
 import { useState, useRef } from "react";
+import { collection, doc, setDoc } from "firebase/firestore";
 import { StudentsTable } from "@/components/students/students-table";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Upload } from "lucide-react";
 import Link from "next/link";
-import { students as initialStudents } from "@/lib/data";
 import { Student } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
 
 export default function AlunosPage() {
-    const [students, setStudents] = useState<Student[]>(initialStudents);
+    const firestore = useFirestore();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
+
+    const studentsCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'students');
+    }, [firestore]);
+
+    const { data: students, isLoading } = useCollection<Student>(studentsCollection);
 
     const handleImportClick = () => {
         fileInputRef.current?.click();
@@ -43,35 +52,44 @@ export default function AlunosPage() {
                     return;
                 }
 
-                const newStudents = lines.map((line, index) => {
+                let importedCount = 0;
+                lines.forEach((line, index) => {
                     const data = line.trim().split(',');
                     const studentData = headers.reduce((obj, header, i) => {
                         obj[header.trim() as keyof Student] = data[i] as any;
                         return obj;
                     }, {} as Partial<Student>);
 
-                    // Create a placeholder student object with default values
-                    const newStudent: Student = {
-                        id: `imported-${Date.now()}-${index}`,
-                        avatar: `https://picsum.photos/seed/${Date.now() + index}/100/100`,
-                        status: 'Ativo',
-                        paymentStatus: 'Pendente',
-                        registrationDate: new Date().toISOString(),
-                        plan: 'Básico',
-                        tshirtSize: 'M',
-                        pantsSize: '40',
-                        emergencyContacts: '',
-                        ...studentData,
-                    };
-                    
-                    return newStudent;
+                    if (firestore && studentsCollection) {
+                        const newStudentId = doc(studentsCollection).id;
+                        const newStudent: Omit<Student, 'id'> = {
+                            name: studentData.name || '',
+                            email: studentData.email || '',
+                            dob: studentData.dob || '',
+                            cpf: studentData.cpf || '',
+                            phone: studentData.phone || '',
+                            belt: studentData.belt || 'Branca',
+                            avatar: `https://picsum.photos/seed/${newStudentId}/100/100`,
+                            status: 'Ativo',
+                            paymentStatus: 'Pendente',
+                            registrationDate: new Date().toISOString(),
+                            plan: 'Básico',
+                            tshirtSize: 'M',
+                            pantsSize: '40',
+                            emergencyContacts: '',
+                        };
+                        
+                        const docRef = doc(firestore, "students", newStudentId);
+                        setDocumentNonBlocking(docRef, { ...newStudent, id: newStudentId }, { merge: true });
+                        importedCount++;
+                    }
                 });
 
-                setStudents(prevStudents => [...prevStudents, ...newStudents]);
                 toast({
                     title: "Importação Concluída!",
-                    description: `${newStudents.length} alunos foram importados com sucesso.`,
+                    description: `${importedCount} alunos foram importados com sucesso.`,
                 });
+
             } catch (error) {
                  toast({
                     variant: "destructive",
@@ -84,7 +102,6 @@ export default function AlunosPage() {
                     fileInputRef.current.value = "";
                 }
             }
-
         };
         reader.readAsText(file);
     };
@@ -114,7 +131,7 @@ export default function AlunosPage() {
                 </div>
             </div>
              <div className="flex flex-1 rounded-lg shadow-sm mt-4">
-                <StudentsTable students={students} />
+                <StudentsTable students={students || []} isLoading={isLoading} />
             </div>
         </>
     );
