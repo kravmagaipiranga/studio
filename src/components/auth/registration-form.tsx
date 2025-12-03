@@ -146,7 +146,6 @@ export function StudentForm({ student, isEditing = false }: StudentFormProps) {
         planValue: values.planValue, 
     };
 
-    // Preserve existing financial data when editing, unless it's a new student
     if (isEditing && student) {
       studentData.lastPaymentDate = student.lastPaymentDate;
       studentData.planExpirationDate = student.planExpirationDate;
