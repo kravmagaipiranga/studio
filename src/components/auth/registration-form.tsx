@@ -53,11 +53,14 @@ const formSchema = z.object({
   planType: z.enum(["Mensal", "Trimestral", "Bolsa"]).optional(),
   planValue: z.preprocess(
     (a) => {
-        if (typeof a === 'string' && a.trim() !== '') return parseFloat(a);
-        if (typeof a === 'number') return a;
-        return undefined;
+      if (typeof a === 'string' && a.trim() !== '') {
+        const num = parseFloat(a.replace(',', '.'));
+        return isNaN(num) ? a : num;
+      }
+      if (typeof a === 'number') return a;
+      return undefined;
     },
-    z.number({ invalid_type_error: "O valor deve ser um número" }).optional()
+    z.number({ invalid_type_error: "O valor deve ser um número." }).optional()
   ),
   
   // Anuidade
@@ -99,7 +102,7 @@ export function StudentForm({ student }: StudentFormProps) {
       generalNotes: student?.generalNotes || "",
       medicalHistory: student?.medicalHistory || "",
       planType: student?.planType || 'Mensal',
-      planValue: student?.planValue ?? 0,
+      planValue: student?.planValue || 0,
       fikmAnnuityPaid: student?.fikmAnnuityPaid || false,
       fikmAnnuityPaymentDate: student?.fikmAnnuityPaymentDate ? student.fikmAnnuityPaymentDate.split('T')[0] : '',
       fikmAnnuityPaymentMethod: student?.fikmAnnuityPaymentMethod || 'Pendente',
@@ -321,7 +324,14 @@ export function StudentForm({ student }: StudentFormProps) {
                 <FormItem>
                   <FormLabel>Valor do Plano (R$)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="Ex: 200.00" {...field} value={field.value ?? ''} onChange={event => field.onChange(event.target.value === '' ? undefined : Number(event.target.value))} />
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      placeholder="Ex: 200.00" 
+                      {...field} 
+                      value={field.value === undefined ? '' : field.value} 
+                      onChange={event => field.onChange(event.target.value === '' ? undefined : parseFloat(event.target.value))} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -336,7 +346,7 @@ export function StudentForm({ student }: StudentFormProps) {
                 control={form.control}
                 name="fikmAnnuityPaid"
                 render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm sm:col-span-1 h-full">
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm sm:col-span-1 h-[58px]">
                         <FormLabel className="mr-4">Anuidade Paga?</FormLabel>
                         <FormControl>
                             <Switch
@@ -491,5 +501,3 @@ export function StudentForm({ student }: StudentFormProps) {
     </Form>
   )
 }
-
-    

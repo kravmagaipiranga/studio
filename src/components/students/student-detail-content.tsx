@@ -38,7 +38,6 @@ function StudentDetailSkeleton() {
       <div className="grid gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center gap-4">
-            <Skeleton className="h-20 w-20 rounded-full" />
             <div className="space-y-2">
               <Skeleton className="h-8 w-64" />
               <Skeleton className="h-4 w-80" />
@@ -208,7 +207,7 @@ export function StudentDetailContent({ studentId }: { studentId: string }) {
             <CardContent className="space-y-4">
               <InfoItem icon={<Star />} label="Graduação (Faixa)" value={student.belt} />
               <Separator />
-               <InfoItem icon={<Calendar />} label="Data de Início" value={student.startDate ? new Date(student.startDate).toLocaleDateString('pt-BR') : 'Não definido'} />
+               <InfoItem icon={<Calendar />} label="Data de Início" value={student.startDate ? new Date(student.startDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não definido'} />
               <Separator />
               <InfoItem icon={<Calendar />} label="Data de Cadastro" value={student.registrationDate ? new Date(student.registrationDate).toLocaleDateString('pt-BR') : 'Não definido'} />
               <Separator />
@@ -225,7 +224,7 @@ export function StudentDetailContent({ studentId }: { studentId: string }) {
                 <CardContent className="space-y-4">
                     <InfoItem icon={<FileText />} label="Plano" value={student.planType || 'Não definido'} />
                     <Separator />
-                    <InfoItem icon={<DollarSign />} label="Valor do Plano" value={student.planValue ? `R$ ${student.planValue.toFixed(2)}` : 'Não definido'} />
+                    <InfoItem icon={<DollarSign />} label="Valor do Plano" value={student.planValue ? `R$ ${student.planValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Não definido'} />
                     <Separator />
                     <InfoItem icon={<Calendar />} label="Último Pagamento" value={student.lastPaymentDate ? new Date(student.lastPaymentDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'Nenhum'} />
                     <Separator />
