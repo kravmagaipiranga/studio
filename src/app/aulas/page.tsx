@@ -7,14 +7,22 @@ import { Button } from "@/components/ui/button";
 import { Download, PlusCircle, Search } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
-import { privateClasses as initialPrivateClasses } from "@/lib/data";
 import { PrivateClass } from "@/lib/types";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
 
 export default function AulasPage() {
-    const [privateClasses, setPrivateClasses] = useState<PrivateClass[]>(initialPrivateClasses);
+    const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
 
-    const filteredClasses = privateClasses.filter(pc =>
+    const privateClassesCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'privateClasses');
+    }, [firestore]);
+
+    const { data: privateClasses, isLoading } = useCollection<PrivateClass>(privateClassesCollection);
+
+    const filteredClasses = (privateClasses || []).filter(pc =>
         pc.studentName.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -49,6 +57,7 @@ export default function AulasPage() {
              <div className="flex flex-1 rounded-lg shadow-sm mt-4">
                 <PrivateClassesTable 
                     privateClasses={filteredClasses}
+                    isLoading={isLoading}
                 />
             </div>
         </>

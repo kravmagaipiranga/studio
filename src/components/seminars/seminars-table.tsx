@@ -27,12 +27,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Seminar } from "@/lib/types"
+import { Skeleton } from "../ui/skeleton"
 
 interface SeminarsTableProps {
   seminars: Seminar[];
+  isLoading: boolean;
 }
 
-export function SeminarsTable({ seminars }: SeminarsTableProps) {
+export function SeminarsTable({ seminars, isLoading }: SeminarsTableProps) {
   
   return (
     <>
@@ -61,7 +63,20 @@ export function SeminarsTable({ seminars }: SeminarsTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {seminars.map((seminar: Seminar) => (
+              {isLoading && Array.from({length: 3}).map((_, index) => (
+                 <TableRow key={index}>
+                    <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-12" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                 </TableRow>
+              ))}
+              {!isLoading && seminars.map((seminar: Seminar) => (
                 <TableRow key={seminar.id}>
                   <TableCell className="font-medium">{seminar.topic}</TableCell>
                   <TableCell>{seminar.studentName}</TableCell>
@@ -102,6 +117,13 @@ export function SeminarsTable({ seminars }: SeminarsTableProps) {
                   </TableCell>
                 </TableRow>
               ))}
+               {!isLoading && seminars.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-10">
+                    Nenhuma inscrição em seminário encontrada.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

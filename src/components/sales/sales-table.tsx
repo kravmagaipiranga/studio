@@ -27,12 +27,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Sale } from "@/lib/types"
+import { Skeleton } from "../ui/skeleton"
 
 interface SalesTableProps {
   sales: Sale[];
+  isLoading: boolean;
 }
 
-export function SalesTable({ sales }: SalesTableProps) {
+export function SalesTable({ sales, isLoading }: SalesTableProps) {
   
   return (
     <>
@@ -59,7 +61,18 @@ export function SalesTable({ sales }: SalesTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sales.map((sale: Sale) => (
+               {isLoading && Array.from({length: 3}).map((_, index) => (
+                 <TableRow key={index}>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                 </TableRow>
+              ))}
+              {!isLoading && sales.map((sale: Sale) => (
                 <TableRow key={sale.id}>
                   <TableCell className="font-medium">{sale.studentName}</TableCell>
                   <TableCell>{sale.item}</TableCell>
@@ -100,6 +113,13 @@ export function SalesTable({ sales }: SalesTableProps) {
                   </TableCell>
                 </TableRow>
               ))}
+              {!isLoading && sales.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-10">
+                    Nenhuma venda encontrada.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

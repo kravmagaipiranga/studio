@@ -7,14 +7,22 @@ import { Button } from "@/components/ui/button";
 import { Download, PlusCircle, Search } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
-import { sales as initialSales } from "@/lib/data";
 import { Sale } from "@/lib/types";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
 
 export default function VendasPage() {
-    const [sales, setSales] = useState<Sale[]>(initialSales);
+    const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
 
-    const filteredSales = sales.filter(sale =>
+    const salesCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'sales');
+    }, [firestore]);
+
+    const { data: sales, isLoading } = useCollection<Sale>(salesCollection);
+
+    const filteredSales = (sales || []).filter(sale =>
         sale.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         sale.item.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -50,6 +58,7 @@ export default function VendasPage() {
              <div className="flex flex-1 rounded-lg shadow-sm mt-4">
                 <SalesTable 
                     sales={filteredSales}
+                    isLoading={isLoading}
                 />
             </div>
         </>

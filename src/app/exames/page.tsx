@@ -7,14 +7,25 @@ import { Button } from "@/components/ui/button";
 import { Download, PlusCircle, Search } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
-import { exams as initialExams } from "@/lib/data";
 import { Exam } from "@/lib/types";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
 
 export default function ExamesPage() {
-    const [exams, setExams] = useState<Exam[]>(initialExams);
+    const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
 
-    const filteredExams = exams.filter(exam =>
+    const examsCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        // This should query a subcollection, e.g., /students/{studentId}/exams
+        // For simplicity, we assume a top-level 'exams' collection for now.
+        // A better structure would be to get all students, then query their exams subcollections.
+        return collection(firestore, 'exams');
+    }, [firestore]);
+
+    const { data: exams, isLoading } = useCollection<Exam>(examsCollection);
+
+    const filteredExams = (exams || []).filter(exam =>
         exam.studentName.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -49,6 +60,7 @@ export default function ExamesPage() {
              <div className="flex flex-1 rounded-lg shadow-sm mt-4">
                 <ExamsTable 
                     exams={filteredExams}
+                    isLoading={isLoading}
                 />
             </div>
         </>

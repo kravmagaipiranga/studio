@@ -7,14 +7,22 @@ import { Button } from "@/components/ui/button";
 import { Download, PlusCircle, Search } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
-import { seminars as initialSeminars } from "@/lib/data";
 import { Seminar } from "@/lib/types";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
 
 export default function SeminariosPage() {
-    const [seminars, setSeminars] = useState<Seminar[]>(initialSeminars);
+    const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
 
-    const filteredSeminars = seminars.filter(seminar =>
+    const seminarsCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'seminars');
+    }, [firestore]);
+
+    const { data: seminars, isLoading } = useCollection<Seminar>(seminarsCollection);
+
+    const filteredSeminars = (seminars || []).filter(seminar =>
         seminar.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         seminar.topic.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -50,6 +58,7 @@ export default function SeminariosPage() {
              <div className="flex flex-1 rounded-lg shadow-sm mt-4">
                 <SeminarsTable 
                     seminars={filteredSeminars}
+                    isLoading={isLoading}
                 />
             </div>
         </>

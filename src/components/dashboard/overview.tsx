@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Card,
   CardContent,
@@ -5,11 +7,44 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { DollarSign, Users, CreditCard } from "lucide-react"
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { Student } from "@/lib/types";
+import { collection } from "firebase/firestore";
+import { useMemo } from "react";
 
 export function Overview() {
-  const totalRevenue = 14860;
-  const activeStudents = 125;
-  const overduePayments = 12;
+  const firestore = useFirestore();
+
+  const studentsCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'students');
+  }, [firestore]);
+
+  const { data: students, isLoading } = useCollection<Student>(studentsCollection);
+
+  const { totalRevenue, activeStudents, overduePayments } = useMemo(() => {
+    if (!students) {
+      return { totalRevenue: 0, activeStudents: 0, overduePayments: 0 };
+    }
+
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+
+    const revenue = students.reduce((acc, student) => {
+      if (student.lastPaymentDate) {
+        const paymentDate = new Date(student.lastPaymentDate);
+        if (paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear) {
+          return acc + (student.planValue || 0);
+        }
+      }
+      return acc;
+    }, 0);
+
+    const active = students.filter(s => s.status === 'Ativo').length;
+    const overdue = students.filter(s => s.paymentStatus === 'Vencido').length;
+
+    return { totalRevenue: revenue, activeStudents: active, overduePayments: overdue };
+  }, [students]);
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -24,8 +59,8 @@ export function Overview() {
           <div className="text-2xl font-bold">
             R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
-          <p className="text-xs text-muted-foreground">
-            +15.2% em relação ao último mês
+           <p className="text-xs text-muted-foreground">
+            {isLoading ? 'Calculando...' : 'Receita do mês atual'}
           </p>
         </CardContent>
       </Card>
@@ -38,8 +73,8 @@ export function Overview() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">+{activeStudents}</div>
-          <p className="text-xs text-muted-foreground">
-            +5 desde o último mês
+           <p className="text-xs text-muted-foreground">
+            {isLoading ? 'Carregando...' : 'Total de alunos com status ativo'}
           </p>
         </CardContent>
       </Card>
@@ -50,8 +85,8 @@ export function Overview() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">+{overduePayments}</div>
-          <p className="text-xs text-muted-foreground">
-            2 novos na última semana
+           <p className="text-xs text-muted-foreground">
+            {isLoading ? 'Carregando...' : 'Total de mensalidades em atraso'}
           </p>
         </CardContent>
       </Card>

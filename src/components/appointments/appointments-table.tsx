@@ -26,12 +26,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Appointment } from "@/lib/types"
+import { Skeleton } from "../ui/skeleton"
 
 interface AppointmentsTableProps {
   appointments: Appointment[];
+  isLoading: boolean;
 }
 
-export function AppointmentsTable({ appointments }: AppointmentsTableProps) {
+export function AppointmentsTable({ appointments, isLoading }: AppointmentsTableProps) {
   
   return (
     <>
@@ -58,7 +60,18 @@ export function AppointmentsTable({ appointments }: AppointmentsTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {appointments.map((appointment: Appointment) => (
+              {isLoading && Array.from({length: 2}).map((_, index) => (
+                 <TableRow key={index}>
+                  <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
+                  <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-40" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                  <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-48" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                </TableRow>
+              ))}
+              {!isLoading && appointments.map((appointment: Appointment) => (
                 <TableRow key={appointment.id}>
                   <TableCell className="font-medium">{appointment.name}</TableCell>
                   <TableCell className="hidden sm:table-cell">
@@ -98,6 +111,13 @@ export function AppointmentsTable({ appointments }: AppointmentsTableProps) {
                   </TableCell>
                 </TableRow>
               ))}
+              {!isLoading && appointments.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-10">
+                    Nenhum agendamento encontrado.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

@@ -27,12 +27,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { PrivateClass } from "@/lib/types"
+import { Skeleton } from "../ui/skeleton"
 
 interface PrivateClassesTableProps {
   privateClasses: PrivateClass[];
+  isLoading: boolean;
 }
 
-export function PrivateClassesTable({ privateClasses }: PrivateClassesTableProps) {
+export function PrivateClassesTable({ privateClasses, isLoading }: PrivateClassesTableProps) {
   
   return (
     <>
@@ -59,7 +61,18 @@ export function PrivateClassesTable({ privateClasses }: PrivateClassesTableProps
               </TableRow>
             </TableHeader>
             <TableBody>
-              {privateClasses.map((pc: PrivateClass) => (
+              {isLoading && Array.from({length: 2}).map((_, index) => (
+                 <TableRow key={index}>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                 </TableRow>
+              ))}
+              {!isLoading && privateClasses.map((pc: PrivateClass) => (
                 <TableRow key={pc.id}>
                   <TableCell className="font-medium">{pc.studentName}</TableCell>
                   <TableCell className="hidden sm:table-cell">
@@ -103,6 +116,13 @@ export function PrivateClassesTable({ privateClasses }: PrivateClassesTableProps
                   </TableCell>
                 </TableRow>
               ))}
+               {!isLoading && privateClasses.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-10">
+                    Nenhuma aula particular agendada.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

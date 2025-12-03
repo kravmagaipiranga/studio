@@ -7,16 +7,24 @@ import { Button } from "@/components/ui/button";
 import { Download, PlusCircle, Search } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
-import { appointments as initialAppointments } from "@/lib/data";
 import { Appointment } from "@/lib/types";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
 
 export default function AgendamentosPage() {
-    const [appointments, setAppointments] = useState<Appointment[]>(initialAppointments);
+    const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
 
-    const filteredAppointments = appointments.filter(appointment =>
+    const appointmentsCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'appointments');
+    }, [firestore]);
+
+    const { data: appointments, isLoading } = useCollection<Appointment>(appointmentsCollection);
+
+    const filteredAppointments = (appointments || []).filter(appointment =>
         appointment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        appointment.email.toLowerCase().includes(searchQuery.toLowerCase())
+        (appointment.email && appointment.email.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
     return (
@@ -50,6 +58,7 @@ export default function AgendamentosPage() {
              <div className="flex flex-1 rounded-lg shadow-sm mt-4">
                 <AppointmentsTable 
                     appointments={filteredAppointments}
+                    isLoading={isLoading}
                 />
             </div>
         </>

@@ -27,12 +27,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Exam } from "@/lib/types"
+import { Skeleton } from "../ui/skeleton"
 
 interface ExamsTableProps {
   exams: Exam[];
+  isLoading: boolean;
 }
 
-export function ExamsTable({ exams }: ExamsTableProps) {
+export function ExamsTable({ exams, isLoading }: ExamsTableProps) {
   
   return (
     <>
@@ -60,7 +62,19 @@ export function ExamsTable({ exams }: ExamsTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {exams.map((exam: Exam) => (
+              {isLoading && Array.from({length: 3}).map((_, index) => (
+                <TableRow key={index}>
+                  <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
+                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-12" /></TableCell>
+                  <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-5 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                </TableRow>
+              ))}
+              {!isLoading && exams.map((exam: Exam) => (
                 <TableRow key={exam.id}>
                   <TableCell>
                      <div className="font-medium">{exam.studentName}</div>
@@ -106,6 +120,13 @@ export function ExamsTable({ exams }: ExamsTableProps) {
                   </TableCell>
                 </TableRow>
               ))}
+               {!isLoading && exams.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-10">
+                    Nenhum exame agendado.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

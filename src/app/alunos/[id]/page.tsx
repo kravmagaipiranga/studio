@@ -1,16 +1,79 @@
+'use client';
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { students } from "@/lib/data";
 import { Student } from "@/lib/types";
-import { ArrowLeft, Edit, FileText, Gift, Hash, HeartPulse, MoreVertical, Phone, Shirt, Trash2, User } from "lucide-react";
+import { ArrowLeft, Edit, FileText, Gift, Hash, Phone, Shirt, Trash2, User } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function StudentDetailPage({ params }: { params: { id: string } }) {
-  const student = students.find((s) => s.id === params.id);
+  const firestore = useFirestore();
+
+  const studentRef = useMemoFirebase(() => {
+    if (!firestore || !params.id) return null;
+    return doc(firestore, 'students', params.id);
+  }, [firestore, params.id]);
+
+  const { data: student, isLoading } = useDoc<Student>(studentRef);
+
+  if (isLoading) {
+    return (
+      <>
+        <div className="flex items-center justify-between mb-4">
+            <Skeleton className="h-10 w-44" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-10 w-28" />
+            <Skeleton className="h-10 w-28" />
+          </div>
+        </div>
+        <div className="grid gap-6">
+            <Card>
+                <CardHeader className="flex flex-row items-center gap-4">
+                    <Skeleton className="h-20 w-20 rounded-full" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-64" />
+                        <Skeleton className="h-4 w-80" />
+                    </div>
+                </CardHeader>
+            </Card>
+             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Card className="lg:col-span-2">
+                    <CardHeader>
+                        <Skeleton className="h-7 w-48" />
+                        <Skeleton className="h-4 w-72" />
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <Skeleton className="h-5 w-full" />
+                        <Skeleton className="h-5 w-full" />
+                        <Skeleton className="h-5 w-full" />
+                        <Skeleton className="h-5 w-full" />
+                        <Skeleton className="h-5 w-full" />
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-7 w-40" />
+                        <Skeleton className="h-4 w-60" />
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <Skeleton className="h-5 w-full" />
+                        <Skeleton className="h-5 w-full" />
+                        <Skeleton className="h-5 w-full" />
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+
+      </>
+    );
+  }
 
   if (!student) {
     notFound();
@@ -70,14 +133,13 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
             <CardContent className="space-y-4">
                <InfoItem icon={<User />} label="Nome Completo" value={student.name} />
                <Separator />
-               <InfoItem icon={<Gift />} label="Data de Nascimento" value={new Date(student.dob).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} />
+               <InfoItem icon={<Gift />} label="Data de Nascimento" value={student.dob ? new Date(student.dob + 'T00:00:00').toLocaleDateString('pt-BR') : ''} />
                <Separator />
                <InfoItem icon={<Hash />} label="CPF" value={student.cpf} />
                <Separator />
                <InfoItem icon={<Phone />} label="Telefone / WhatsApp" value={student.phone} />
                <Separator />
                <InfoList icon={<User />} label="Contatos de Emergência" value={student.emergencyContacts} />
-
             </CardContent>
           </Card>
           
@@ -89,9 +151,9 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
             <CardContent className="space-y-4">
               <InfoItem label="Graduação (Faixa)" value={student.belt} />
               <Separator />
-              <InfoItem label="Data de Início" value={student.startDate ? new Date(student.startDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'Não definido'} />
+              <InfoItem label="Data de Início" value={student.registrationDate ? new Date(student.registrationDate).toLocaleDateString('pt-BR') : 'Não definido'} />
               <Separator />
-              <InfoItem label="Último Exame" value={student.lastExamDate ? new Date(student.lastExamDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'Não definido'} />
+              <InfoItem label="Último Exame" value={student.lastExamDate ? new Date(student.lastExamDate).toLocaleDateString('pt-BR') : 'Não definido'} />
               <Separator />
               <InfoItem label="Anuidade FIKM" value={student.fikmAnnuityPaid ? "Paga" : "Pendente"} />
             </CardContent>
