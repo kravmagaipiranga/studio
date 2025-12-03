@@ -2,6 +2,7 @@
 
 import { signOut } from "firebase/auth"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -61,14 +62,8 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>
-            Perfil
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            Faturamento
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            Configurações
+          <DropdownMenuItem asChild>
+            <Link href="/perfil">Perfil</Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
