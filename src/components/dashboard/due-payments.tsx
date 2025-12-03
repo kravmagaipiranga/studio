@@ -38,9 +38,9 @@ export function DuePayments() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pagamentos Vencidos</CardTitle>
+        <CardTitle>Mensalidades Vencidas</CardTitle>
         <CardDescription>
-          Uma lista de alunos com pagamentos atualmente vencidos.
+          Alunos com pagamentos vencidos este mês.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -89,7 +89,7 @@ export function DuePayments() {
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Enviar Lembrete por WhatsApp</p>
+                          <p>Lembrete via WhatsApp</p>
                         </TooltipContent>
                       </Tooltip>
                       <Tooltip>
@@ -100,7 +100,7 @@ export function DuePayments() {
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Enviar Lembrete por Email</p>
+                          <p>Lembrete via Email</p>
                         </TooltipContent>
                       </Tooltip>
                     </div>

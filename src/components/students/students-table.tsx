@@ -27,51 +27,56 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Student } from "@/lib/types"
 
 export function StudentsTable() {
   
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Lista de Alunos</CardTitle>
+        <CardTitle>Alunos</CardTitle>
         <CardDescription>
-          Gerencie seus alunos e veja seu progresso.
+          Uma lista de todos os alunos cadastrados.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Aluno</TableHead>
-              <TableHead className="hidden sm:table-cell">Plano</TableHead>
-              <TableHead className="hidden sm:table-cell">Status</TableHead>
-              <TableHead className="hidden md:table-cell">Data de Inscrição</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="hidden w-[100px] sm:table-cell">
+                <span className="sr-only">Avatar</span>
+              </TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead>Plano</TableHead>
+              <TableHead className="hidden md:table-cell">
+                Status
+              </TableHead>
+              <TableHead className="hidden md:table-cell">
+                Data de Inscrição
+              </TableHead>
+              <TableHead>
+                <span className="sr-only">Ações</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {students.map((student) => (
+            {students.map((student: Student) => (
               <TableRow key={student.id}>
-                <TableCell>
-                  <div className="flex items-center gap-4">
-                    <Avatar className="hidden h-9 w-9 sm:flex">
+                <TableCell className="hidden sm:table-cell">
+                  <Avatar className="h-9 w-9">
                       <AvatarImage src={student.avatar} alt="Avatar" data-ai-hint="person face" />
                       <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="grid gap-1">
-                      <p className="text-sm font-medium leading-none">
-                        {student.name}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {student.email}
-                      </p>
-                    </div>
+                  </Avatar>
+                </TableCell>
+                <TableCell className="font-medium">{student.name}
+                  <div className="text-sm text-muted-foreground md:hidden">
+                    {student.email}
                   </div>
                 </TableCell>
-                <TableCell className="hidden sm:table-cell">
+                <TableCell>
                   <Badge variant="outline">{student.plan}</Badge>
                 </TableCell>
-                 <TableCell className="hidden sm:table-cell">
+                 <TableCell className="hidden md:table-cell">
                     <Badge variant={
                         student.status === 'Ativo' ? 'default' : 
                         student.status === 'Inativo' ? 'secondary': 
@@ -83,18 +88,19 @@ export function StudentsTable() {
                 <TableCell className="hidden md:table-cell">
                   {new Date(student.registrationDate).toLocaleDateString('pt-BR')}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell>
                    <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button aria-haspopup="true" size="icon" variant="ghost">
                         <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
+                        <span className="sr-only">Abrir menu</span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                      <DropdownMenuItem>Ver Detalhes</DropdownMenuItem>
                       <DropdownMenuItem>Editar</DropdownMenuItem>
-                      <DropdownMenuItem>Excluir</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive">Excluir</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

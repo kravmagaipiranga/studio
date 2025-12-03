@@ -8,17 +8,19 @@ export type Student = {
   status: 'Ativo' | 'Inativo' | 'Pendente';
   paymentStatus: 'Pago' | 'Vencido' | 'Pendente';
   dueDate?: string;
-  // Student-filled data
-  dob?: string;
-  cpf?: string;
-  tshirtSize?: string;
-  pantsSize?: string;
-  phone?: string;
-  emergencyContacts?: string;
-  // Internal data
+  
+  // Dados preenchidos pelo aluno
+  dob: string;
+  cpf: string;
+  tshirtSize: string;
+  pantsSize: string;
+  phone: string;
+  emergencyContacts: string;
+  
+  // Dados de controle interno
   startDate?: string;
   lastExamDate?: string;
-  belt?: string; // color
+  belt?: string; // cor
   medicalHistory?: string;
   generalNotes?: string;
   fikmAnnuityPaid?: boolean;

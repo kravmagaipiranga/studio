@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 import { AppLayout } from "@/components/layout/app-layout";
 
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Krav Magá IPIRANGA - Gestão",
@@ -16,17 +18,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="font-body antialiased">
-          <AppLayout>{children}</AppLayout>
-          <Toaster />
+      <body className={inter.className}>
+        <AppLayout>{children}</AppLayout>
+        <Toaster />
       </body>
     </html>
   );

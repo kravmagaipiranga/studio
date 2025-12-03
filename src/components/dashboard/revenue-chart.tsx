@@ -6,7 +6,7 @@ import { revenueData } from "@/lib/data"
 
 export function RevenueChart() {
   return (
-    <Card className="col-span-1 lg:col-span-2">
+    <Card>
       <CardHeader>
         <CardTitle>Receita Mensal</CardTitle>
       </CardHeader>
@@ -28,9 +28,9 @@ export function RevenueChart() {
               tickFormatter={(value) => `R$${value}`}
             />
             <Tooltip
-              cursor={{ fill: 'hsl(var(--background))' }}
+              cursor={{ fill: 'hsl(var(--card))' }}
               contentStyle={{ 
-                backgroundColor: 'hsl(var(--card))',
+                backgroundColor: 'hsl(var(--background))',
                 borderColor: 'hsl(var(--border))'
               }}
                formatter={(value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)}

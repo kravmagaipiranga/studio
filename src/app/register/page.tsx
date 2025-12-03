@@ -1,32 +1,35 @@
-import Link from "next/link";
 import { FistIcon } from "@/components/icons";
 import { RegistrationForm } from "@/components/auth/registration-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AppLayout } from "@/components/layout/app-layout";
+import Link from "next/link";
 
 export default function RegisterPage() {
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40 p-4">
-      <div className="mb-8 flex items-center gap-2 text-primary">
-          <FistIcon className="h-8 w-8" />
-          <h1 className="text-2xl font-bold font-headline">Krav Magá IPIRANGA</h1>
-      </div>
-      <Card className="w-full max-w-lg mx-auto">
-        <CardHeader>
-          <CardTitle className="text-2xl">Cadastro de Aluno</CardTitle>
-          <CardDescription>
-            Preencha o formulário abaixo para iniciar sua jornada de treinamento.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RegistrationForm />
-        </CardContent>
-      </Card>
-       <div className="mt-8 text-center text-sm text-muted-foreground">
-        Voltar para o {" "}
-        <Link href="/dashboard" className="underline underline-offset-4 hover:text-primary">
-          Painel
-        </Link>
-      </div>
+        <div className="w-full max-w-lg mx-auto">
+            <div className="mb-8 flex flex-col items-center gap-2 text-primary">
+                <FistIcon className="h-10 w-10" />
+                <h1 className="text-3xl font-bold">Krav Magá IPIRANGA</h1>
+            </div>
+            <Card>
+                <CardHeader className="text-center">
+                    <CardTitle className="text-2xl">Cadastro de Aluno</CardTitle>
+                    <CardDescription>
+                        Preencha o formulário para iniciar sua jornada.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <RegistrationForm />
+                </CardContent>
+            </Card>
+            <div className="mt-6 text-center text-sm text-muted-foreground">
+                Já é parte da equipe? {" "}
+                <Link href="/dashboard" className="underline underline-offset-4 hover:text-primary">
+                    Voltar ao Painel
+                </Link>
+            </div>
+        </div>
     </div>
   );
 }
