@@ -16,7 +16,11 @@ export const students: Student[] = [
     tshirtSize: "M",
     pantsSize: "42",
     phone: "(11) 98765-4321",
-    emergencyContacts: "Maria Silva (mãe) - (11) 91234-5678"
+    emergencyContacts: "Maria Silva (mãe) - (11) 91234-5678",
+    planType: 'Mensal',
+    planValue: 150,
+    lastPaymentDate: '2024-05-10',
+    planExpirationDate: '2024-06-10',
   },
   {
     id: "2",
@@ -34,7 +38,11 @@ export const students: Student[] = [
     tshirtSize: "P",
     pantsSize: "38",
     phone: "(21) 99999-8888",
-    emergencyContacts: "João Oliveira (pai) - (21) 98888-7777"
+    emergencyContacts: "João Oliveira (pai) - (21) 98888-7777",
+    planType: 'Mensal',
+    planValue: 200,
+    lastPaymentDate: '2024-04-10',
+    planExpirationDate: '2024-05-10',
   },
   {
     id: "3",
@@ -51,7 +59,11 @@ export const students: Student[] = [
     tshirtSize: "G",
     pantsSize: "44",
     phone: "(31) 91111-2222",
-    emergencyContacts: "Ana Pereira (esposa) - (31) 93333-4444"
+    emergencyContacts: "Ana Pereira (esposa) - (31) 93333-4444",
+    planType: 'Trimestral',
+    planValue: 400,
+    lastPaymentDate: '2024-04-05',
+    planExpirationDate: '2024-07-05',
   },
   {
     id: "4",
@@ -68,7 +80,11 @@ export const students: Student[] = [
     tshirtSize: "M",
     pantsSize: "40",
     phone: "(41) 94444-5555",
-    emergencyContacts: "Paulo Costa (irmão) - (41) 96666-7777"
+    emergencyContacts: "Paulo Costa (irmão) - (41) 96666-7777",
+    planType: 'Mensal',
+    planValue: 150,
+    lastPaymentDate: '2024-02-15',
+    planExpirationDate: '2024-03-15',
   },
   {
     id: "5",
@@ -86,7 +102,12 @@ export const students: Student[] = [
     tshirtSize: "GG",
     pantsSize: "46",
     phone: "(51) 97777-8888",
-    emergencyContacts: "Laura Santos (irmã) - (51) 99999-0000"
+    emergencyContacts: "Laura Santos (irmã) - (51) 99999-0000",
+    planType: 'Trimestral',
+    planValue: 550,
+    lastPaymentDate: '2024-01-20',
+    planExpirationDate: '2024-04-20',
+    paymentCredits: 'R$ 50 de crédito ref. aula extra'
   },
 ];
 

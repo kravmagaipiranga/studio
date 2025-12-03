@@ -24,6 +24,13 @@ export type Student = {
   medicalHistory?: string;
   generalNotes?: string;
   fikmAnnuityPaid?: boolean;
+
+  // Dados Financeiros
+  planType?: 'Mensal' | 'Trimestral';
+  planValue?: number;
+  lastPaymentDate?: string;
+  planExpirationDate?: string;
+  paymentCredits?: string;
 };
 
 export type RevenueData = {

@@ -73,10 +73,10 @@ export function DuePayments() {
                   </div>
                 </TableCell>
                 <TableCell className="hidden sm:table-cell">
-                  <Badge variant="outline">{student.plan}</Badge>
+                  <Badge variant="outline">{student.planType}</Badge>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {student.dueDate}
+                  {student.planExpirationDate ? new Date(student.planExpirationDate).toLocaleDateString('pt-BR', { timeZone: 'UTC'}) : 'N/A'}
                 </TableCell>
                 <TableCell className="text-right">
                   <TooltipProvider>
