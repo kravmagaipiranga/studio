@@ -6,7 +6,6 @@ import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student } from "@/lib/types";
 import { StudentForm } from "@/components/auth/registration-form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -58,8 +57,19 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
     return <EditStudentSkeleton />;
   }
 
-  if (!isLoading && !student) {
-    notFound();
+  if (!student) {
+    return (
+        <div className="flex flex-col items-center justify-center text-center py-10">
+            <h2 className="text-2xl font-bold">Aluno não encontrado</h2>
+            <p className="text-muted-foreground mt-2">O aluno que você está tentando editar não foi encontrado.</p>
+            <Link href="/alunos" className="mt-6">
+                <Button variant="outline">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Voltar para a Lista de Alunos
+                </Button>
+            </Link>
+        </div>
+    )
   }
 
   return (
@@ -81,7 +91,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {student && <StudentForm student={student} isEditing={true} />}
+                    <StudentForm student={student} isEditing={true} />
                 </CardContent>
             </Card>
         </div>
