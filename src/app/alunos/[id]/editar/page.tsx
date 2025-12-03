@@ -50,12 +50,13 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
 
   const { data: student, isLoading } = useDoc<Student>(studentRef);
 
+  // First, handle the loading state to prevent premature notFound() calls.
   if (isLoading) {
     return <EditStudentSkeleton />;
   }
 
+  // After loading is complete, if student is still null, then it's a 404.
   if (!student) {
-    // This will trigger the not-found.tsx page if the student doesn't exist
     notFound();
   }
 
