@@ -80,7 +80,16 @@ service cloud.firestore {
     
     // Other top-level collections like appointments, sales, etc., should be
     // admin-only for writes, and potentially reads depending on the data.
-    match /{collection}/{docId} {
+    match /appointments/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /privateClasses/{docId} {
+      allow read, write: if isAdmin();
+    }
+     match /seminars/{docId} {
+      allow read, write: if isAdmin();
+    }
+     match /sales/{docId} {
       allow read, write: if isAdmin();
     }
     

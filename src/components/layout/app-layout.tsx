@@ -22,33 +22,34 @@ import {
 import { Button } from "@/components/ui/button";
 import { UserNav } from "@/components/user-nav";
 import { cn } from "@/lib/utils";
-import { useAuth, useUser } from "@/firebase";
+import { useUser } from "@/firebase";
 import { useEffect } from "react";
+import { FirebaseErrorListener } from "@/components/FirebaseErrorListener";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const auth = useAuth();
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    // If auth is still loading, do nothing.
+    // If auth is still loading, do nothing to prevent flickering.
     if (isUserLoading) return;
     
-    // If not loading and there's no user, redirect to login page.
-    // Allow access to public pages like register and login itself.
+    // If auth has loaded and there's no user, redirect to login page.
+    // We allow access to public pages like /register and the login page itself.
     if (!user && pathname !== '/login' && pathname !== '/register') {
       router.push('/login');
     }
   }, [isUserLoading, user, pathname, router]);
 
-  // Don't show layout for public pages
+  // For public-facing pages, we render children without the main app layout.
   if (pathname === '/register' || pathname === '/login') {
     return <>{children}</>;
   }
   
-  // While loading auth state, you can show a loader or null
-  if (isUserLoading) {
+  // While loading auth state for protected routes, show a simple loader.
+  // This prevents the layout from flashing before the redirect can happen.
+  if (isUserLoading || !user) {
       return (
         <div className="flex items-center justify-center min-h-screen">
           Carregando...
@@ -59,6 +60,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+       <FirebaseErrorListener />
       <div className="hidden border-r bg-muted/40 md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">

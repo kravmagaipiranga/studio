@@ -4,14 +4,6 @@ import React, { DependencyList, createContext, useContext, ReactNode, useMemo, u
 import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
-import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
-
-interface FirebaseProviderProps {
-  children: ReactNode;
-  firebaseApp: FirebaseApp;
-  firestore: Firestore;
-  auth: Auth;
-}
 
 // Internal state for user authentication
 interface UserAuthState {
@@ -74,7 +66,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       return;
     }
 
-    setUserAuthState({ user: null, isUserLoading: true, userError: null }); // Reset on auth instance change
+    // Set initial loading state. This is important on re-renders if the auth object changes.
+    // It signals that we're re-evaluating the user's authentication status.
+    setUserAuthState({ user: null, isUserLoading: true, userError: null });
 
     const unsubscribe = onAuthStateChanged(
       auth,
@@ -86,8 +80,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         setUserAuthState({ user: null, isUserLoading: false, userError: error });
       }
     );
-    return () => unsubscribe(); // Cleanup
-  }, [auth]); // Depends on the auth instance
+
+    return () => unsubscribe(); // Cleanup subscription on component unmount
+  }, [auth]); // Rerun effect if the auth service instance changes
 
   // Memoize the context value
   const contextValue = useMemo((): FirebaseContextState => {
@@ -105,11 +100,18 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
   return (
     <FirebaseContext.Provider value={contextValue}>
-      <FirebaseErrorListener />
       {children}
     </FirebaseContext.Provider>
   );
 };
+
+interface FirebaseProviderProps {
+  children: ReactNode;
+  firebaseApp: FirebaseApp;
+  firestore: Firestore;
+  auth: Auth;
+}
+
 
 /**
  * Hook to access core Firebase services and user authentication state.
