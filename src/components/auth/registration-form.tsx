@@ -30,6 +30,7 @@ import {
 import { useFirestore, setDocumentNonBlocking } from "@/firebase"
 import { Student } from "@/lib/types"
 import { Switch } from "../ui/switch"
+import { useEffect } from "react"
 
 const formSchema = z.object({
   name: z.string().min(2, "O nome completo deve ter pelo menos 2 caracteres."),
@@ -52,7 +53,7 @@ const formSchema = z.object({
     (a) => {
       if (typeof a === 'string' && a.trim() !== '') {
         const num = parseFloat(a.replace(',', '.'));
-        return isNaN(num) ? a : num;
+        return isNaN(num) ? undefined : num;
       }
       if (typeof a === 'number') return a;
       return undefined;
@@ -83,26 +84,51 @@ export function StudentForm({ student }: StudentFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: student?.name || "",
-      dob: student?.dob ? student.dob.split('T')[0] : '',
-      cpf: student?.cpf || "",
-      phone: student?.phone || "",
-      email: student?.email || "",
-      tshirtSize: student?.tshirtSize || "M",
-      pantsSize: student?.pantsSize || "M",
-      emergencyContacts: student?.emergencyContacts || "",
-      belt: student?.belt || 'Branca',
-      status: student?.status || 'Ativo',
-      startDate: student?.startDate ? student.startDate.split('T')[0] : '',
-      generalNotes: student?.generalNotes || "",
-      medicalHistory: student?.medicalHistory || "",
-      planType: student?.planType || 'Mensal',
-      planValue: student?.planValue ?? undefined,
-      fikmAnnuityPaid: student?.fikmAnnuityPaid || false,
-      fikmAnnuityPaymentDate: student?.fikmAnnuityPaymentDate ? student.fikmAnnuityPaymentDate.split('T')[0] : '',
-      fikmAnnuityPaymentMethod: student?.fikmAnnuityPaymentMethod || 'Pendente',
+      name: "",
+      dob: "",
+      cpf: "",
+      phone: "",
+      email: "",
+      tshirtSize: "M",
+      pantsSize: "M",
+      emergencyContacts: "",
+      belt: 'Branca',
+      status: 'Ativo',
+      startDate: "",
+      generalNotes: "",
+      medicalHistory: "",
+      planType: 'Mensal',
+      planValue: undefined,
+      fikmAnnuityPaid: false,
+      fikmAnnuityPaymentDate: "",
+      fikmAnnuityPaymentMethod: 'Pendente',
     }
   });
+
+  useEffect(() => {
+    if (student) {
+      form.reset({
+        name: student.name || "",
+        dob: student.dob ? student.dob.split('T')[0] : '',
+        cpf: student.cpf || "",
+        phone: student.phone || "",
+        email: student.email || "",
+        tshirtSize: student.tshirtSize || "M",
+        pantsSize: student.pantsSize || "M",
+        emergencyContacts: student.emergencyContacts || "",
+        belt: student.belt || 'Branca',
+        status: student.status || 'Ativo',
+        startDate: student.startDate ? student.startDate.split('T')[0] : '',
+        generalNotes: student.generalNotes || "",
+        medicalHistory: student.medicalHistory || "",
+        planType: student.planType || 'Mensal',
+        planValue: student.planValue ?? undefined,
+        fikmAnnuityPaid: student.fikmAnnuityPaid || false,
+        fikmAnnuityPaymentDate: student.fikmAnnuityPaymentDate ? student.fikmAnnuityPaymentDate.split('T')[0] : '',
+        fikmAnnuityPaymentMethod: student.fikmAnnuityPaymentMethod || 'Pendente',
+      });
+    }
+  }, [student, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) {
@@ -123,7 +149,7 @@ export function StudentForm({ student }: StudentFormProps) {
         planValue: values.planValue, 
     };
 
-    if (isEditing) {
+    if (isEditing && student) {
       studentData.lastPaymentDate = student.lastPaymentDate;
       studentData.planExpirationDate = student.planExpirationDate;
       studentData.paymentStatus = student.paymentStatus;
@@ -140,11 +166,7 @@ export function StudentForm({ student }: StudentFormProps) {
       description: isEditing ? `Os dados de ${values.name} foram atualizados.` : `${values.name} foi adicionado com sucesso.`,
     })
     
-    if (isEditing) {
-      router.push(`/alunos`);
-    } else {
-      router.push('/alunos');
-    }
+    router.push(`/alunos`);
   }
 
   return (
@@ -231,7 +253,7 @@ export function StudentForm({ student }: StudentFormProps) {
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Faixa</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                         <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                         </FormControl>
@@ -255,7 +277,7 @@ export function StudentForm({ student }: StudentFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Status do Aluno</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione..." />
@@ -294,7 +316,7 @@ export function StudentForm({ student }: StudentFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tipo de Plano</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o plano" />
@@ -322,7 +344,7 @@ export function StudentForm({ student }: StudentFormProps) {
                       step="0.01" 
                       placeholder="Ex: 200.00" 
                       {...field} 
-                      value={field.value === undefined ? '' : field.value} 
+                      value={field.value ?? ''}
                       onChange={event => field.onChange(event.target.value === '' ? undefined : parseFloat(event.target.value))} 
                     />
                   </FormControl>
@@ -368,7 +390,7 @@ export function StudentForm({ student }: StudentFormProps) {
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Forma Pgto. Anuidade</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!form.watch('fikmAnnuityPaid')}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!form.watch('fikmAnnuityPaid')}>
                         <FormControl>
                         <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                         </FormControl>
@@ -393,7 +415,7 @@ export function StudentForm({ student }: StudentFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tamanho da Camiseta</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione..." />
@@ -422,7 +444,8 @@ export function StudentForm({ student }: StudentFormProps) {
               name="pantsSize"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tamanho da Calça</FormLabel>                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormLabel>Tamanho da Calça</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione..." />
