@@ -12,7 +12,6 @@ import {
   PlusCircle,
 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -43,15 +42,15 @@ import { DuePayments } from "./due-payments";
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-      <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-        <AppSidebar />
+        <Sidebar>
+            <AppSidebar />
+        </Sidebar>
         <div className="flex flex-col">
           <AppHeader />
           <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
             {children}
           </main>
         </div>
-      </div>
     </SidebarProvider>
   );
 }
@@ -80,7 +79,7 @@ function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar>
+    <>
       <SidebarHeader>
         <Link className="flex items-center gap-2 font-semibold" href="/">
           <FistIcon className="h-6 w-6" />
@@ -141,7 +140,7 @@ function AppSidebar() {
             </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-    </Sidebar>
+    </>
   );
 }
 

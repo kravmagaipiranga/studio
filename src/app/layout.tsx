@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
+import {
+  Sidebar,
+  SidebarProvider,
+} from "@/components/ui/sidebar";
 
 export const metadata: Metadata = {
   title: "Krav Magá IPIRANGA - Gestão",
@@ -23,8 +27,8 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        {children}
-        <Toaster />
+          {children}
+          <Toaster />
       </body>
     </html>
   );
