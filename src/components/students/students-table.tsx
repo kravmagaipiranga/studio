@@ -63,8 +63,8 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
     setDeletingStudent(null);
   };
 
-  const handleEdit = (student: Student) => {
-    router.push(`/alunos/${student.id}/editar`);
+  const handleEdit = (studentId: string) => {
+    router.push(`/alunos/${studentId}/editar`);
   };
 
   return (
@@ -125,7 +125,7 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onSelect={() => handleEdit(student)}>
+                        <DropdownMenuItem onSelect={() => handleEdit(student.id)}>
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />

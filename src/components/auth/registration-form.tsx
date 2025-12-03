@@ -72,18 +72,17 @@ const formSchema = z.object({
 
 interface StudentFormProps {
   student?: Student;
+  isEditing?: boolean;
 }
 
-export function StudentForm({ student }: StudentFormProps) {
+export function StudentForm({ student, isEditing = false }: StudentFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const firestore = useFirestore();
 
-  const isEditing = !!student;
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: isEditing ? student : {
+    defaultValues: isEditing && student ? student : {
       name: "",
       dob: "",
       cpf: "",
@@ -106,7 +105,7 @@ export function StudentForm({ student }: StudentFormProps) {
   });
 
   useEffect(() => {
-    if (student) {
+    if (isEditing && student) {
       form.reset({
         name: student.name || "",
         dob: student.dob ? student.dob.split('T')[0] : '',
@@ -128,7 +127,7 @@ export function StudentForm({ student }: StudentFormProps) {
         fikmAnnuityPaymentMethod: student.fikmAnnuityPaymentMethod || 'Pendente',
       });
     }
-  }, [student, form]);
+  }, [student, isEditing, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) {
@@ -140,7 +139,7 @@ export function StudentForm({ student }: StudentFormProps) {
       return;
     }
     
-    const studentId = isEditing ? student.id : doc(collection(firestore, "students")).id;
+    const studentId = isEditing && student ? student.id : doc(collection(firestore, "students")).id;
     
     const studentData: Partial<Student> = {
         ...values,
@@ -167,7 +166,7 @@ export function StudentForm({ student }: StudentFormProps) {
     })
     
     router.push(`/alunos`);
-    router.refresh(); // Força a atualização dos dados na página de lista
+    router.refresh(); 
   }
 
   return (

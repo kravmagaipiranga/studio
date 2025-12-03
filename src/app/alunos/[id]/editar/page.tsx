@@ -81,7 +81,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {student && <StudentForm student={student} />}
+                    {student && <StudentForm student={student} isEditing={true} />}
                 </CardContent>
             </Card>
         </div>
