@@ -1,3 +1,4 @@
+
 'use client';
 
 import { doc } from "firebase/firestore";
@@ -42,7 +43,8 @@ function EditStudentSkeleton() {
 }
 
 
-export default function EditStudentPage({ params: { id } }: { params: { id: string } }) {
+export default function EditStudentPage({ params }: { params: { id: string } }) {
+  const id = params.id;
   const firestore = useFirestore();
 
   const studentRef = useMemoFirebase(() => {
@@ -56,7 +58,6 @@ export default function EditStudentPage({ params: { id } }: { params: { id: stri
     return <EditStudentSkeleton />;
   }
 
-  // Apenas chame notFound DEPOIS que o carregamento estiver concluído e o aluno ainda não existir.
   if (!isLoading && !student) {
     notFound();
   }
