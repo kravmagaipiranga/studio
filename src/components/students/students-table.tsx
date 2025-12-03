@@ -86,7 +86,7 @@ export function StudentsTable() {
                     </Badge>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {new Date(student.registrationDate).toLocaleDateString('pt-BR')}
+                  {new Date(student.registrationDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
                 </TableCell>
                 <TableCell>
                    <DropdownMenu>
