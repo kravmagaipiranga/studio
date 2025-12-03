@@ -196,7 +196,20 @@ export function StudentForm({ student, onFinished }: StudentFormProps) {
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Faixa</FormLabel>
-                    <Input placeholder="Ex: Branca, Amarela, etc." {...field} />
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            <SelectItem value="branca">Branca</SelectItem>
+                            <SelectItem value="amarela">Amarela</SelectItem>
+                            <SelectItem value="laranja">Laranja</SelectItem>
+                            <SelectItem value="verde">Verde</SelectItem>
+                            <SelectItem value="azul">Azul</SelectItem>
+                            <SelectItem value="marrom">Marrom</SelectItem>
+                            <SelectItem value="preta">Preta</SelectItem>
+                        </SelectContent>
+                    </Select>
                     <FormMessage />
                     </FormItem>
                 )}
@@ -239,11 +252,17 @@ export function StudentForm({ student, onFinished }: StudentFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="P">P</SelectItem>
-                      <SelectItem value="M">M</SelectItem>
-                      <SelectItem value="G">G</SelectItem>
-                      <SelectItem value="GG">GG</SelectItem>
-                      <SelectItem value="XG">XG</SelectItem>
+                        <SelectItem value="8 anos">8 anos</SelectItem>
+                        <SelectItem value="10 anos">10 anos</SelectItem>
+                        <SelectItem value="12 anos">12 anos</SelectItem>
+                        <SelectItem value="14 anos">14 anos</SelectItem>
+                        <SelectItem value="PP">PP</SelectItem>
+                        <SelectItem value="P">P</SelectItem>
+                        <SelectItem value="M">M</SelectItem>
+                        <SelectItem value="G">G</SelectItem>
+                        <SelectItem value="GG">GG</SelectItem>
+                        <SelectItem value="XGG">XGG</SelectItem>
+                        <SelectItem value="XXGG">XXGG</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -263,13 +282,14 @@ export function StudentForm({ student, onFinished }: StudentFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="36">36</SelectItem>
-                      <SelectItem value="38">38</SelectItem>
-                      <SelectItem value="40">40</SelectItem>
-                      <SelectItem value="42">42</SelectItem>
-                      <SelectItem value="44">44</SelectItem>
-                      <SelectItem value="46">46</SelectItem>
-                      <SelectItem value="48">48</SelectItem>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="12">12</SelectItem>
+                        <SelectItem value="PP">PP</SelectItem>
+                        <SelectItem value="P">P</SelectItem>
+                        <SelectItem value="M">M</SelectItem>
+                        <SelectItem value="G">G</SelectItem>
+                        <SelectItem value="GG">GG</SelectItem>
+                        <SelectItem value="EGG">EGG</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
