@@ -71,18 +71,9 @@ service cloud.firestore {
         allow update: if isAdmin() && studentIdIsImmutable();
         allow delete: if isAdmin();
       }
-
-      match /exams/{examId} {
-        allow get: if isOwner(studentId) || isAdmin();
-        allow list: if isOwner(studentId) || isAdmin();
-        allow create: if isAdmin() && newDocStudentIdMatchesPath(studentId);
-        allow update: if isAdmin() && studentIdIsImmutable();
-        allow delete: if isAdmin();
-      }
     }
     
-    // Other top-level collections like appointments, sales, etc., should be
-    // admin-only for writes, and potentially reads depending on the data.
+    // Admin-only collections
     match /appointments/{docId} {
       allow read, write: if isAdmin();
     }
@@ -93,6 +84,9 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
      match /sales/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /exams/{examId} {
       allow read, write: if isAdmin();
     }
     
