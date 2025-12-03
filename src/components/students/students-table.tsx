@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState } from "react"
@@ -35,6 +36,7 @@ import { useFirestore, deleteDocumentNonBlocking } from "@/firebase"
 import { doc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import { StudentFormDialog } from "./student-form-dialog"
 
 interface StudentsTableProps {
   students: Student[];
@@ -46,6 +48,7 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
 
   const handleDelete = (student: Student) => {
     setDeletingStudent(student);
@@ -62,8 +65,8 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
     setDeletingStudent(null);
   };
 
-  const handleEdit = (studentId: string) => {
-    router.push(`/alunos/${studentId}/editar`);
+  const handleEdit = (student: Student) => {
+    setEditingStudent(student);
   };
 
   return (
@@ -124,7 +127,7 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onSelect={() => handleEdit(student.id)}>
+                        <DropdownMenuItem onSelect={() => handleEdit(student)}>
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -160,6 +163,13 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {editingStudent && (
+        <StudentFormDialog
+            isOpen={!!editingStudent}
+            onOpenChange={(isOpen) => !isOpen && setEditingStudent(null)}
+            student={editingStudent}
+        />
+      )}
     </>
   )
 }
