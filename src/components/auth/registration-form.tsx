@@ -29,22 +29,25 @@ import {
 import { useFirestore, setDocumentNonBlocking } from "@/firebase"
 import { Student } from "@/lib/types"
 
-
+// Schema de validação completo para a ficha do aluno
 const formSchema = z.object({
   name: z.string().min(2, "O nome completo deve ter pelo menos 2 caracteres."),
   dob: z.string().refine((val) => val, {
     message: "A data de nascimento é obrigatória.",
   }),
-  cpf: z.string().min(11, "O CPF deve ter pelo menos 11 dígitos.").max(14, "Formato de CPF inválido."),
+  cpf: z.string().min(11, "O CPF deve ter 11 dígitos.").max(14, "Formato de CPF inválido."),
   phone: z.string().min(10, "O número de telefone/WhatsApp é obrigatório."),
   email: z.string().email("Por favor, insira um endereço de e-mail válido."),
+  
+  // Controle Interno
+  belt: z.string().min(1, "A faixa é obrigatória"),
+  status: z.string().min(1, "O status do aluno é obrigatório"),
+  
+  // Uniforme
   tshirtSize: z.string().min(1, "Selecione um tamanho de camiseta."),
   pantsSize: z.string().min(1, "Selecione um tamanho de calça."),
-  emergencyContacts: z.string().optional(),
-  belt: z.string().min(1, "A faixa é obrigatória"),
-  status: z.string().min(1, "O status é obrigatório"),
-  generalNotes: z.string().optional(),
-  medicalHistory: z.string().optional(),
+
+  // Financeiro
   planType: z.enum(["Mensal", "Trimestral", "Bolsa"]).optional(),
   planValue: z.preprocess(
     (a) => {
@@ -52,17 +55,22 @@ const formSchema = z.object({
         if (typeof a === 'number') return a;
         return undefined;
     },
-    z.number().optional()
+    z.number({ invalid_type_error: "O valor deve ser um número" }).optional()
   ),
-})
+  
+  // Campos Opcionais
+  emergencyContacts: z.string().optional(),
+  medicalHistory: z.string().optional(),
+  generalNotes: z.string().optional(),
+});
 
 interface StudentFormProps {
   student?: Student;
 }
 
 export function StudentForm({ student }: StudentFormProps) {
-  const { toast } = useToast()
-  const router = useRouter()
+  const { toast } = useToast();
+  const router = useRouter();
   const firestore = useFirestore();
 
   const isEditing = !!student;
@@ -83,9 +91,9 @@ export function StudentForm({ student }: StudentFormProps) {
       generalNotes: student?.generalNotes || "",
       medicalHistory: student?.medicalHistory || "",
       planType: student?.planType || 'Mensal',
-      planValue: student?.planValue || 0,
+      planValue: student?.planValue ?? 0,
     }
-  })
+  });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) {
@@ -104,16 +112,18 @@ export function StudentForm({ student }: StudentFormProps) {
         id: studentId,
         avatar: student?.avatar || `https://picsum.photos/seed/${studentId}/100/100`,
         registrationDate: student?.registrationDate || new Date().toISOString(),
-        // Ensure planValue is a number or undefined
-        planValue: values.planValue ?? undefined,
+        planValue: values.planValue, // Garante que pode ser undefined se não preenchido
     };
 
+    // Ao editar, preserva campos que não estão no formulário
     if (isEditing) {
-      // Preserve fields not in the form when editing
       studentData.lastPaymentDate = student.lastPaymentDate;
       studentData.planExpirationDate = student.planExpirationDate;
       studentData.paymentStatus = student.paymentStatus;
       studentData.paymentCredits = student.paymentCredits;
+    } else {
+      // Ao criar, define valores padrão para campos financeiros e de status
+      studentData.paymentStatus = 'Pendente';
     }
 
     const docRef = doc(firestore, 'students', studentId);
@@ -124,13 +134,16 @@ export function StudentForm({ student }: StudentFormProps) {
       description: isEditing ? `Os dados de ${values.name} foram atualizados.` : `${values.name} foi adicionado com sucesso.`,
     })
     
-    // Redirect to the detail page after creating or editing
+    // Redireciona para a página de detalhes do aluno após criar ou editar
     router.push(`/alunos/${studentId}`);
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        
+        {/* --- Informações Pessoais --- */}
+        <h3 className="text-lg font-medium border-b pb-2">Informações Pessoais</h3>
         <FormField
           control={form.control}
           name="name"
@@ -201,7 +214,9 @@ export function StudentForm({ student }: StudentFormProps) {
               )}
             />
         </div>
-
+        
+        {/* --- Controle Interno e Financeiro --- */}
+        <h3 className="text-lg font-medium border-b pb-2 pt-4">Controle Interno e Financeiro</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
                 control={form.control}
@@ -251,6 +266,46 @@ export function StudentForm({ student }: StudentFormProps) {
             />
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FormField
+              control={form.control}
+              name="planType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo de Plano</FormLabel>
+                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o plano" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Mensal">Mensal</SelectItem>
+                      <SelectItem value="Trimestral">Trimestral</SelectItem>
+                      <SelectItem value="Bolsa">Bolsa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="planValue"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Valor do Plano (R$)</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="Ex: 200.00" {...field} value={field.value ?? ''} onChange={event => field.onChange(event.target.value === '' ? undefined : Number(event.target.value))} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        </div>
+        
+        {/* --- Uniforme --- */}
+        <h3 className="text-lg font-medium border-b pb-2 pt-4">Uniforme</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
               control={form.control}
@@ -311,50 +366,14 @@ export function StudentForm({ student }: StudentFormProps) {
             />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="planType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tipo de Plano</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o plano" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Mensal">Mensal</SelectItem>
-                      <SelectItem value="Trimestral">Trimestral</SelectItem>
-                      <SelectItem value="Bolsa">Bolsa</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="planValue"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Valor do Plano (R$)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="Ex: 200.00" {...field} value={field.value ?? ''} onChange={event => field.onChange(event.target.value === '' ? undefined : Number(event.target.value))} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-        </div>
-        
+        {/* --- Informações Adicionais --- */}
+        <h3 className="text-lg font-medium border-b pb-2 pt-4">Informações Adicionais (Opcional)</h3>
         <FormField
           control={form.control}
           name="emergencyContacts"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Contatos de Emergência (Opcional)</FormLabel>
+              <FormLabel>Contatos de Emergência</FormLabel>
               <FormControl>
                 <Textarea placeholder="Nome, parentesco e telefone de um ou mais contatos" {...field} value={field.value ?? ''}/>
               </FormControl>
@@ -367,7 +386,7 @@ export function StudentForm({ student }: StudentFormProps) {
           name="medicalHistory"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Histórico Médico (Opcional)</FormLabel>
+              <FormLabel>Histórico Médico</FormLabel>
               <FormControl>
                 <Textarea placeholder="Alergias, condições pré-existentes, etc." {...field} value={field.value ?? ''} />
               </FormControl>
@@ -380,7 +399,7 @@ export function StudentForm({ student }: StudentFormProps) {
           name="generalNotes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Anotações Gerais (Opcional)</FormLabel>
+              <FormLabel>Anotações Gerais</FormLabel>
               <FormControl>
                 <Textarea placeholder="Qualquer outra observação relevante." {...field} value={field.value ?? ''}/>
               </FormControl>
@@ -389,10 +408,8 @@ export function StudentForm({ student }: StudentFormProps) {
           )}
         />
 
-        <Button type="submit" className="w-full mt-4">{isEditing ? "Salvar Alterações" : "Adicionar Aluno"}</Button>
+        <Button type="submit" className="w-full mt-6">{isEditing ? "Salvar Alterações" : "Adicionar Aluno"}</Button>
       </form>
     </Form>
   )
 }
-
-    

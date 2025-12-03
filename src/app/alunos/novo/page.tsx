@@ -1,4 +1,3 @@
-
 "use client";
 
 import { StudentForm } from "@/components/auth/registration-form";
@@ -18,12 +17,12 @@ export default function NewStudentPage() {
                 </Button>
             </Link>
         </div>
-        <div className="w-full max-w-2xl mx-auto">
+        <div className="w-full max-w-3xl mx-auto">
             <Card>
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl">Adicionar Novo Aluno</CardTitle>
                     <CardDescription>
-                        Preencha os dados abaixo para adicionar um novo aluno ao sistema.
+                        Preencha a ficha cadastral completa do novo aluno.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
