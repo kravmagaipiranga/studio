@@ -241,15 +241,15 @@ function StudentDetailContent({ student, onDelete }: { student: Student, onDelet
   );
 }
 
-export default function StudentDetailPage({ params }: { params: { id: string } }) {
+export default function StudentDetailPage({ params: { id } }: { params: { id: string } }) {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
 
   const studentRef = useMemoFirebase(() => {
-    if (!firestore || !params.id) return null;
-    return doc(firestore, 'students', params.id);
-  }, [firestore, params.id]);
+    if (!firestore || !id) return null;
+    return doc(firestore, 'students', id);
+  }, [firestore, id]);
 
   const { data: student, isLoading } = useDoc<Student>(studentRef);
 
@@ -267,14 +267,10 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
     return <StudentDetailSkeleton />;
   }
 
-  if (!student && !isLoading) {
+  if (!student) {
     notFound();
   }
   
-  if (!student) {
-    return <StudentDetailSkeleton />;
-  }
-
   return <StudentDetailContent student={student} onDelete={handleDeleteStudent} />;
 }
 
@@ -302,5 +298,3 @@ function InfoList({ icon, label, value }: { icon?: React.ReactNode, label: strin
     </div>
   );
 }
-
-    

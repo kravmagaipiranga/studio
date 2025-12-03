@@ -31,13 +31,13 @@ function EditAppointmentSkeleton() {
     );
 }
 
-export default function EditAppointmentPage({ params }: { params: { id: string } }) {
+export default function EditAppointmentPage({ params: { id } }: { params: { id: string } }) {
   const firestore = useFirestore();
 
   const appointmentRef = useMemoFirebase(() => {
-    if (!firestore || !params.id) return null;
-    return doc(firestore, 'appointments', params.id);
-  }, [firestore, params.id]);
+    if (!firestore || !id) return null;
+    return doc(firestore, 'appointments', id);
+  }, [firestore, id]);
 
   const { data: appointment, isLoading } = useDoc<Appointment>(appointmentRef);
 

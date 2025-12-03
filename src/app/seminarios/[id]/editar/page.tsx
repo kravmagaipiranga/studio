@@ -31,13 +31,13 @@ function EditSeminarSkeleton() {
     );
 }
 
-export default function EditSeminarPage({ params }: { params: { id: string } }) {
+export default function EditSeminarPage({ params: { id } }: { params: { id: string } }) {
   const firestore = useFirestore();
 
   const seminarRef = useMemoFirebase(() => {
-    if (!firestore || !params.id) return null;
-    return doc(firestore, 'seminars', params.id);
-  }, [firestore, params.id]);
+    if (!firestore || !id) return null;
+    return doc(firestore, 'seminars', id);
+  }, [firestore, id]);
 
   const studentsCollection = useMemoFirebase(() => {
       if (!firestore) return null;

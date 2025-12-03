@@ -31,13 +31,13 @@ function EditStudentSkeleton() {
     );
 }
 
-export default function EditStudentPage({ params }: { params: { id: string } }) {
+export default function EditStudentPage({ params: { id } }: { params: { id: string } }) {
   const firestore = useFirestore();
 
   const studentRef = useMemoFirebase(() => {
-    if (!firestore || !params.id) return null;
-    return doc(firestore, 'students', params.id);
-  }, [firestore, params.id]);
+    if (!firestore || !id) return null;
+    return doc(firestore, 'students', id);
+  }, [firestore, id]);
 
   const { data: student, isLoading } = useDoc<Student>(studentRef);
 
@@ -52,7 +52,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
   return (
     <>
         <div className="flex items-center justify-between mb-4">
-            <Link href={`/alunos/${params.id}`}>
+            <Link href={`/alunos/${id}`}>
                 <Button variant="outline">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Voltar para Detalhes

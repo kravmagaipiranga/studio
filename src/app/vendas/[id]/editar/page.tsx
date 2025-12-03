@@ -31,13 +31,13 @@ function EditSaleSkeleton() {
     );
 }
 
-export default function EditSalePage({ params }: { params: { id: string } }) {
+export default function EditSalePage({ params: { id } }: { params: { id: string } }) {
   const firestore = useFirestore();
 
   const saleRef = useMemoFirebase(() => {
-    if (!firestore || !params.id) return null;
-    return doc(firestore, 'sales', params.id);
-  }, [firestore, params.id]);
+    if (!firestore || !id) return null;
+    return doc(firestore, 'sales', id);
+  }, [firestore, id]);
 
   const studentsCollection = useMemoFirebase(() => {
       if (!firestore) return null;

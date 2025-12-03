@@ -31,13 +31,13 @@ function EditPrivateClassSkeleton() {
     );
 }
 
-export default function EditPrivateClassPage({ params }: { params: { id: string } }) {
+export default function EditPrivateClassPage({ params: { id } }: { params: { id: string } }) {
   const firestore = useFirestore();
 
   const privateClassRef = useMemoFirebase(() => {
-    if (!firestore || !params.id) return null;
-    return doc(firestore, 'privateClasses', params.id);
-  }, [firestore, params.id]);
+    if (!firestore || !id) return null;
+    return doc(firestore, 'privateClasses', id);
+  }, [firestore, id]);
 
   const studentsCollection = useMemoFirebase(() => {
       if (!firestore) return null;

@@ -31,13 +31,13 @@ function EditExamSkeleton() {
     );
 }
 
-export default function EditExamPage({ params }: { params: { id: string } }) {
+export default function EditExamPage({ params: { id } }: { params: { id: string } }) {
   const firestore = useFirestore();
 
   const examRef = useMemoFirebase(() => {
-    if (!firestore || !params.id) return null;
-    return doc(firestore, 'exams', params.id);
-  }, [firestore, params.id]);
+    if (!firestore || !id) return null;
+    return doc(firestore, 'exams', id);
+  }, [firestore, id]);
 
   const studentsCollection = useMemoFirebase(() => {
       if (!firestore) return null;
