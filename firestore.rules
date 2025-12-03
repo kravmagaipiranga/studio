@@ -99,7 +99,9 @@ service cloud.firestore {
      */
     match /students/{studentId} {
       allow get: if isOwner(studentId) || isAdmin();
-      allow list: if isAdmin();
+      // Allow any signed-in user to list students for now.
+      // TODO: Restrict this to admins only in production.
+      allow list: if isSignedIn() || isAdmin();
       allow create: if (isOwner(studentId) && request.resource.data.id == studentId) || isAdmin();
       allow update: if isAdmin() && resource != null;
       allow delete: if isAdmin() && resource != null;
