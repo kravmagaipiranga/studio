@@ -260,7 +260,7 @@ export function StudentForm({ student, onFinished }: StudentFormProps) {
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione..." />
-                      </Trierigger>
+                      </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="36">36</SelectItem>
