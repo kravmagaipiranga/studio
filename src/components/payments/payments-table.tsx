@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -19,7 +20,6 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { students as initialStudents } from "@/lib/data"
 import { MoreHorizontal, MessageCircle, Mail, Info } from "lucide-react"
 import {
   DropdownMenu,
@@ -37,8 +37,12 @@ import {
 } from "@/components/ui/tooltip"
 import { RegisterPaymentDialog } from "./register-payment-dialog"
 
-export function PaymentsTable() {
-  const [students, setStudents] = useState<Student[]>(initialStudents);
+interface PaymentsTableProps {
+  students: Student[];
+  setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
+}
+
+export function PaymentsTable({ students, setStudents }: PaymentsTableProps) {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -56,6 +60,8 @@ export function PaymentsTable() {
     setStudents(prevStudents => 
       prevStudents.map(s => s.id === updatedStudent.id ? updatedStudent : s)
     );
+    // Reset selected student after dialog closes
+    setSelectedStudent(null);
   }
   
   return (
@@ -168,7 +174,10 @@ export function PaymentsTable() {
       {selectedStudent && (
         <RegisterPaymentDialog 
           isOpen={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
+          onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) setSelectedStudent(null);
+          }}
           student={selectedStudent}
           onPaymentRegistered={handlePaymentRegistered}
         />
