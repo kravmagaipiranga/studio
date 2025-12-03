@@ -1,4 +1,4 @@
-import type { Student, RevenueData, Exam } from "./types";
+import type { Student, RevenueData, Exam, Seminar } from "./types";
 
 function calculateAge(dob: string) {
   const birthDate = new Date(dob);
@@ -169,5 +169,46 @@ export const exams: Exam[] = [
     paymentDate: "2024-06-12",
     paymentAmount: 100,
     paymentMethod: "Dinheiro",
+  },
+];
+
+export const seminars: Seminar[] = [
+  {
+    id: 'seminar-1',
+    topic: 'Defesa contra Ameaças com Faca',
+    studentId: '1',
+    studentName: 'João da Silva',
+    studentBelt: 'Laranja',
+    studentCpf: '123.456.789-00',
+    studentAge: calculateAge('1990-05-20'),
+    paymentStatus: 'Pago',
+    paymentDate: '2024-05-15',
+    paymentAmount: 80,
+    paymentMethod: 'Pix',
+  },
+  {
+    id: 'seminar-2',
+    topic: 'Técnicas de Solo e Retenção',
+    studentId: '2',
+    studentName: 'Maria Oliveira',
+    studentBelt: 'Verde',
+    studentCpf: '987.654.321-00',
+    studentAge: calculateAge('1985-02-15'),
+    paymentStatus: 'Pendente',
+    paymentAmount: 80,
+    paymentMethod: 'Cartão',
+  },
+  {
+    id: 'seminar-3',
+    topic: 'Defesa contra Ameaças com Faca',
+    studentId: '3',
+    studentName: 'Carlos Pereira',
+    studentBelt: 'Amarela',
+    studentCpf: '111.222.333-44',
+    studentAge: calculateAge('1998-11-30'),
+    paymentStatus: 'Pago',
+    paymentDate: '2024-05-20',
+    paymentAmount: 80,
+    paymentMethod: 'Dinheiro',
   },
 ];

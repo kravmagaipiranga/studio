@@ -51,3 +51,17 @@ export type Exam = {
   paymentAmount: number;
   paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro';
 };
+
+export type Seminar = {
+  id: string;
+  topic: string;
+  studentId: string;
+  studentName: string;
+  studentBelt: string;
+  studentCpf: string;
+  studentAge: number;
+  paymentStatus: 'Pago' | 'Pendente';
+  paymentDate?: string;
+  paymentAmount: number;
+  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro';
+};
