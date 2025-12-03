@@ -37,3 +37,17 @@ export type RevenueData = {
   month: string;
   revenue: number;
 }
+
+export type Exam = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentCpf: string;
+  studentAge: number;
+  examDate: string;
+  targetBelt: string;
+  paymentStatus: 'Pago' | 'Pendente';
+  paymentDate?: string;
+  paymentAmount: number;
+  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro';
+};

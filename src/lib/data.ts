@@ -1,4 +1,15 @@
-import type { Student, RevenueData } from "./types";
+import type { Student, RevenueData, Exam } from "./types";
+
+function calculateAge(dob: string) {
+  const birthDate = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
 
 export const students: Student[] = [
   {
@@ -7,7 +18,7 @@ export const students: Student[] = [
     email: "joao.silva@example.com",
     avatar: "https://picsum.photos/seed/1/100/100",
     plan: "Intermediário",
-    registrationDate: "2023-01-15",
+    registrationDate: "2023-01-15T00:00:00.000Z",
     status: "Ativo",
     paymentStatus: "Pago",
     belt: "Laranja",
@@ -118,4 +129,45 @@ export const revenueData: RevenueData[] = [
     { month: "Abr", revenue: 2400 },
     { month: "Mai", revenue: 2890 },
     { month: "Jun", revenue: 2650 },
+];
+
+export const exams: Exam[] = [
+  {
+    id: "exam-1",
+    studentId: "1",
+    studentName: "João da Silva",
+    studentCpf: "123.456.789-00",
+    studentAge: calculateAge("1990-05-20"),
+    examDate: "2024-06-20",
+    targetBelt: "Verde",
+    paymentStatus: "Pago",
+    paymentDate: "2024-06-10",
+    paymentAmount: 100,
+    paymentMethod: "Pix",
+  },
+  {
+    id: "exam-2",
+    studentId: "3",
+    studentName: "Carlos Pereira",
+    studentCpf: "111.222.333-44",
+    studentAge: calculateAge("1998-11-30"),
+    examDate: "2024-06-20",
+    targetBelt: "Laranja",
+    paymentStatus: "Pendente",
+    paymentAmount: 100,
+    paymentMethod: "Cartão",
+  },
+    {
+    id: "exam-3",
+    studentId: "2",
+    studentName: "Maria Oliveira",
+    studentCpf: "987.654.321-00",
+    studentAge: calculateAge("1985-02-15"),
+    examDate: "2024-06-20",
+    targetBelt: "Azul",
+    paymentStatus: "Pago",
+    paymentDate: "2024-06-12",
+    paymentAmount: 100,
+    paymentMethod: "Dinheiro",
+  },
 ];
