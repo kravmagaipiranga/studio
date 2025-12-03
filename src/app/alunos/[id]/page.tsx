@@ -14,7 +14,6 @@ import { notFound, useRouter } from "next/navigation";
 import { useDoc, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StudentFormDialog } from "@/components/students/student-form-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,7 +30,6 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const studentRef = useMemoFirebase(() => {
@@ -103,8 +101,13 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
   }
 
   // Only call notFound if loading is finished and student is still null
-  if (!student) {
+  if (!isLoading && !student) {
     notFound();
+  }
+  
+  if (!student) {
+    // This part should ideally not be reached if notFound() is called, but it's a safe fallback.
+    return null;
   }
 
   return (
@@ -117,10 +120,12 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
           </Button>
         </Link>
         <div className="flex items-center gap-2">
-           <Button onClick={() => setIsEditDialogOpen(true)}>
-            <Edit className="mr-2 h-4 w-4" />
-            Editar Aluno
-           </Button>
+           <Link href={`/alunos/${student.id}/editar`}>
+            <Button>
+                <Edit className="mr-2 h-4 w-4" />
+                Editar Aluno
+            </Button>
+           </Link>
             <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Excluir
@@ -245,12 +250,6 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
         </div>
       </div>
 
-       <StudentFormDialog
-        isOpen={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        student={student}
-      />
-
        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -296,5 +295,3 @@ function InfoList({ icon, label, value }: { icon?: React.ReactNode, label: strin
     </div>
   );
 }
-
-    

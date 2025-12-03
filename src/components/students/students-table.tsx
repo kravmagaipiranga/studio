@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Trash2 } from "lucide-react"
+import { MoreHorizontal, Trash2, Edit } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,11 +32,11 @@ import {
 import { Student } from "@/lib/types"
 import Link from "next/link"
 import { Skeleton } from "../ui/skeleton"
-import { StudentFormDialog } from "./student-form-dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog"
 import { useFirestore, deleteDocumentNonBlocking } from "@/firebase"
 import { doc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 
 interface StudentsTableProps {
   students: Student[];
@@ -45,12 +46,8 @@ interface StudentsTableProps {
 export function StudentsTable({ students, isLoading }: StudentsTableProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const router = useRouter();
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
-
-  const handleEdit = (student: Student) => {
-    setEditingStudent(student);
-  };
 
   const handleDelete = (student: Student) => {
     setDeletingStudent(student);
@@ -140,7 +137,8 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
                         <DropdownMenuItem asChild>
                           <Link href={`/alunos/${student.id}`}>Ver Detalhes</Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEdit(student)}>
+                        <DropdownMenuItem onClick={() => router.push(`/alunos/${student.id}/editar`)}>
+                          <Edit className="mr-2 h-4 w-4" />
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -162,13 +160,6 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
           )}
         </CardContent>
       </Card>
-      {editingStudent && (
-        <StudentFormDialog
-          isOpen={!!editingStudent}
-          onOpenChange={(isOpen) => !isOpen && setEditingStudent(null)}
-          student={editingStudent}
-        />
-      )}
       <AlertDialog open={!!deletingStudent} onOpenChange={(isOpen) => !isOpen && setDeletingStudent(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

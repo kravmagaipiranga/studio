@@ -1,21 +1,20 @@
 
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { collection, doc } from "firebase/firestore";
+import Link from "next/link";
 import { StudentsTable } from "@/components/students/students-table";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Upload } from "lucide-react";
 import { Student } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
-import { StudentFormDialog } from "@/components/students/student-form-dialog";
 
 export default function AlunosPage() {
     const firestore = useFirestore();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
-    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
     const studentsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -145,19 +144,17 @@ export default function AlunosPage() {
                         accept=".csv"
                         onChange={handleFileChange}
                     />
-                    <Button onClick={() => setIsAddDialogOpen(true)}>
-                        <PlusCircle className="h-4 w-4 mr-2" />
-                        Adicionar Aluno
-                    </Button>
+                    <Link href="/alunos/novo">
+                        <Button>
+                            <PlusCircle className="h-4 w-4 mr-2" />
+                            Adicionar Aluno
+                        </Button>
+                    </Link>
                 </div>
             </div>
              <div className="flex flex-1 rounded-lg shadow-sm mt-4">
                 <StudentsTable students={students || []} isLoading={isLoading} />
             </div>
-            <StudentFormDialog 
-                isOpen={isAddDialogOpen}
-                onOpenChange={setIsAddDialogOpen}
-            />
         </>
     );
 }

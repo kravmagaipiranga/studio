@@ -1,0 +1,61 @@
+
+'use client';
+
+import { doc } from "firebase/firestore";
+import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { Student } from "@/lib/types";
+import { StudentForm } from "@/components/auth/registration-form";
+import { Skeleton } from "@/components/ui/skeleton";
+import { notFound, useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+
+export default function EditStudentPage({ params }: { params: { id: string } }) {
+  const firestore = useFirestore();
+
+  const studentRef = useMemoFirebase(() => {
+    if (!firestore || !params.id) return null;
+    return doc(firestore, 'students', params.id);
+  }, [firestore, params.id]);
+
+  const { data: student, isLoading } = useDoc<Student>(studentRef);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-44" />
+        <div className="space-y-2">
+            <Skeleton className="h-8 w-1/4" />
+            <Skeleton className="h-10 w-full" />
+        </div>
+         <div className="space-y-2">
+            <Skeleton className="h-8 w-1/4" />
+            <Skeleton className="h-10 w-full" />
+        </div>
+         <div className="space-y-2">
+            <Skeleton className="h-8 w-1/4" />
+            <Skeleton className="h-10 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!student) {
+    notFound();
+  }
+
+  return (
+    <>
+        <div className="flex items-center justify-between mb-4">
+            <Link href={`/alunos/${params.id}`}>
+                <Button variant="outline">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Voltar para Detalhes
+                </Button>
+            </Link>
+        </div>
+        <StudentForm student={student} />
+    </>
+  );
+}

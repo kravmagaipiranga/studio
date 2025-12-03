@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -49,10 +50,9 @@ const formSchema = z.object({
 
 interface StudentFormProps {
   student?: Student;
-  onFinished?: () => void;
 }
 
-export function StudentForm({ student, onFinished }: StudentFormProps) {
+export function StudentForm({ student }: StudentFormProps) {
   const { toast } = useToast()
   const router = useRouter()
   const firestore = useFirestore();
@@ -108,11 +108,7 @@ export function StudentForm({ student, onFinished }: StudentFormProps) {
       description: isEditing ? "Os dados do aluno foram atualizados." : "O novo aluno foi adicionado.",
     })
     
-    if (onFinished) {
-        onFinished();
-    } else {
-        router.push('/alunos');
-    }
+    router.push('/alunos');
   }
 
   return (

@@ -1,7 +1,6 @@
 
 "use client"
 
-import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Card,
@@ -35,27 +34,22 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { RegisterPaymentDialog } from "./register-payment-dialog"
 import { Skeleton } from "../ui/skeleton"
+import { useRouter } from "next/navigation"
 
 interface PaymentsTableProps {
   students: Student[];
   isLoading: boolean;
+  allStudents: Student[];
 }
 
 export function PaymentsTable({ students, isLoading }: PaymentsTableProps) {
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const router = useRouter();
 
   const openWhatsApp = (studentName: string) => {
     const message = encodeURIComponent(`Olá ${studentName}, este é um lembrete amigável sobre seu pagamento pendente para o Krav Magá IPIRANGA.`);
     window.open(`https://wa.me/?text=${message}`, '_blank');
   };
-
-  const handleOpenDialog = (student: Student) => {
-    setSelectedStudent(student);
-    setIsDialogOpen(true);
-  }
   
   return (
     <>
@@ -166,10 +160,9 @@ export function PaymentsTable({ students, isLoading }: PaymentsTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onSelect={() => handleOpenDialog(student)}>
+                        <DropdownMenuItem onSelect={() => router.push(`/pagamentos/novo?aluno=${student.id}`)}>
                           Registrar Pagamento
                         </DropdownMenuItem>
-                        <DropdownMenuItem>Editar Informações</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                     </div>
@@ -185,17 +178,6 @@ export function PaymentsTable({ students, isLoading }: PaymentsTableProps) {
            )}
         </CardContent>
       </Card>
-      {selectedStudent && (
-        <RegisterPaymentDialog 
-          isOpen={isDialogOpen}
-          onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) setSelectedStudent(null);
-          }}
-          student={selectedStudent}
-          allStudents={students}
-        />
-      )}
     </>
   )
 }
