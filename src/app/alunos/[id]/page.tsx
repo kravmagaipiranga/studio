@@ -177,7 +177,7 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
             <CardContent className="space-y-4">
               <InfoItem icon={<Star />} label="Graduação (Faixa)" value={student.belt} />
               <Separator />
-              <InfoItem icon={<Calendar />} label="Data de Início" value={student.registrationDate ? new Date(student.registrationDate).toLocaleDateString('pt-BR') : 'Não definido'} />
+              <InfoItem icon={<Calendar />} label="Data de Cadastro" value={student.registrationDate ? new Date(student.registrationDate).toLocaleDateString('pt-BR') : 'Não definido'} />
               <Separator />
               <InfoItem icon={<Calendar />} label="Último Exame" value={student.lastExamDate ? new Date(student.lastExamDate).toLocaleDateString('pt-BR') : 'Não definido'} />
               <Separator />
