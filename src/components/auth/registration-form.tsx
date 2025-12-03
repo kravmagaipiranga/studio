@@ -1,5 +1,3 @@
-
-
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -82,7 +80,7 @@ export function StudentForm({ student, isEditing = false }: StudentFormProps) {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: isEditing && student ? student : {
+    defaultValues: {
       name: "",
       dob: "",
       cpf: "",
