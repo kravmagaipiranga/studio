@@ -2,14 +2,14 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { collection, doc, setDoc } from "firebase/firestore";
+import { collection, doc } from "firebase/firestore";
 import { StudentsTable } from "@/components/students/students-table";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Upload } from "lucide-react";
 import Link from "next/link";
 import { Student } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
 
 export default function AlunosPage() {
     const firestore = useFirestore();
@@ -38,9 +38,18 @@ export default function AlunosPage() {
 
             try {
                 const lines = text.split('\n').filter(line => line.trim() !== '');
-                const headers = lines.shift()?.trim().split(',') || [];
+                if (lines.length < 2) {
+                    toast({
+                        variant: "destructive",
+                        title: "Arquivo Inválido",
+                        description: "O arquivo CSV precisa conter um cabeçalho e pelo menos uma linha de dados.",
+                    });
+                    return;
+                }
+
+                const headers = lines.shift()!.trim().split(',').map(h => h.trim());
                 
-                const requiredHeaders = ['name', 'email', 'dob', 'cpf', 'phone', 'belt'];
+                const requiredHeaders = ['name', 'email'];
                 const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
 
                 if (missingHeaders.length > 0) {
@@ -53,10 +62,13 @@ export default function AlunosPage() {
                 }
 
                 let importedCount = 0;
-                lines.forEach((line, index) => {
+                lines.forEach((line) => {
                     const data = line.trim().split(',');
                     const studentData = headers.reduce((obj, header, i) => {
-                        obj[header.trim() as keyof Student] = data[i] as any;
+                        const value = data[i]?.trim() || '';
+                        if (value) {
+                             obj[header as keyof Student] = value as any;
+                        }
                         return obj;
                     }, {} as Partial<Student>);
 
@@ -74,13 +86,18 @@ export default function AlunosPage() {
                             phone: studentData.phone || '',
                             belt: formattedBelt,
                             avatar: `https://picsum.photos/seed/${newStudentId}/100/100`,
-                            status: 'Ativo',
-                            paymentStatus: 'Pendente',
+                            status: studentData.status || 'Ativo',
+                            paymentStatus: studentData.paymentStatus || 'Pendente',
                             registrationDate: new Date().toISOString(),
-                            plan: 'Básico',
-                            tshirtSize: 'M',
-                            pantsSize: '40',
-                            emergencyContacts: '',
+                            tshirtSize: studentData.tshirtSize || 'M',
+                            pantsSize: studentData.pantsSize || '40',
+                            emergencyContacts: studentData.emergencyContacts || '',
+                            medicalHistory: studentData.medicalHistory || '',
+                            generalNotes: studentData.generalNotes || '',
+                            planType: studentData.planType,
+                            planValue: studentData.planValue ? parseFloat(studentData.planValue as any) : undefined,
+                            lastPaymentDate: studentData.lastPaymentDate,
+                            planExpirationDate: studentData.planExpirationDate,
                         };
                         
                         const docRef = doc(firestore, "students", newStudentId);
@@ -95,10 +112,11 @@ export default function AlunosPage() {
                 });
 
             } catch (error) {
+                 console.error("Erro ao importar:", error);
                  toast({
                     variant: "destructive",
                     title: "Erro ao Importar",
-                    description: "Não foi possível processar o arquivo. Verifique o formato.",
+                    description: "Não foi possível processar o arquivo. Verifique o formato e os dados.",
                 });
             } finally {
                 // Reset file input
@@ -107,7 +125,7 @@ export default function AlunosPage() {
                 }
             }
         };
-        reader.readAsText(file);
+        reader.readAsText(file, 'UTF-8');
     };
 
     return (
@@ -121,7 +139,7 @@ export default function AlunosPage() {
                     </Button>
                     <input 
                         type="file" 
-                        ref={fileInputref} 
+                        ref={fileInputRef} 
                         className="hidden" 
                         accept=".csv"
                         onChange={handleFileChange}
