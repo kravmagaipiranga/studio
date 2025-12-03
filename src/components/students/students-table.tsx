@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Student } from "@/lib/types"
+import Link from "next/link"
 
 export function StudentsTable() {
   
@@ -88,7 +89,9 @@ export function StudentsTable() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                      <DropdownMenuItem>Ver Detalhes</DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                         <Link href={`/alunos/${student.id}`}>Ver Detalhes</Link>
+                      </DropdownMenuItem>
                       <DropdownMenuItem>Editar</DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive">Excluir</DropdownMenuItem>
                     </DropdownMenuContent>
