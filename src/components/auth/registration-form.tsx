@@ -331,21 +331,19 @@ export function StudentForm({ student }: StudentFormProps) {
 
         {/* --- Anuidade --- */}
         <h3 className="text-lg font-medium border-b pb-2 pt-4">Anuidade FIKM</h3>
-         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
+         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
             <FormField
                 control={form.control}
                 name="fikmAnnuityPaid"
                 render={({ field }) => (
-                    <FormItem className="flex flex-col rounded-lg border p-3 shadow-sm">
-                    <div className="flex flex-row items-center justify-between">
-                         <FormLabel>Anuidade Paga?</FormLabel>
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm sm:col-span-1 h-full">
+                        <FormLabel className="mr-4">Anuidade Paga?</FormLabel>
                         <FormControl>
                             <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
                             />
                         </FormControl>
-                    </div>
                     </FormItem>
                 )}
             />
@@ -493,3 +491,5 @@ export function StudentForm({ student }: StudentFormProps) {
     </Form>
   )
 }
+
+    
