@@ -31,8 +31,7 @@ function EditSaleSkeleton() {
     );
 }
 
-export default function EditSalePage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function EditSalePage({ params: { id } }: { params: { id: string } }) {
   const firestore = useFirestore();
 
   const saleRef = useMemoFirebase(() => {

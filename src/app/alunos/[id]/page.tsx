@@ -241,8 +241,7 @@ function StudentDetailContent({ student, onDelete }: { student: Student, onDelet
   );
 }
 
-export default function StudentDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function StudentDetailPage({ params: { id } }: { params: { id: string } }) {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
