@@ -39,7 +39,7 @@ const formSchema = z.object({
   email: z.string().email("Por favor, insira um endereço de e-mail válido."),
   tshirtSize: z.string().min(1, "Selecione um tamanho de camiseta."),
   pantsSize: z.string().min(1, "Selecione um tamanho de calça."),
-  emergencyContacts: z.string().min(10, "Por favor, insira pelo menos um contato de emergência."),
+  emergencyContacts: z.string().optional(),
   belt: z.string().min(1, "A faixa é obrigatória"),
   status: z.string().min(1, "O status é obrigatório"),
   paymentStatus: z.string().min(1, "O status de pagamento é obrigatório."),
@@ -201,13 +201,13 @@ export function StudentForm({ student, onFinished }: StudentFormProps) {
                         <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="branca">Branca</SelectItem>
-                            <SelectItem value="amarela">Amarela</SelectItem>
-                            <SelectItem value="laranja">Laranja</SelectItem>
-                            <SelectItem value="verde">Verde</SelectItem>
-                            <SelectItem value="azul">Azul</SelectItem>
-                            <SelectItem value="marrom">Marrom</SelectItem>
-                            <SelectItem value="preta">Preta</SelectItem>
+                            <SelectItem value="Branca">Branca</SelectItem>
+                            <SelectItem value="Amarela">Amarela</SelectItem>
+                            <SelectItem value="Laranja">Laranja</SelectItem>
+                            <SelectItem value="Verde">Verde</SelectItem>
+                            <SelectItem value="Azul">Azul</SelectItem>
+                            <SelectItem value="Marrom">Marrom</SelectItem>
+                            <SelectItem value="Preta">Preta</SelectItem>
                         </SelectContent>
                     </Select>
                     <FormMessage />
@@ -303,7 +303,7 @@ export function StudentForm({ student, onFinished }: StudentFormProps) {
           name="emergencyContacts"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Contatos de Emergência</FormLabel>
+              <FormLabel>Contatos de Emergência (Opcional)</FormLabel>
               <FormControl>
                 <Textarea placeholder="Nome, parentesco e telefone de um ou mais contatos" {...field} />
               </FormControl>
@@ -316,7 +316,7 @@ export function StudentForm({ student, onFinished }: StudentFormProps) {
           name="medicalHistory"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Histórico Médico</FormLabel>
+              <FormLabel>Histórico Médico (Opcional)</FormLabel>
               <FormControl>
                 <Textarea placeholder="Alergias, condições pré-existentes, etc." {...field} />
               </FormControl>
@@ -329,7 +329,7 @@ export function StudentForm({ student, onFinished }: StudentFormProps) {
           name="generalNotes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Anotações Gerais</FormLabel>
+              <FormLabel>Anotações Gerais (Opcional)</FormLabel>
               <FormControl>
                 <Textarea placeholder="Qualquer outra observação relevante." {...field} />
               </FormControl>

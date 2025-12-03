@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Student } from "@/lib/types";
-import { ArrowLeft, Edit, FileText, Gift, Hash, Phone, Shirt, Trash2, User } from "lucide-react";
+import { ArrowLeft, Edit, FileText, Gift, Hash, Phone, Shirt, Trash2, User, DollarSign, Calendar, CreditCard, Star } from "lucide-react";
 import Link from "next/link";
 import { notFound, useRouter } from "next/navigation";
 import { useDoc, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from "@/firebase";
@@ -154,7 +154,7 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Informações Pessoais</CardTitle>
-              <CardDescription>Dados preenchidos pelo aluno no cadastro.</CardDescription>
+              <CardDescription>Dados preenchidos no cadastro.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                <InfoItem icon={<User />} label="Nome Completo" value={student.name} />
@@ -175,18 +175,33 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
               <CardDescription>Dados de gestão da academia.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <InfoItem label="Graduação (Faixa)" value={student.belt} />
+              <InfoItem icon={<Star />} label="Graduação (Faixa)" value={student.belt} />
               <Separator />
-              <InfoItem label="Data de Início" value={student.registrationDate ? new Date(student.registrationDate).toLocaleDateString('pt-BR') : 'Não definido'} />
+              <InfoItem icon={<Calendar />} label="Data de Início" value={student.registrationDate ? new Date(student.registrationDate).toLocaleDateString('pt-BR') : 'Não definido'} />
               <Separator />
-              <InfoItem label="Último Exame" value={student.lastExamDate ? new Date(student.lastExamDate).toLocaleDateString('pt-BR') : 'Não definido'} />
+              <InfoItem icon={<Calendar />} label="Último Exame" value={student.lastExamDate ? new Date(student.lastExamDate).toLocaleDateString('pt-BR') : 'Não definido'} />
               <Separator />
               <InfoItem label="Anuidade FIKM" value={student.fikmAnnuityPaid ? "Paga" : "Pendente"} />
             </CardContent>
           </Card>
         </div>
-
+        
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+           <Card>
+                <CardHeader>
+                    <CardTitle>Informações Financeiras</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <InfoItem icon={<FileText />} label="Plano" value={student.planType || 'Não definido'} />
+                    <Separator />
+                    <InfoItem icon={<DollarSign />} label="Valor do Plano" value={student.planValue ? `R$ ${student.planValue.toFixed(2)}` : 'Não definido'} />
+                    <Separator />
+                    <InfoItem icon={<Calendar />} label="Último Pagamento" value={student.lastPaymentDate ? new Date(student.lastPaymentDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'Nenhum'} />
+                    <Separator />
+                    <InfoItem icon={<Calendar />} label="Vencimento" value={student.planExpirationDate ? new Date(student.planExpirationDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'} />
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle>Uniformes</CardTitle>
@@ -198,6 +213,17 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
                 </CardContent>
             </Card>
 
+            <Card>
+                <CardHeader>
+                    <CardTitle>Créditos</CardTitle>
+                </CardHeader>
+                <CardContent>
+                     <p className="text-sm text-muted-foreground">{student.paymentCredits || "Nenhum crédito ou observação."}</p>
+                </CardContent>
+            </Card>
+        </div>
+
+        <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
                 <CardHeader>
                     <CardTitle>Histórico Médico</CardTitle>
@@ -234,7 +260,7 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteStudent}>
+            <AlertDialogAction onClick={handleDeleteStudent} className="bg-destructive hover:bg-destructive/90">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -257,6 +283,7 @@ function InfoItem({ icon, label, value }: { icon?: React.ReactNode, label: strin
 }
 
 function InfoList({ icon, label, value }: { icon?: React.ReactNode, label: string; value: string | React.ReactNode; }) {
+  if (!value) return null;
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-3">
