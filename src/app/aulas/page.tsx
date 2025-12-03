@@ -10,12 +10,11 @@ import { Input } from "@/components/ui/input";
 import { PrivateClass, Student } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
-import { PrivateClassFormDialog } from "@/components/private-classes/private-class-form-dialog";
+import Link from "next/link";
 
 export default function AulasPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const privateClassesCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -39,10 +38,12 @@ export default function AulasPage() {
             <div className="flex items-center justify-between gap-4">
                 <h1 className="text-lg font-semibold md:text-2xl">Aulas Particulares</h1>
                 <div className="flex items-center gap-2">
-                     <Button onClick={() => setIsDialogOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Agendar Aula
-                    </Button>
+                     <Link href="/aulas/novo">
+                        <Button>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Agendar Aula
+                        </Button>
+                     </Link>
                     <Button variant="outline">
                         <Download className="mr-2 h-4 w-4" />
                         Gerar Relatório
@@ -66,14 +67,8 @@ export default function AulasPage() {
                 <PrivateClassesTable 
                     privateClasses={filteredClasses}
                     isLoading={isLoadingClasses}
-                    allStudents={students || []}
                 />
             </div>
-            <PrivateClassFormDialog
-                isOpen={isDialogOpen}
-                onOpenChange={setIsDialogOpen}
-                allStudents={students || []}
-            />
         </>
     );
 }

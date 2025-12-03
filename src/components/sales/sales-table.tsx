@@ -26,23 +26,17 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Sale, Student } from "@/lib/types"
+import { Sale } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
-import { useState } from "react"
-import { SaleFormDialog } from "./sale-form-dialog"
+import { useRouter } from "next/navigation"
 
 interface SalesTableProps {
   sales: Sale[];
   isLoading: boolean;
-  allStudents: Student[];
 }
 
-export function SalesTable({ sales, isLoading, allStudents }: SalesTableProps) {
-  const [editingSale, setEditingSale] = useState<Sale | null>(null);
-
-  const handleEdit = (sale: Sale) => {
-    setEditingSale(sale);
-  };
+export function SalesTable({ sales, isLoading }: SalesTableProps) {
+  const router = useRouter();
   
   return (
     <>
@@ -109,7 +103,7 @@ export function SalesTable({ sales, isLoading, allStudents }: SalesTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEdit(sale)}>
+                        <DropdownMenuItem onClick={() => router.push(`/vendas/${sale.id}/editar`)}>
                           Editar/Registrar Pagamento
                         </DropdownMenuItem>
                          <DropdownMenuItem className="text-destructive">
@@ -132,15 +126,6 @@ export function SalesTable({ sales, isLoading, allStudents }: SalesTableProps) {
           </Table>
         </CardContent>
       </Card>
-      {editingSale && (
-        <SaleFormDialog
-            isOpen={!!editingSale}
-            onOpenChange={(isOpen) => !isOpen && setEditingSale(null)}
-            sale={editingSale}
-            allStudents={allStudents}
-        />
-      )}
     </>
   )
 }
-    

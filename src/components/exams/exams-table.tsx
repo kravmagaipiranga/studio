@@ -26,24 +26,18 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Exam, Student } from "@/lib/types"
+import { Exam } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
-import { useState } from "react"
-import { ExamFormDialog } from "./exam-form-dialog"
+import { useRouter } from "next/navigation"
 
 interface ExamsTableProps {
   exams: Exam[];
   isLoading: boolean;
-  allStudents: Student[];
 }
 
-export function ExamsTable({ exams, isLoading, allStudents }: ExamsTableProps) {
-  const [editingExam, setEditingExam] = useState<Exam | null>(null);
+export function ExamsTable({ exams, isLoading }: ExamsTableProps) {
+  const router = useRouter();
 
-  const handleEdit = (exam: Exam) => {
-    setEditingExam(exam);
-  };
-  
   return (
     <>
       <Card className="w-full">
@@ -118,10 +112,12 @@ export function ExamsTable({ exams, isLoading, allStudents }: ExamsTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEdit(exam)}>
+                        <DropdownMenuItem onClick={() => router.push(`/exames/${exam.id}/editar`)}>
                           Editar/Registrar Pagamento
                         </DropdownMenuItem>
-                        <DropdownMenuItem>Ver Detalhes do Aluno</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push(`/alunos/${exam.studentId}`)}>
+                          Ver Detalhes do Aluno
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                     </div>
@@ -139,15 +135,6 @@ export function ExamsTable({ exams, isLoading, allStudents }: ExamsTableProps) {
           </Table>
         </CardContent>
       </Card>
-      {editingExam && (
-        <ExamFormDialog
-            isOpen={!!editingExam}
-            onOpenChange={(isOpen) => !isOpen && setEditingExam(null)}
-            exam={editingExam}
-            allStudents={allStudents}
-        />
-      )}
     </>
   )
 }
-    

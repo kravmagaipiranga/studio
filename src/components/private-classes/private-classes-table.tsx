@@ -26,23 +26,17 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { PrivateClass, Student } from "@/lib/types"
+import { PrivateClass } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
-import { useState } from "react"
-import { PrivateClassFormDialog } from "./private-class-form-dialog"
+import { useRouter } from "next/navigation"
 
 interface PrivateClassesTableProps {
   privateClasses: PrivateClass[];
   isLoading: boolean;
-  allStudents: Student[];
 }
 
-export function PrivateClassesTable({ privateClasses, isLoading, allStudents }: PrivateClassesTableProps) {
-  const [editingClass, setEditingClass] = useState<PrivateClass | null>(null);
-
-  const handleEdit = (pc: PrivateClass) => {
-    setEditingClass(pc);
-  };
+export function PrivateClassesTable({ privateClasses, isLoading }: PrivateClassesTableProps) {
+  const router = useRouter();
   
   return (
     <>
@@ -111,10 +105,12 @@ export function PrivateClassesTable({ privateClasses, isLoading, allStudents }: 
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEdit(pc)}>
+                        <DropdownMenuItem onClick={() => router.push(`/aulas/${pc.id}/editar`)}>
                           Editar/Registrar Pagamento
                         </DropdownMenuItem>
-                        <DropdownMenuItem>Ver Detalhes do Aluno</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push(`/alunos/${pc.studentId}`)}>
+                          Ver Detalhes do Aluno
+                        </DropdownMenuItem>
                          <DropdownMenuItem className="text-destructive">
                           Cancelar Aula
                         </DropdownMenuItem>
@@ -135,15 +131,6 @@ export function PrivateClassesTable({ privateClasses, isLoading, allStudents }: 
           </Table>
         </CardContent>
       </Card>
-      {editingClass && (
-        <PrivateClassFormDialog
-          isOpen={!!editingClass}
-          onOpenChange={(isOpen) => !isOpen && setEditingClass(null)}
-          privateClass={editingClass}
-          allStudents={allStudents}
-        />
-      )}
     </>
   )
 }
-    

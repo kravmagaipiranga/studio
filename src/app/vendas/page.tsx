@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { SalesTable } from "@/components/sales/sales-table";
 import { Button } from "@/components/ui/button";
 import { Download, PlusCircle, Search } from "lucide-react";
@@ -10,26 +11,17 @@ import { Input } from "@/components/ui/input";
 import { Sale, Student } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
-import { SaleFormDialog } from "@/components/sales/sale-form-dialog";
 
 export default function VendasPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const salesCollection = useMemoFirebase(() => {
         if (!firestore) return null;
         return collection(firestore, 'sales');
     }, [firestore]);
-    
-    const studentsCollection = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return collection(firestore, 'students');
-    }, [firestore]);
 
     const { data: sales, isLoading: isLoadingSales } = useCollection<Sale>(salesCollection);
-    const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
-
 
     const filteredSales = (sales || []).filter(sale =>
         sale.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -41,10 +33,12 @@ export default function VendasPage() {
             <div className="flex items-center justify-between gap-4">
                 <h1 className="text-lg font-semibold md:text-2xl">Vendas Gerais</h1>
                 <div className="flex items-center gap-2">
-                     <Button onClick={() => setIsDialogOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Nova Venda
-                    </Button>
+                     <Link href="/vendas/novo">
+                        <Button>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Nova Venda
+                        </Button>
+                     </Link>
                     <Button variant="outline">
                         <Download className="mr-2 h-4 w-4" />
                         Gerar Relatório
@@ -68,14 +62,8 @@ export default function VendasPage() {
                 <SalesTable 
                     sales={filteredSales}
                     isLoading={isLoadingSales}
-                    allStudents={students || []}
                 />
             </div>
-             <SaleFormDialog
-                isOpen={isDialogOpen}
-                onOpenChange={setIsDialogOpen}
-                allStudents={students || []}
-            />
         </>
     );
 }

@@ -26,23 +26,17 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Seminar, Student } from "@/lib/types"
+import { Seminar } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
-import { useState } from "react"
-import { SeminarFormDialog } from "./seminar-form-dialog"
+import { useRouter } from "next/navigation"
 
 interface SeminarsTableProps {
   seminars: Seminar[];
   isLoading: boolean;
-  allStudents: Student[];
 }
 
-export function SeminarsTable({ seminars, isLoading, allStudents }: SeminarsTableProps) {
-  const [editingSeminar, setEditingSeminar] = useState<Seminar | null>(null);
-
-  const handleEdit = (seminar: Seminar) => {
-    setEditingSeminar(seminar);
-  };
+export function SeminarsTable({ seminars, isLoading }: SeminarsTableProps) {
+  const router = useRouter();
   
   return (
     <>
@@ -115,10 +109,12 @@ export function SeminarsTable({ seminars, isLoading, allStudents }: SeminarsTabl
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEdit(seminar)}>
+                        <DropdownMenuItem onClick={() => router.push(`/seminarios/${seminar.id}/editar`)}>
                           Editar/Registrar Pagamento
                         </DropdownMenuItem>
-                        <DropdownMenuItem>Ver Detalhes do Aluno</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push(`/alunos/${seminar.studentId}`)}>
+                          Ver Detalhes do Aluno
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                     </div>
@@ -136,15 +132,6 @@ export function SeminarsTable({ seminars, isLoading, allStudents }: SeminarsTabl
           </Table>
         </CardContent>
       </Card>
-      {editingSeminar && (
-        <SeminarFormDialog
-          isOpen={!!editingSeminar}
-          onOpenChange={(isOpen) => !isOpen && setEditingSeminar(null)}
-          seminar={editingSeminar}
-          allStudents={allStudents}
-        />
-      )}
     </>
   )
 }
-    

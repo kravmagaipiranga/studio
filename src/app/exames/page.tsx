@@ -2,35 +2,26 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { ExamsTable } from "@/components/exams/exams-table";
 import { Button } from "@/components/ui/button";
 import { Download, PlusCircle, Search } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
-import { Exam, Student } from "@/lib/types";
+import { Exam } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
-import { ExamFormDialog } from "@/components/exams/exam-form-dialog";
+import { collection } from "firebase/firestore";
 
 export default function ExamesPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-    // This fetches all exams. For a large number of exams, consider pagination or querying by date range.
     const examsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
         return collection(firestore, 'exams');
     }, [firestore]);
 
-    const studentsCollection = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return collection(firestore, 'students');
-    }, [firestore]);
-
     const { data: exams, isLoading: isLoadingExams } = useCollection<Exam>(examsCollection);
-    const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
-
 
     const filteredExams = (exams || []).filter(exam =>
         exam.studentName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -41,11 +32,13 @@ export default function ExamesPage() {
             <div className="flex items-center justify-between gap-4">
                 <h1 className="text-lg font-semibold md:text-2xl">Exames de Faixa</h1>
                 <div className="flex items-center gap-2">
-                     <Button onClick={() => setIsDialogOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Agendar Exame
-                    </Button>
-                    <Button variant="outline">
+                     <Link href="/exames/novo">
+                        <Button>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Agendar Exame
+                        </Button>
+                     </Link>
+                    <Button variant_1="outline">
                         <Download className="mr-2 h-4 w-4" />
                         Gerar Relatório
                     </Button>
@@ -68,16 +61,8 @@ export default function ExamesPage() {
                 <ExamsTable 
                     exams={filteredExams}
                     isLoading={isLoadingExams}
-                    allStudents={students || []}
                 />
             </div>
-            <ExamFormDialog
-                isOpen={isDialogOpen}
-                onOpenChange={setIsDialogOpen}
-                allStudents={students || []}
-            />
         </>
     );
 }
-
-    

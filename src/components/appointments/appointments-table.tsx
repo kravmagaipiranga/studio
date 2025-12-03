@@ -27,8 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Appointment } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
-import { useState } from "react"
-import { AppointmentFormDialog } from "./appointment-form-dialog"
+import { useRouter } from "next/navigation"
 
 interface AppointmentsTableProps {
   appointments: Appointment[];
@@ -36,12 +35,8 @@ interface AppointmentsTableProps {
 }
 
 export function AppointmentsTable({ appointments, isLoading }: AppointmentsTableProps) {
-  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const router = useRouter();
 
-  const handleEdit = (appointment: Appointment) => {
-    setEditingAppointment(appointment);
-  };
-  
   return (
     <>
       <Card className="w-full">
@@ -103,7 +98,7 @@ export function AppointmentsTable({ appointments, isLoading }: AppointmentsTable
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEdit(appointment)}>
+                        <DropdownMenuItem onClick={() => router.push(`/agendamentos/${appointment.id}/editar`)}>
                           Editar Agendamento
                         </DropdownMenuItem>
                         <DropdownMenuItem>
@@ -129,14 +124,6 @@ export function AppointmentsTable({ appointments, isLoading }: AppointmentsTable
           </Table>
         </CardContent>
       </Card>
-        {editingAppointment && (
-            <AppointmentFormDialog
-                isOpen={!!editingAppointment}
-                onOpenChange={(isOpen) => !isOpen && setEditingAppointment(null)}
-                appointment={editingAppointment}
-            />
-        )}
     </>
   )
 }
-    
