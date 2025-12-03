@@ -6,10 +6,30 @@ import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student } from "@/lib/types";
 import { StudentForm } from "@/components/auth/registration-form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { notFound, useRouter } from "next/navigation";
+import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+
+function EditStudentSkeleton() {
+    return (
+        <div className="space-y-4">
+            <Skeleton className="h-10 w-44" />
+            <div className="space-y-2">
+                <Skeleton className="h-8 w-1/4" />
+                <Skeleton className="h-10 w-full" />
+            </div>
+            <div className="space-y-2">
+                <Skeleton className="h-8 w-1/4" />
+                <Skeleton className="h-10 w-full" />
+            </div>
+            <div className="space-y-2">
+                <Skeleton className="h-8 w-1/4" />
+                <Skeleton className="h-10 w-full" />
+            </div>
+        </div>
+    );
+}
 
 export default function EditStudentPage({ params }: { params: { id: string } }) {
   const firestore = useFirestore();
@@ -22,23 +42,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
   const { data: student, isLoading } = useDoc<Student>(studentRef);
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-44" />
-        <div className="space-y-2">
-            <Skeleton className="h-8 w-1/4" />
-            <Skeleton className="h-10 w-full" />
-        </div>
-         <div className="space-y-2">
-            <Skeleton className="h-8 w-1/4" />
-            <Skeleton className="h-10 w-full" />
-        </div>
-         <div className="space-y-2">
-            <Skeleton className="h-8 w-1/4" />
-            <Skeleton className="h-10 w-full" />
-        </div>
-      </div>
-    );
+    return <EditStudentSkeleton />;
   }
 
   if (!student) {

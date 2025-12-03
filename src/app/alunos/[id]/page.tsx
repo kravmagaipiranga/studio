@@ -26,87 +26,60 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast";
 
-export default function StudentDetailPage({ params }: { params: { id: string } }) {
-  const firestore = useFirestore();
-  const router = useRouter();
-  const { toast } = useToast();
+function StudentDetailSkeleton() {
+  return (
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <Skeleton className="h-10 w-44" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-10 w-28" />
+          <Skeleton className="h-10 w-28" />
+        </div>
+      </div>
+      <div className="grid gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center gap-4">
+            <Skeleton className="h-20 w-20 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-4 w-80" />
+            </div>
+          </CardHeader>
+        </Card>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="h-4 w-72" />
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-5 w-full" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-7 w-40" />
+              <Skeleton className="h-4 w-60" />
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-5 w-full" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function StudentDetailContent({ student, onDelete }: { student: Student, onDelete: () => void }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const studentRef = useMemoFirebase(() => {
-    if (!firestore || !params.id) return null;
-    return doc(firestore, 'students', params.id);
-  }, [firestore, params.id]);
-
-  const { data: student, isLoading } = useDoc<Student>(studentRef);
-
-  const handleDeleteStudent = () => {
-    if (!studentRef) return;
-    deleteDocumentNonBlocking(studentRef);
-    toast({
-      title: "Aluno Excluído",
-      description: "O aluno foi removido do sistema.",
-    });
-    router.push("/alunos");
-  };
-
-  // While loading, show a skeleton UI
-  if (isLoading) {
-    return (
-      <>
-        <div className="flex items-center justify-between mb-4">
-            <Skeleton className="h-10 w-44" />
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-10 w-28" />
-            <Skeleton className="h-10 w-28" />
-          </div>
-        </div>
-        <div className="grid gap-6">
-            <Card>
-                <CardHeader className="flex flex-row items-center gap-4">
-                    <Skeleton className="h-20 w-20 rounded-full" />
-                    <div className="space-y-2">
-                        <Skeleton className="h-8 w-64" />
-                        <Skeleton className="h-4 w-80" />
-                    </div>
-                </CardHeader>
-            </Card>
-             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2">
-                    <CardHeader>
-                        <Skeleton className="h-7 w-48" />
-                        <Skeleton className="h-4 w-72" />
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <Skeleton className="h-5 w-full" />
-                        <Skeleton className="h-5 w-full" />
-                        <Skeleton className="h-5 w-full" />
-                        <Skeleton className="h-5 w-full" />
-                        <Skeleton className="h-5 w-full" />
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <Skeleton className="h-7 w-40" />
-                        <Skeleton className="h-4 w-60" />
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <Skeleton className="h-5 w-full" />
-                        <Skeleton className="h-5 w-full" />
-                        <Skeleton className="h-5 w-full" />
-                    </CardContent>
-                </Card>
-            </div>
-        </div>
-      </>
-    );
-  }
-
-  // After loading, if student is not found, show 404 page
-  if (!student) {
-    notFound();
-  }
-
-  // If student is found, render the details
   return (
     <>
       <div className="flex items-center justify-between mb-4">
@@ -136,7 +109,7 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
             <div className="flex items-center gap-4">
               <Avatar className="h-20 w-20 border">
                 <AvatarImage src={student.avatar || `https://picsum.photos/seed/${student.id}/100/100`} alt={student.name || 'Avatar do Aluno'} data-ai-hint="person face" />
-                <AvatarFallback>{student.name ? student.name.charAt(0) : 'A'}</AvatarFallback>
+                <AvatarFallback>{student.name ? student.name.charAt(0).toUpperCase() : 'A'}</AvatarFallback>
               </Avatar>
               <div>
                 <CardTitle className="text-3xl">{student.name}</CardTitle>
@@ -258,7 +231,7 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteStudent} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction onClick={onDelete} className="bg-destructive hover:bg-destructive/90">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -266,6 +239,39 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
       </AlertDialog>
     </>
   );
+}
+
+export default function StudentDetailPage({ params }: { params: { id: string } }) {
+  const firestore = useFirestore();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const studentRef = useMemoFirebase(() => {
+    if (!firestore || !params.id) return null;
+    return doc(firestore, 'students', params.id);
+  }, [firestore, params.id]);
+
+  const { data: student, isLoading } = useDoc<Student>(studentRef);
+
+  const handleDeleteStudent = () => {
+    if (!studentRef) return;
+    deleteDocumentNonBlocking(studentRef);
+    toast({
+      title: "Aluno Excluído",
+      description: "O aluno foi removido do sistema.",
+    });
+    router.push("/alunos");
+  };
+
+  if (isLoading) {
+    return <StudentDetailSkeleton />;
+  }
+
+  if (!student) {
+    notFound();
+  }
+
+  return <StudentDetailContent student={student} onDelete={handleDeleteStudent} />;
 }
 
 function InfoItem({ icon, label, value }: { icon?: React.ReactNode, label: string; value: string | number | React.ReactNode; }) {
