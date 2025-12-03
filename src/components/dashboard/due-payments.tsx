@@ -31,26 +31,26 @@ export function DuePayments() {
   const overdueStudents = students.filter(s => s.paymentStatus === 'Overdue');
 
   const openWhatsApp = (studentName: string) => {
-    const message = encodeURIComponent(`Hello ${studentName}, this is a friendly reminder about your overdue payment for Krav Magá IPIRANGA.`);
+    const message = encodeURIComponent(`Olá ${studentName}, este é um lembrete amigável sobre seu pagamento pendente para o Krav Magá IPIRANGA.`);
     window.open(`https://wa.me/?text=${message}`, '_blank');
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Overdue Payments</CardTitle>
+        <CardTitle>Pagamentos Vencidos</CardTitle>
         <CardDescription>
-          A list of students with payments currently overdue.
+          Uma lista de alunos com pagamentos atualmente vencidos.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Student</TableHead>
-              <TableHead className="hidden sm:table-cell">Plan</TableHead>
-              <TableHead className="hidden md:table-cell">Due Date</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>Aluno</TableHead>
+              <TableHead className="hidden sm:table-cell">Plano</TableHead>
+              <TableHead className="hidden md:table-cell">Vencimento</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -85,22 +85,22 @@ export function DuePayments() {
                         <TooltipTrigger asChild>
                            <Button variant="ghost" size="icon" onClick={() => openWhatsApp(student.name)}>
                             <MessageCircle className="h-4 w-4" />
-                            <span className="sr-only">Send WhatsApp</span>
+                            <span className="sr-only">Enviar WhatsApp</span>
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Send WhatsApp Reminder</p>
+                          <p>Enviar Lembrete por WhatsApp</p>
                         </TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button variant="ghost" size="icon">
                             <Mail className="h-4 w-4" />
-                            <span className="sr-only">Send Email</span>
+                            <span className="sr-only">Enviar Email</span>
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Send Email Reminder</p>
+                          <p>Enviar Lembrete por Email</p>
                         </TooltipContent>
                       </Tooltip>
                     </div>

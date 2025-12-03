@@ -12,25 +12,25 @@ export default function RegisterPage() {
       </div>
       <Card className="w-full max-w-lg mx-auto">
         <CardHeader>
-          <CardTitle className="text-2xl">Student Registration</CardTitle>
+          <CardTitle className="text-2xl">Cadastro de Aluno</CardTitle>
           <CardDescription>
-            Please fill out the form below to begin your training journey.
+            Preencha o formulário abaixo para iniciar sua jornada de treinamento.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <RegistrationForm />
           <div className="mt-4 text-center text-sm">
-            Already have an account?{" "}
+            Já possui uma conta?{" "}
             <Link href="#" className="underline">
-              Sign in
+              Entrar
             </Link>
           </div>
         </CardContent>
       </Card>
        <div className="mt-8 text-center text-sm text-muted-foreground">
-        Go back to {" "}
+        Voltar para o {" "}
         <Link href="/" className="underline underline-offset-4 hover:text-primary">
-          Dashboard
+          Painel
         </Link>
       </div>
     </div>

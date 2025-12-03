@@ -49,7 +49,7 @@ export default function DashboardPage() {
             <AppHeader />
             <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
               <div className="flex items-center">
-                <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
+                <h1 className="text-lg font-semibold md:text-2xl">Painel</h1>
               </div>
               <div className="flex flex-1 rounded-lg shadow-sm" x-chunk="dashboard-02-chunk-1">
                 <div className="flex flex-col w-full gap-4">
@@ -82,13 +82,13 @@ function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton href="#" isActive>
               <Home className="h-4 w-4" />
-              Dashboard
+              Painel
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton href="#">
               <Users className="h-4 w-4" />
-              Students
+              Alunos
               <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
                 6
               </Badge>
@@ -97,13 +97,13 @@ function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton href="#">
               <CreditCard className="h-4 w-4" />
-              Payments
+              Pagamentos
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton href="#">
               <ShieldCheck className="h-4 w-4" />
-              Exams
+              Exames
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -111,16 +111,16 @@ function AppSidebar() {
       <SidebarFooter>
         <Card x-chunk="dashboard-02-chunk-0">
           <CardHeader className="p-2 pt-0 md:p-4">
-            <CardTitle>New Student?</CardTitle>
+            <CardTitle>Novo Aluno?</CardTitle>
             <CardDescription>
-              Register a new student to get them started.
+              Cadastre um novo aluno para começar.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
             <Link href="/register">
                 <Button size="sm" className="w-full">
                   <PlusCircle className="mr-2 h-4 w-4" />
-                  Add Student
+                  Adicionar Aluno
                 </Button>
             </Link>
           </CardContent>
@@ -129,7 +129,7 @@ function AppSidebar() {
             <SidebarMenuItem>
                 <SidebarMenuButton href="#">
                     <Settings className="h-4 w-4" />
-                    Settings
+                    Configurações
                 </SidebarMenuButton>
             </SidebarMenuItem>
         </SidebarMenu>
@@ -148,7 +148,7 @@ function AppHeader() {
       </div>
       <Button variant="ghost" size="icon" className="h-8 w-8">
         <Bell className="h-4 w-4" />
-        <span className="sr-only">Toggle notifications</span>
+        <span className="sr-only">Alternar notificações</span>
       </Button>
       <UserNav />
     </header>

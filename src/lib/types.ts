@@ -3,11 +3,25 @@ export type Student = {
   name: string;
   email: string;
   avatar: string;
-  plan: 'Basic' | 'Intermediate' | 'Advanced';
+  plan: 'Básico' | 'Intermediário' | 'Avançado';
   registrationDate: string;
-  status: 'Active' | 'Inactive' | 'Pending';
-  paymentStatus: 'Paid' | 'Overdue' | 'Pending';
+  status: 'Ativo' | 'Inativo' | 'Pendente';
+  paymentStatus: 'Pago' | 'Vencido' | 'Pendente';
   dueDate?: string;
+  // Student-filled data
+  dob?: string;
+  cpf?: string;
+  tshirtSize?: string;
+  pantsSize?: string;
+  phone?: string;
+  emergencyContacts?: string;
+  // Internal data
+  startDate?: string;
+  lastExamDate?: string;
+  belt?: string; // color
+  medicalHistory?: string;
+  generalNotes?: string;
+  fikmAnnuityPaid?: boolean;
 };
 
 export type RevenueData = {
