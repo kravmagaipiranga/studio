@@ -11,6 +11,7 @@ import {
   Menu,
   BookCopy,
   ClipboardList,
+  CalendarPlus,
 } from "lucide-react";
 import {
   Sheet,
@@ -49,6 +50,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <NavItem href="/dashboard">
                 <Home className="h-4 w-4" />
                 Painel
+              </NavItem>
+               <NavItem href="/agendamentos">
+                <CalendarPlus className="h-4 w-4" />
+                Agendamentos
               </NavItem>
               <NavItem href="/alunos">
                 <Users className="h-4 w-4" />
@@ -99,6 +104,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <NavItem href="/dashboard" isMobile>
                   <Home className="h-5 w-5" />
                   Painel
+                </NavItem>
+                 <NavItem href="/agendamentos" isMobile>
+                  <CalendarPlus className="h-5 w-5" />
+                  Agendamentos
                 </NavItem>
                 <NavItem href="/alunos" isMobile>
                   <Users className="h-5 w-5" />

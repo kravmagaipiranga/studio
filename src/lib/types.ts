@@ -77,3 +77,13 @@ export type PrivateClass = {
   paymentAmount: number;
   paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro';
 };
+
+export type Appointment = {
+  id: string;
+  name: string;
+  whatsapp: string;
+  email: string;
+  classDate: string;
+  classTime: string;
+  notes?: string;
+};

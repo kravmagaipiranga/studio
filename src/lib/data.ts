@@ -1,4 +1,4 @@
-import type { Student, RevenueData, Exam, Seminar, PrivateClass } from "./types";
+import type { Student, RevenueData, Exam, Seminar, PrivateClass, Appointment } from "./types";
 
 function calculateAge(dob: string) {
   const birthDate = new Date(dob);
@@ -234,5 +234,26 @@ export const privateClasses: PrivateClass[] = [
     paymentStatus: 'Pendente',
     paymentAmount: 150,
     paymentMethod: 'Cartão',
+  },
+];
+
+export const appointments: Appointment[] = [
+  {
+    id: 'appt-1',
+    name: 'Lucas Mendes',
+    whatsapp: '(11) 98877-6655',
+    email: 'lucas.m@email.com',
+    classDate: '2024-07-10',
+    classTime: '10:00',
+    notes: 'Primeira aula experimental.'
+  },
+  {
+    id: 'appt-2',
+    name: 'Juliana Rios',
+    whatsapp: '(21) 97766-5544',
+    email: 'juliana.r@email.com',
+    classDate: '2024-07-11',
+    classTime: '18:30',
+    notes: 'Interessada em defesa pessoal feminina.'
   },
 ];
