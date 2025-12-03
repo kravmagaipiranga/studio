@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { addMonths, format } from 'date-fns';
 import { useEffect, useState } from "react";
+import { doc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -36,6 +37,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Student } from "@/lib/types"
 import { Combobox } from "@/components/ui/combobox";
+import { useFirestore, setDocumentNonBlocking } from "@/firebase";
 
 const formSchema = z.object({
   studentId: z.string({ required_error: "É necessário selecionar um aluno." }),
@@ -54,7 +56,6 @@ interface RegisterPaymentDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   student?: Student;
-  onPaymentRegistered: (student: Student) => void;
   allStudents?: Student[];
 }
 
@@ -62,10 +63,10 @@ export function RegisterPaymentDialog({
   isOpen,
   onOpenChange,
   student,
-  onPaymentRegistered,
   allStudents = []
 }: RegisterPaymentDialogProps) {
   const { toast } = useToast()
+  const firestore = useFirestore();
   const [selectedStudent, setSelectedStudent] = useState<Student | undefined>(student);
 
   const studentOptions = allStudents.map(s => ({ value: s.id, label: s.name }));
@@ -94,6 +95,11 @@ export function RegisterPaymentDialog({
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!firestore) {
+        toast({ title: "Erro", description: "Banco de dados não disponível.", variant: "destructive" });
+        return;
+    }
+
     const targetStudent = allStudents.find(s => s.id === values.studentId);
     if (!targetStudent) {
         toast({ title: "Erro", description: "Aluno não encontrado.", variant: "destructive" });
@@ -110,8 +116,7 @@ export function RegisterPaymentDialog({
         expirationDate = addMonths(paymentDate, 1);
     }
 
-    const updatedStudent: Student = {
-        ...targetStudent,
+    const updatedStudentData: Partial<Student> = {
         planType: values.planType,
         planValue: values.planValue,
         lastPaymentDate: paymentDate.toISOString().split('T')[0],
@@ -120,7 +125,10 @@ export function RegisterPaymentDialog({
         paymentCredits: values.paymentCredits,
     };
 
-    onPaymentRegistered(updatedStudent);
+    const studentDocRef = doc(firestore, "students", targetStudent.id);
+    
+    // Non-blocking update
+    setDocumentNonBlocking(studentDocRef, updatedStudentData, { merge: true });
     
     toast({
       title: "Pagamento Registrado!",

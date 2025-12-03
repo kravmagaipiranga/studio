@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, MessageCircle, Mail, Info } from "lucide-react"
+import { MoreHorizontal, MessageCircle, Info } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,13 +36,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { RegisterPaymentDialog } from "./register-payment-dialog"
+import { Skeleton } from "../ui/skeleton"
 
 interface PaymentsTableProps {
   students: Student[];
-  setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
+  isLoading: boolean;
 }
 
-export function PaymentsTable({ students, setStudents }: PaymentsTableProps) {
+export function PaymentsTable({ students, isLoading }: PaymentsTableProps) {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -54,14 +55,6 @@ export function PaymentsTable({ students, setStudents }: PaymentsTableProps) {
   const handleOpenDialog = (student: Student) => {
     setSelectedStudent(student);
     setIsDialogOpen(true);
-  }
-
-  const handlePaymentRegistered = (updatedStudent: Student) => {
-    setStudents(prevStudents => 
-      prevStudents.map(s => s.id === updatedStudent.id ? updatedStudent : s)
-    );
-    // Reset selected student after dialog closes
-    setSelectedStudent(null);
   }
   
   return (
@@ -89,7 +82,23 @@ export function PaymentsTable({ students, setStudents }: PaymentsTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {students.map((student: Student) => (
+            {isLoading && Array.from({ length: 3 }).map((_, index) => (
+                <TableRow key={index}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-9 w-9 rounded-full" />
+                      <Skeleton className="h-5 w-32" />
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
+                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-16" /></TableCell>
+                  <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                </TableRow>
+              ))}
+              {!isLoading && students.map((student: Student) => (
                 <TableRow key={student.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -107,10 +116,10 @@ export function PaymentsTable({ students, setStudents }: PaymentsTableProps) {
                     {student.planValue ? `R$ ${student.planValue.toFixed(2)}` : 'N/A'}
                   </TableCell>
                    <TableCell className="hidden md:table-cell">
-                      {student.lastPaymentDate ? new Date(student.lastPaymentDate).toLocaleDateString('pt-BR', { timeZone: 'UTC'}) : 'N/A'}
+                      {student.lastPaymentDate ? new Date(student.lastPaymentDate + "T00:00:00").toLocaleDateString('pt-BR') : 'N/A'}
                   </TableCell>
                    <TableCell className="hidden md:table-cell">
-                      {student.planExpirationDate ? new Date(student.planExpirationDate).toLocaleDateString('pt-BR', { timeZone: 'UTC'}) : 'N/A'}
+                      {student.planExpirationDate ? new Date(student.planExpirationDate + "T00:00:00").toLocaleDateString('pt-BR') : 'N/A'}
                   </TableCell>
                   <TableCell>
                     <Badge variant={student.paymentStatus === 'Pago' ? 'outline' : 'destructive'}>
@@ -169,6 +178,11 @@ export function PaymentsTable({ students, setStudents }: PaymentsTableProps) {
               ))}
             </TableBody>
           </Table>
+           {!isLoading && students.length === 0 && (
+            <div className="text-center py-10 text-muted-foreground">
+                Nenhum aluno para exibir.
+            </div>
+           )}
         </CardContent>
       </Card>
       {selectedStudent && (
@@ -179,7 +193,7 @@ export function PaymentsTable({ students, setStudents }: PaymentsTableProps) {
             if (!open) setSelectedStudent(null);
           }}
           student={selectedStudent}
-          onPaymentRegistered={handlePaymentRegistered}
+          allStudents={students}
         />
       )}
     </>

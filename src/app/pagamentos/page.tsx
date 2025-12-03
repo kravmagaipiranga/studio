@@ -2,27 +2,33 @@
 "use client";
 
 import { useState } from "react";
+import { collection } from "firebase/firestore";
 import { PaymentsTable } from "@/components/payments/payments-table";
 import { Button } from "@/components/ui/button";
 import { Download, PlusCircle, Search } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { RegisterPaymentDialog } from "@/components/payments/register-payment-dialog";
-import { students as initialStudents } from "@/lib/data";
 import { Student } from "@/lib/types";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 
 export default function PagamentosPage() {
-    const [students, setStudents] = useState<Student[]>(initialStudents);
+    const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-    const handlePaymentRegistered = (updatedStudent: Student) => {
-        setStudents(prevStudents =>
-            prevStudents.map(s => s.id === updatedStudent.id ? updatedStudent : s)
-        );
-    };
+    const studentsCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'students');
+    }, [firestore]);
 
-    const filteredStudents = students.filter(student =>
+    const { data: students, isLoading } = useCollection<Student>(studentsCollection);
+
+    // This local state is no longer the source of truth, but can be kept for optimistic updates if needed,
+    // or removed if all updates are handled directly by Firestore listeners.
+    // For now, we'll let the listener handle updates.
+
+    const filteredStudents = (students || []).filter(student =>
         student.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -57,16 +63,15 @@ export default function PagamentosPage() {
              <div className="flex flex-1 rounded-lg shadow-sm mt-4">
                 <PaymentsTable 
                     students={filteredStudents}
-                    setStudents={setStudents}
+                    isLoading={isLoading}
                 />
             </div>
 
-            {/* Dialog para adicionar pagamento sem aluno pré-selecionado */}
+            {/* The dialog can now receive the full list of students from Firestore */}
             <RegisterPaymentDialog
                 isOpen={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
-                onPaymentRegistered={handlePaymentRegistered}
-                allStudents={students}
+                allStudents={students || []}
             />
         </>
     );
