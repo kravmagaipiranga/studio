@@ -64,6 +64,8 @@ export function StudentForm({ student }: StudentFormProps) {
     defaultValues: student ? {
         ...student,
         dob: student.dob ? student.dob.split('T')[0] : '',
+        status: student.status || 'Ativo',
+        paymentStatus: student.paymentStatus || 'Pendente',
     } : {
       name: "",
       dob: "",
@@ -108,7 +110,11 @@ export function StudentForm({ student }: StudentFormProps) {
       description: isEditing ? "Os dados do aluno foram atualizados." : "O novo aluno foi adicionado.",
     })
     
-    router.push('/alunos');
+    if (isEditing) {
+        router.push(`/alunos/${studentId}`);
+    } else {
+        router.push('/alunos');
+    }
   }
 
   return (
@@ -339,3 +345,5 @@ export function StudentForm({ student }: StudentFormProps) {
     </Form>
   )
 }
+
+    

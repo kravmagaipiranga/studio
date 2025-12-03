@@ -177,3 +177,5 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
     </>
   )
 }
+
+    

@@ -47,12 +47,10 @@ const formSchema = z.object({
 })
 
 interface RegisterPaymentFormProps {
-  student?: Student;
   allStudents?: Student[];
 }
 
 export function RegisterPaymentForm({
-  student,
   allStudents = []
 }: RegisterPaymentFormProps) {
   const { toast } = useToast()
@@ -61,7 +59,7 @@ export function RegisterPaymentForm({
   const searchParams = useSearchParams();
   const studentIdFromUrl = searchParams.get('aluno');
   
-  const [selectedStudent, setSelectedStudent] = useState<Student | undefined>(student);
+  const [selectedStudent, setSelectedStudent] = useState<Student | undefined>(undefined);
 
   const studentOptions = allStudents.map(s => ({ value: s.id, label: s.name }));
 
@@ -70,7 +68,7 @@ export function RegisterPaymentForm({
   });
 
   useEffect(() => {
-      const studentToLoad = student || allStudents.find(s => s.id === studentIdFromUrl);
+      const studentToLoad = allStudents.find(s => s.id === studentIdFromUrl);
       setSelectedStudent(studentToLoad);
 
       if (studentToLoad) {
@@ -91,24 +89,22 @@ export function RegisterPaymentForm({
         });
       }
 
-  }, [student, studentIdFromUrl, allStudents, form]);
+  }, [studentIdFromUrl, allStudents, form]);
 
 
   useEffect(() => {
-    const studentId = form.watch('studentId');
-    if (studentId) {
-        const foundStudent = allStudents.find(s => s.id === studentId);
-        if (foundStudent && foundStudent.id !== selectedStudent?.id) {
-             setSelectedStudent(foundStudent);
-              form.reset({
-                ...form.getValues(),
-                studentId: foundStudent.id,
-                planType: foundStudent.planType || "Mensal",
-                planValue: foundStudent.planValue || 0,
-            });
+    const subscription = form.watch((values, { name }) => {
+        if (name === 'studentId' && values.studentId) {
+            const foundStudent = allStudents.find(s => s.id === values.studentId);
+            if (foundStudent && foundStudent.id !== selectedStudent?.id) {
+                setSelectedStudent(foundStudent);
+                form.setValue('planType', foundStudent.planType || 'Mensal');
+                form.setValue('planValue', foundStudent.planValue || 0);
+            }
         }
-    }
-  }, [form.watch('studentId'), allStudents, selectedStudent]);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, allStudents, selectedStudent]);
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -253,3 +249,5 @@ export function RegisterPaymentForm({
     </Card>
   )
 }
+
+    

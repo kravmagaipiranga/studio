@@ -36,9 +36,11 @@ export function StudentFormDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
-            <StudentForm student={student} onFinished={handleFinished} />
+            <StudentForm student={student} />
         </div>
       </DialogContent>
     </Dialog>
   )
 }
+
+    
