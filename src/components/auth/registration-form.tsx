@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -139,7 +140,11 @@ export function StudentForm({ student }: StudentFormProps) {
       description: isEditing ? `Os dados de ${values.name} foram atualizados.` : `${values.name} foi adicionado com sucesso.`,
     })
     
-    router.push('/alunos');
+    if (isEditing) {
+      router.push(`/alunos`);
+    } else {
+      router.push('/alunos');
+    }
   }
 
   return (
