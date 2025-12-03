@@ -130,9 +130,14 @@ export function StudentDetailContent({ studentId }: { studentId: string }) {
   }
 
   if (!student) {
-    notFound();
+    return notFound();
   }
   
+  const onDelete = () => {
+    handleDeleteStudent();
+    setIsDeleteDialogOpen(false);
+  }
+
   return (
     <>
       <div className="flex items-center justify-between mb-4">

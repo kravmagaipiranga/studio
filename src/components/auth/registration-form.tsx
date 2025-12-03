@@ -43,9 +43,13 @@ const formSchema = z.object({
   emergencyContacts: z.string().optional(),
   belt: z.string().min(1, "A faixa é obrigatória"),
   status: z.string().min(1, "O status é obrigatório"),
-  paymentStatus: z.string().min(1, "O status de pagamento é obrigatório."),
   generalNotes: z.string().optional(),
   medicalHistory: z.string().optional(),
+  planType: z.enum(["Mensal", "Trimestral", "Bolsa"]).optional(),
+  planValue: z.preprocess(
+    (a) => a ? parseFloat(z.string().parse(a)) : undefined,
+    z.number().optional()
+  ),
 })
 
 interface StudentFormProps {
@@ -65,10 +69,11 @@ export function StudentForm({ student }: StudentFormProps) {
         ...student,
         dob: student.dob ? student.dob.split('T')[0] : '',
         status: student.status || 'Ativo',
-        paymentStatus: student.paymentStatus || 'Pendente',
         emergencyContacts: student.emergencyContacts || '',
         generalNotes: student.generalNotes || '',
         medicalHistory: student.medicalHistory || '',
+        planType: student.planType || 'Mensal',
+        planValue: student.planValue || 0,
     } : {
       name: "",
       dob: "",
@@ -80,9 +85,10 @@ export function StudentForm({ student }: StudentFormProps) {
       emergencyContacts: "",
       belt: 'Branca',
       status: 'Ativo',
-      paymentStatus: 'Pendente',
       generalNotes: "",
       medicalHistory: "",
+      planType: 'Mensal',
+      planValue: 0
     },
   })
 
@@ -99,11 +105,14 @@ export function StudentForm({ student }: StudentFormProps) {
     const studentId = isEditing ? student.id : doc(collection(firestore, "students")).id;
     
     const studentData: Partial<Student> = {
-        ...values,
         id: studentId,
         avatar: student?.avatar || `https://picsum.photos/seed/${studentId}/100/100`,
         registrationDate: student?.registrationDate || new Date().toISOString(),
+        ...values,
     }
+    // Remove paymentStatus as it's not in the form
+    // The status is derived from financial data, which is handled separately.
+    // delete (studentData as any).paymentStatus;
 
     const docRef = doc(firestore, 'students', studentId);
     setDocumentNonBlocking(docRef, studentData, { merge: true });
@@ -113,7 +122,8 @@ export function StudentForm({ student }: StudentFormProps) {
       description: isEditing ? `Os dados de ${values.name} foram atualizados.` : `${values.name} foi adicionado com sucesso.`,
     })
     
-    router.push(isEditing ? `/alunos/${studentId}` : '/alunos');
+    // Redirect to the detail page after creating or editing
+    router.push(`/alunos/${studentId}`);
     router.refresh();
   }
 
@@ -294,6 +304,44 @@ export function StudentForm({ student }: StudentFormProps) {
                         <SelectItem value="EGG">EGG</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="planType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo de Plano</FormLabel>
+                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o plano" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Mensal">Mensal</SelectItem>
+                      <SelectItem value="Trimestral">Trimestral</SelectItem>
+                      <SelectItem value="Bolsa">Bolsa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="planValue"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Valor do Plano (R$)</FormLabel>
+                  <FormControl>
+                    <Input type="number" step="0.01" placeholder="Ex: 200.00" {...field} onChange={event => field.onChange(+event.target.value)} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

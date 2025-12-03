@@ -138,8 +138,7 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
                           <Link href={`/alunos/${student.id}`}>Ver Detalhes</Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/alunos/${student.id}/editar`}>
-                            <Edit className="mr-2 h-4 w-4" />
+                           <Link href={`/alunos/${student.id}/editar`}>
                             Editar
                           </Link>
                         </DropdownMenuItem>
