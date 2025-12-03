@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Bell,
   Home,
@@ -39,7 +40,7 @@ import { Overview } from "./overview";
 import { RevenueChart } from "./revenue-chart";
 import { DuePayments } from "./due-payments";
 
-export default function DashboardPage() {
+export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen">
@@ -47,18 +48,7 @@ export default function DashboardPage() {
         <SidebarInset>
           <AppHeader />
           <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-            <div className="flex items-center">
-              <h1 className="text-lg font-semibold md:text-2xl">Painel</h1>
-            </div>
-            <div className="flex flex-1 rounded-lg shadow-sm" x-chunk="dashboard-02-chunk-1">
-              <div className="flex flex-col w-full gap-4">
-                <Overview />
-                <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
-                  <RevenueChart />
-                  <DuePayments />
-                </div>
-              </div>
-            </div>
+            {children}
           </main>
         </SidebarInset>
       </div>
@@ -66,11 +56,33 @@ export default function DashboardPage() {
   );
 }
 
+
+export default function DashboardPage() {
+  return (
+    <AppLayout>
+        <div className="flex items-center">
+            <h1 className="text-lg font-semibold md:text-2xl">Painel</h1>
+        </div>
+        <div className="flex flex-1 rounded-lg shadow-sm" x-chunk="dashboard-02-chunk-1">
+            <div className="flex flex-col w-full gap-4">
+                <Overview />
+                <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
+                    <RevenueChart />
+                    <DuePayments />
+                </div>
+            </div>
+        </div>
+    </AppLayout>
+  );
+}
+
 function AppSidebar() {
+  const pathname = usePathname();
+
   return (
     <Sidebar>
       <SidebarHeader>
-        <Link className="flex items-center gap-2 font-semibold" href="#">
+        <Link className="flex items-center gap-2 font-semibold" href="/">
           <FistIcon className="h-6 w-6" />
           <span className="">Krav Magá IPIRANGA</span>
         </Link>
@@ -78,28 +90,25 @@ function AppSidebar() {
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton href="#" isActive>
+            <SidebarMenuButton href="/" isActive={pathname === '/'}>
               <Home className="h-4 w-4" />
               Painel
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="#">
+            <SidebarMenuButton href="/alunos" isActive={pathname.startsWith('/alunos')}>
               <Users className="h-4 w-4" />
               Alunos
-              <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-                6
-              </Badge>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="#">
+            <SidebarMenuButton href="#" isActive={pathname.startsWith('/pagamentos')}>
               <CreditCard className="h-4 w-4" />
               Pagamentos
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="#">
+            <SidebarMenuButton href="#" isActive={pathname.startsWith('/exames')}>
               <ShieldCheck className="h-4 w-4" />
               Exames
             </SidebarMenuButton>
