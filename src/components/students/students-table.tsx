@@ -137,9 +137,11 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
                         <DropdownMenuItem asChild>
                           <Link href={`/alunos/${student.id}`}>Ver Detalhes</Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push(`/alunos/${student.id}/editar`)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Editar
+                        <DropdownMenuItem asChild>
+                          <Link href={`/alunos/${student.id}/editar`}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Editar
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(student)}>
@@ -177,5 +179,3 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
     </>
   )
 }
-
-    
