@@ -49,6 +49,10 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
     notFound();
   }
 
+  if (!student) {
+    return <EditStudentSkeleton />;
+  }
+
   return (
     <>
         <div className="flex items-center justify-between mb-4">

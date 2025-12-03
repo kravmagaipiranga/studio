@@ -270,8 +270,12 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
   if (!student && !isLoading) {
     notFound();
   }
+  
+  if (!student) {
+    return <StudentDetailSkeleton />;
+  }
 
-  return student ? <StudentDetailContent student={student} onDelete={handleDeleteStudent} /> : <StudentDetailSkeleton />;
+  return <StudentDetailContent student={student} onDelete={handleDeleteStudent} />;
 }
 
 function InfoItem({ icon, label, value }: { icon?: React.ReactNode, label: string; value: string | number | React.ReactNode; }) {
