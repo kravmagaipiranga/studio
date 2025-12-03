@@ -3,7 +3,7 @@
 
 import { useRef } from "react";
 import { collection, doc } from "firebase/firestore";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { StudentsTable } from "@/components/students/students-table";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Upload } from "lucide-react";
@@ -15,6 +15,7 @@ export default function AlunosPage() {
     const firestore = useFirestore();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
+    const router = useRouter();
 
     const studentsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -25,6 +26,10 @@ export default function AlunosPage() {
 
     const handleImportClick = () => {
         fileInputRef.current?.click();
+    };
+
+    const handleAddNew = () => {
+        router.push('/alunos/novo/editar');
     };
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,12 +148,10 @@ export default function AlunosPage() {
                         accept=".csv"
                         onChange={handleFileChange}
                     />
-                    <Link href="/alunos/novo">
-                        <Button>
-                            <PlusCircle className="h-4 w-4 mr-2" />
-                            Adicionar Aluno
-                        </Button>
-                    </Link>
+                    <Button onClick={handleAddNew}>
+                        <PlusCircle className="h-4 w-4 mr-2" />
+                        Adicionar Aluno
+                    </Button>
                 </div>
             </div>
              <div className="flex flex-1 rounded-lg shadow-sm mt-4">
