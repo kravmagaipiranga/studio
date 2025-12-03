@@ -1,0 +1,182 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * Core Philosophy: This ruleset implements a Role-Based Access Control (RBAC) model
+     * with two primary roles: "Admin" and "Student". Admins possess comprehensive
+     * read and write permissions across the database to manage the school's data.
+     * Students (authenticated users) are granted read-only access to their personal
+     * data, ensuring privacy and data integrity.
+     *
+     * Data Structure: The data is hierarchically organized to enforce security. All
+     * student-specific data (payments, exams) is nested within a user-owned document
+     * under the `/students/{studentId}` path, where `{studentId}` corresponds to the
+     * user's authentication UID. A dedicated `/roles_admin` collection serves as an
+     * efficient lookup table to identify administrators.
+     *
+     * Key Security Decisions:
+     * - Admin Access: A user is considered an Admin if a document with their UID exists
+     *   in the `/roles_admin` collection. This provides a centralized and secure way
+     *   to manage administrative privileges.
+     * - Student Access: Students can only view their own data. All write operations
+     *   (create, update, delete) on student records are reserved for Admins, except
+     *   for the initial creation of their own student profile.
+     * - Public Data: The `/plans` collection is publicly readable, allowing anyone
+     *   to view available payment plans, but only Admins can manage its content.
+     * - Default Deny: All operations are denied by default and must be explicitly
+     *   allowed by a rule.
+     *
+     * Denormalization for Authorization: The ruleset leverages a denormalized
+     * `/roles_admin` collection to perform fast and cost-effective authorization checks
+     * for admin users via an `exists()` call, avoiding slow and expensive `get()`
+     * operations in rules for every request.
+     *
+     * Structural Segregation: Private student data is segregated under the
+     * `/students/{studentId}` path, which is distinct from the public-read `/plans`
+     * collection. This clear separation ensures that list operations are both secure
+     * and performant.
+     */
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the authenticated user's UID matches the provided userId.
+     * This is the foundation for the "Ownership" access pattern.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks if the user has administrative privileges.
+     * Admin status is granted if a document with the user's UID exists in the
+     * `/roles_admin` collection. This is a performant check.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * Validates that the studentId in a new document's body matches the
+     * studentId from the document path. Enforces relational integrity on create.
+     */
+    function newDocStudentIdMatchesPath(studentId) {
+      return request.resource.data.studentId == studentId;
+    }
+
+    /**
+     * Validates that the studentId field is immutable on updates.
+     * Prevents re-assigning a subcollection document to a different student.
+     */
+    function studentIdIsImmutable() {
+      return request.resource.data.studentId == resource.data.studentId;
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Collection Rules
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Manages student profile data. Students can create and read their
+     *   own profile. Admins have full read/write access to all student profiles.
+     * @path /students/{studentId}
+     * @allow (get) An admin reading any student's profile.
+     * @allow (create) A new user creating their own student profile upon signup.
+     * @deny (update) A student trying to update their own phone number.
+     * @principle Enforces a mix of ownership for reads/self-creation and role-based
+     *   (Admin) access for administrative writes.
+     */
+    match /students/{studentId} {
+      allow get: if isOwner(studentId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if (isOwner(studentId) && request.resource.data.id == studentId) || isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
+
+      /**
+       * @description Manages student payment records. Students can read their own
+       *   payment history. Only Admins can create, update, or delete payments.
+       * @path /students/{studentId}/payments/{paymentId}
+       * @allow (list) A student viewing their list of past payments.
+       * @allow (create) An admin adding a new payment record for a student.
+       * @deny (create) A student trying to add their own payment record.
+       * @principle Restricts access to a user's own data tree for reads and requires
+       *   Admin role for all writes. Validates relational integrity on create.
+       */
+      match /payments/{paymentId} {
+        allow get: if isOwner(studentId) || isAdmin();
+        allow list: if isOwner(studentId) || isAdmin();
+        allow create: if isAdmin() && newDocStudentIdMatchesPath(studentId);
+        allow update: if isAdmin() && resource != null && studentIdIsImmutable();
+        allow delete: if isAdmin() && resource != null;
+      }
+
+      /**
+       * @description Manages student exam records. Students can read their own
+       *   exam history. Only Admins can create, update, or delete exam records.
+       * @path /students/{studentId}/exams/{examId}
+       * @allow (get) A student viewing the result of a specific exam.
+       * @allow (update) An admin correcting a note on an exam record.
+       * @deny (delete) A student trying to delete a failed exam record.
+       * @principle Restricts access to a user's own data tree for reads and requires
+       *   Admin role for all writes. Validates relational integrity on create.
+       */
+      match /exams/{examId} {
+        allow get: if isOwner(studentId) || isAdmin();
+        allow list: if isOwner(studentId) || isAdmin();
+        allow create: if isAdmin() && newDocStudentIdMatchesPath(studentId);
+        allow update: if isAdmin() && resource != null && studentIdIsImmutable();
+        allow delete: if isAdmin() && resource != null;
+      }
+    }
+
+    /**
+     * @description Manages payment plans. This data is public for anyone to read,
+     *   allowing prospective students to see available plans. Only Admins can
+     *   create, modify, or delete plans.
+     * @path /plans/{planId}
+     * @allow (list) An unauthenticated user browsing the available plans on the website.
+     * @allow (create) An admin adding a new "yearly" plan.
+     * @deny (update) An authenticated non-admin user trying to change a plan's price.
+     * @principle Implements a "Public Read with Admin-Only Writes" pattern for data that
+     *   is informational to the public but managed centrally.
+     */
+    match /plans/{planId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Manages which users are administrators. Access to this collection
+     *   is strictly limited to other Admins to prevent privilege escalation.
+     * @path /roles_admin/{userId}
+     * @allow (create) An existing admin granting admin rights to another user.
+     * @allow (get) An admin checking if another user is also an admin.
+     * @deny (list) Any non-admin attempting to see the list of all admins.
+     * @deny (create) A user attempting to make themselves an admin.
+     * @principle Secures administrative role management by restricting all access
+     *   to users who are already admins.
+     */
+    match /roles_admin/{userId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
+    }
+  }
+}
