@@ -9,8 +9,9 @@ service cloud.firestore {
      * Authenticated users are generally restricted to reading public data or their own data.
      *
      * Key Security Decisions:
-     * - Admin Access: A user is an Admin if their UID exists in the `/roles_admin` collection.
-     *   This is a secure and performant way to manage administrative privileges.
+     * - Admin Access: A user is an Admin if their UID exists as a document in the `/roles_admin`
+     *   collection AND that document contains the field `isAdmin: true`.
+     *   This is a secure and explicit way to manage administrative privileges.
      * - Default Deny: All operations are denied by default.
      * - Production Security: Listing all students is restricted to Admins to prevent data leaks.
      *   Write operations on critical data are also restricted to Admins.
@@ -28,8 +29,10 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // A user is an admin if their UID is a document in 'roles_admin'
+    // and that document has a field 'isAdmin' set to true.
     function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      return isSignedIn() && get(/databases/$(database)/documents/roles_admin/$(request.auth.uid)).data.isAdmin == true;
     }
 
     function newDocStudentIdMatchesPath(studentId) {
@@ -95,8 +98,8 @@ service cloud.firestore {
     
     match /plans/{planId} {
       // Plans are public to read.
-      allow get: if true;
-      allow list: if true;
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
       // Only admins can manage plans.
       allow create, update, delete: if isAdmin();
     }
