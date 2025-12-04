@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
-import { collection, query, where, orderBy } from "firebase/firestore";
+import { collection, query, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -31,23 +31,34 @@ export default function AlunosPage() {
 
     const studentsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        
-        let q = query(collection(firestore, 'students'), orderBy('name', 'asc'));
+        // Query simplificada: busca todos os alunos, ordenados por nome. A filtragem será feita no cliente.
+        return query(collection(firestore, 'students'), orderBy('name', 'asc'));
+    }, [firestore]);
 
+    const { data: allStudents, isLoading } = useCollection<Student>(studentsQuery);
+
+    const filteredStudents = useMemo(() => {
+        if (!allStudents) return [];
+
+        let students = allStudents;
+
+        // 1. Aplicar filtro de status (Ativo, Inativo, Vencido)
         if (activeFilter === 'Vencido') {
-            q = query(q, where('paymentStatus', '==', 'Vencido'));
-        } else {
-            q = query(q, where('status', '==', activeFilter));
+            students = students.filter(student => student.paymentStatus === 'Vencido');
+        } else { // 'Ativo' or 'Inativo'
+            students = students.filter(student => student.status === activeFilter);
         }
 
-        return q;
-    }, [firestore, activeFilter]);
+        // 2. Aplicar filtro de busca por nome
+        if (searchQuery) {
+            students = students.filter(student => 
+                student.name.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+        }
 
-    const { data: students, isLoading } = useCollection<Student>(studentsQuery);
+        return students;
 
-    const filteredStudents = (students || []).filter(student => 
-        student.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    }, [allStudents, activeFilter, searchQuery]);
 
     const handleSelectStudent = (studentId: string) => {
         router.push(`/alunos/${studentId}/editar`);
