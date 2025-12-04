@@ -115,7 +115,6 @@ export default function AlunosPage() {
             });
 
             setJsonInput(""); // Limpa o textarea
-            router.refresh(); // Atualiza a lista na tela
 
         } catch (error: any) {
             toast({
@@ -125,7 +124,6 @@ export default function AlunosPage() {
             });
         }
     };
-
 
     return (
         <div className="h-full">
