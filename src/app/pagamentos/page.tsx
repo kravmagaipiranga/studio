@@ -13,6 +13,7 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { parseISO } from "date-fns";
 
 export default function PagamentosPage() {
     const firestore = useFirestore();
@@ -43,9 +44,19 @@ export default function PagamentosPage() {
 
     }, [students]);
 
-    const filteredStudents = (students || []).filter(student =>
-        student.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredStudents = useMemo(() => {
+        if (!students) return [];
+
+        return (students || [])
+            .filter(student => student.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            .sort((a, b) => {
+                const dateA = a.lastPaymentDate ? parseISO(a.lastPaymentDate).getTime() : 0;
+                const dateB = b.lastPaymentDate ? parseISO(b.lastPaymentDate).getTime() : 0;
+                return dateB - dateA; // Sort by most recent payment date
+            });
+
+    }, [students, searchQuery]);
+
 
     return (
         <>
