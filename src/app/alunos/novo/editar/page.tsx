@@ -26,7 +26,6 @@ export default function NewStudentPage() {
             </CardHeader>
             <CardContent className="flex-grow overflow-hidden p-6">
                 <StudentForm 
-                    student={null} 
                     isEditing={false}
                 />
             </CardContent>

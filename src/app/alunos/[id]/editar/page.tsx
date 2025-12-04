@@ -1,11 +1,10 @@
 
 'use client';
 
-import { doc, deleteDoc } from "firebase/firestore";
-import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { deleteDoc, doc } from "firebase/firestore";
+import { useFirestore } from "@/firebase";
 import { Student } from "@/lib/types";
 import { StudentForm } from "@/components/students/student-form";
-import { Skeleton } from "@/components/ui/skeleton";
 import { notFound, useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -14,26 +13,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
-function EditStudentSkeleton() {
-    return (
-        <div className="space-y-4">
-            <Skeleton className="h-10 w-44" />
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-            </div>
-        </div>
-    );
-}
-
 export default function EditStudentPage() {
   const params = useParams();
   const id = params.id as string;
@@ -41,22 +20,18 @@ export default function EditStudentPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const studentRef = useMemoFirebase(() => {
-    if (!firestore || !id) return null;
-    return doc(firestore, 'students', id);
-  }, [firestore, id]);
-
-  const { data: student, isLoading } = useDoc<Student>(studentRef);
-
   const handleDeleteStudent = async () => {
-    if (!firestore || !student) return;
+    if (!firestore || !id) return;
     
     try {
-        const studentDocRef = doc(firestore, 'students', student.id);
+        const studentDocRef = doc(firestore, 'students', id);
+        // We need student name for the toast, this is a bit tricky without fetching data here
+        // For now, we will show a generic message or assume the form has the data.
+        // A better approach might be to pass student name to this function.
         await deleteDoc(studentDocRef);
         toast({
             title: "Aluno Excluído",
-            description: `${student.name} foi removido com sucesso.`,
+            description: `O cadastro foi removido com sucesso.`,
         });
         router.push('/alunos');
     } catch (error) {
@@ -68,11 +43,7 @@ export default function EditStudentPage() {
     }
   }
 
-  if (isLoading) {
-    return <EditStudentSkeleton />;
-  }
-
-  if (!isLoading && !student) {
+  if (!id) {
     notFound();
   }
 
@@ -91,35 +62,33 @@ export default function EditStudentPage() {
                 <div>
                     <CardTitle>Editar Aluno</CardTitle>
                     <CardDescription>
-                        Modifique os dados de {student?.name}
+                        Modifique os dados do aluno
                     </CardDescription>
                 </div>
-                {student && (
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Excluir Aluno
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Esta ação não pode ser desfeita. Isso excluirá permanentemente o cadastro de <strong>{student.name}</strong>.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDeleteStudent}>Confirmar Exclusão</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                )}
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir Aluno
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta ação não pode ser desfeita. Isso excluirá permanentemente o cadastro do aluno.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteStudent}>Confirmar Exclusão</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </CardHeader>
             <CardContent className="flex-grow overflow-hidden p-6">
                 <StudentForm 
-                    student={student} 
+                    studentId={id} 
                     isEditing={true}
                 />
             </CardContent>

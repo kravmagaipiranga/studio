@@ -27,11 +27,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useFirestore, setDocumentNonBlocking } from "@/firebase"
+import { useDoc, useFirestore, useMemoFirebase, setDocumentNonBlocking } from "@/firebase"
 import { Student } from "@/lib/types"
 import { Switch } from "../ui/switch"
 import { ScrollArea } from "../ui/scroll-area"
 import { removeUndefinedFields } from "@/lib/utils"
+import { Skeleton } from "../ui/skeleton"
 
 const formSchema = z.object({
   name: z.string().min(2, "O nome completo deve ter pelo menos 2 caracteres."),
@@ -72,14 +73,53 @@ const formSchema = z.object({
 });
 
 interface StudentFormProps {
-  student?: Student | null;
+  studentId?: string;
   isEditing: boolean;
 }
 
-export function StudentForm({ student, isEditing }: StudentFormProps) {
+function StudentFormSkeleton() {
+    return (
+        <div className="space-y-6">
+            <div className="space-y-2">
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-10 w-full" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+            </div>
+            <Skeleton className="h-10 w-32 ml-auto" />
+        </div>
+    );
+}
+
+export function StudentForm({ studentId, isEditing }: StudentFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const router = useRouter();
+
+  const studentRef = useMemoFirebase(() => {
+    if (!firestore || !studentId) return null;
+    return doc(firestore, 'students', studentId);
+  }, [firestore, studentId]);
+
+  const { data: student, isLoading } = useDoc<Student>(studentRef);
 
   const defaultValues = {
     name: "",
@@ -108,7 +148,7 @@ export function StudentForm({ student, isEditing }: StudentFormProps) {
   });
 
   useEffect(() => {
-    if (student) {
+    if (isEditing && student) {
       form.reset({
         name: student.name || "",
         dob: student.dob ? student.dob.split('T')[0] : '',
@@ -129,10 +169,10 @@ export function StudentForm({ student, isEditing }: StudentFormProps) {
         fikmAnnuityPaymentDate: student.fikmAnnuityPaymentDate ? student.fikmAnnuityPaymentDate.split('T')[0] : '',
         fikmAnnuityPaymentMethod: student.fikmAnnuityPaymentMethod || 'Pendente',
       });
-    } else {
+    } else if (!isEditing) {
         form.reset(defaultValues);
     }
-  }, [student, form]);
+  }, [student, isEditing, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) {
@@ -144,11 +184,11 @@ export function StudentForm({ student, isEditing }: StudentFormProps) {
       return;
     }
     
-    const studentId = isEditing && student ? student.id : doc(collection(firestore, "students")).id;
+    const finalStudentId = isEditing && student ? student.id : doc(collection(firestore, "students")).id;
     
     let studentData: Partial<Student> = {
         ...values,
-        id: studentId,
+        id: finalStudentId,
         registrationDate: student?.registrationDate || new Date().toISOString(),
         planValue: values.planValue, 
     };
@@ -164,7 +204,7 @@ export function StudentForm({ student, isEditing }: StudentFormProps) {
 
     const cleanedStudentData = removeUndefinedFields(studentData);
 
-    const docRef = doc(firestore, 'students', studentId);
+    const docRef = doc(firestore, 'students', finalStudentId);
     setDocumentNonBlocking(docRef, cleanedStudentData, { merge: true });
 
     toast({
@@ -173,6 +213,10 @@ export function StudentForm({ student, isEditing }: StudentFormProps) {
     })
     
     router.push('/alunos');
+  }
+
+  if (isEditing && isLoading) {
+      return <StudentFormSkeleton />;
   }
 
   return (
