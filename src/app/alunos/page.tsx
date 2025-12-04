@@ -7,13 +7,14 @@ import { collection, query, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, User, Search, Download } from "lucide-react";
+import { PlusCircle, User, Search, Download, Upload } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
+import { BulkImportDialog } from "@/components/students/bulk-import-dialog";
 
 type FilterType = 'Todos' | 'Ativo' | 'Inativo' | 'Vencido';
 
@@ -94,7 +95,13 @@ export default function AlunosPage() {
                             <CardTitle>Alunos - {cardTitleSuffix}</CardTitle>
                             <CardDescription>{filterDescriptions[activeFilter]}</CardDescription>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                            <BulkImportDialog>
+                                <Button size="sm" variant="outline">
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    Importar em Massa
+                                </Button>
+                            </BulkImportDialog>
                             <Link href="/alunos/novo/editar">
                                 <Button size="sm">
                                     <PlusCircle className="mr-2 h-4 w-4" />
