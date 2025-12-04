@@ -31,7 +31,6 @@ service cloud.firestore {
     }
 
     // A user is an admin if their UID is a document in 'roles_admin'.
-    // For simplicity now, we can expand this to check for a specific field like `isAdmin: true`.
     function isAdmin() {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
@@ -49,14 +48,10 @@ service cloud.firestore {
     // Collection Rules
     // ------------------------------------------------------------------------
 
-    // General read access for the entire collection for any signed-in user.
-    // This allows list operations (queries) to work.
-    match /students/{document=**} {
-        allow read: if isSignedIn();
-    }
-
     match /students/{studentId} {
-      // Write access for individual documents is restricted to Admins.
+      // Allow any signed-in user to read the list of students or get a single student.
+      allow get, list: if isSignedIn();
+      // Allow only admins to create, update, or delete students.
       allow create, update, delete: if isAdmin();
 
       // Subcollection access rules
@@ -88,8 +83,7 @@ service cloud.firestore {
     
     match /plans/{planId} {
       // Plans are public to read for any signed-in user.
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
+      allow get, list: if isSignedIn();
       // Only admins can manage plans.
       allow create, update, delete: if isAdmin();
     }
