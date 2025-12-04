@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { collection, doc } from 'firebase/firestore'
 import { useEffect } from "react"
-import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -31,6 +30,7 @@ import { useFirestore, setDocumentNonBlocking } from "@/firebase"
 import { Student } from "@/lib/types"
 import { Switch } from "../ui/switch"
 import { ScrollArea } from "../ui/scroll-area"
+import { removeUndefinedFields } from "@/lib/utils"
 
 const formSchema = z.object({
   name: z.string().min(2, "O nome completo deve ter pelo menos 2 caracteres."),
@@ -145,7 +145,7 @@ export function StudentForm({ student, onFormSubmit, isEditing }: StudentFormPro
     
     const studentId = isEditing && student ? student.id : doc(collection(firestore, "students")).id;
     
-    const studentData: Partial<Student> = {
+    let studentData: Partial<Student> = {
         ...values,
         id: studentId,
         registrationDate: student?.registrationDate || new Date().toISOString(),
@@ -161,8 +161,10 @@ export function StudentForm({ student, onFormSubmit, isEditing }: StudentFormPro
       studentData.paymentStatus = 'Pendente';
     }
 
+    const cleanedStudentData = removeUndefinedFields(studentData);
+
     const docRef = doc(firestore, 'students', studentId);
-    setDocumentNonBlocking(docRef, studentData, { merge: true });
+    setDocumentNonBlocking(docRef, cleanedStudentData, { merge: true });
 
     toast({
       title: isEditing ? "Aluno Atualizado!" : "Cadastro Realizado!",
@@ -522,3 +524,5 @@ export function StudentForm({ student, onFormSubmit, isEditing }: StudentFormPro
     </Form>
   )
 }
+
+    
