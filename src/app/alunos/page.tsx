@@ -8,18 +8,35 @@ import { useToast } from "@/hooks/use-toast";
 import { Student } from "@/lib/types";
 import { StudentForm } from "@/components/students/student-form";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, User, Trash2 } from "lucide-react";
+import { PlusCircle, User, Trash2, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+
+function WelcomeMessage() {
+    return (
+        <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm h-full">
+            <div className="flex flex-col items-center gap-1 text-center">
+                <h3 className="text-2xl font-bold tracking-tight">
+                    Gerencie seus Alunos
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                    Selecione um aluno na lista para editar ou adicione um novo.
+                </p>
+            </div>
+        </div>
+    )
+}
 
 export default function AlunosPage() {
     const firestore = useFirestore();
     const { toast } = useToast();
     
-    const [selectedStudent, setSelectedStudent] = useState<Student | 'new' | null>('new');
+    const [selectedStudent, setSelectedStudent] = useState<Student | 'new' | null>(null);
+    const [searchQuery, setSearchQuery] = useState("");
 
     const studentsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -27,6 +44,10 @@ export default function AlunosPage() {
     }, [firestore]);
 
     const { data: students, isLoading } = useCollection<Student>(studentsCollection);
+
+    const filteredStudents = (students || []).filter(student => 
+        student.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     const handleSelectStudent = (student: Student) => {
         setSelectedStudent(student);
@@ -37,7 +58,7 @@ export default function AlunosPage() {
     };
 
     const handleFormSubmit = () => {
-        setSelectedStudent('new');
+        setSelectedStudent(null);
     }
     
     const handleDeleteStudent = async () => {
@@ -50,7 +71,7 @@ export default function AlunosPage() {
                 title: "Aluno Excluído",
                 description: `${selectedStudent.name} foi removido com sucesso.`,
             });
-            setSelectedStudent('new');
+            setSelectedStudent(null);
         } catch (error) {
             toast({
                 variant: "destructive",
@@ -71,16 +92,29 @@ export default function AlunosPage() {
                     <CardDescription>Selecione um aluno para editar</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0 flex-grow">
-                    <Button onClick={handleAddNew} className="w-[calc(100%-1rem)] m-2">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Adicionar Novo Aluno
-                    </Button>
-                    <ScrollArea className="h-[calc(100%-80px)]">
+                     <div className="p-2 space-y-2">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                type="search"
+                                placeholder="Buscar por nome..."
+                                className="pl-8 w-full"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        <Button onClick={handleAddNew} className="w-full">
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Adicionar Novo Aluno
+                        </Button>
+                    </div>
+
+                    <ScrollArea className="h-[calc(100%-120px)]">
                         <div className="p-2 space-y-1">
                             {isLoading && Array.from({ length: 7 }).map((_, index) => (
                                 <Skeleton key={index} className="h-10 w-full" />
                             ))}
-                            {!isLoading && students?.map((student) => (
+                            {!isLoading && filteredStudents.map((student) => (
                                 <button
                                     key={student.id}
                                     onClick={() => handleSelectStudent(student)}
@@ -102,45 +136,49 @@ export default function AlunosPage() {
 
             {/* Coluna do Formulário/Detalhes */}
             <div className="md:col-span-2 lg:col-span-3 h-full">
-                <Card className="h-full flex flex-col">
-                    <CardHeader className="flex flex-row justify-between items-center border-b">
-                        <div>
-                            <CardTitle>{studentToEdit ? "Editar Aluno" : "Adicionar Novo Aluno"}</CardTitle>
-                            <CardDescription>
-                                {studentToEdit ? `Modifique os dados de ${studentToEdit.name}` : "Preencha as informações do novo aluno"}
-                            </CardDescription>
-                        </div>
-                        {studentToEdit && (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="destructive">
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Excluir Aluno
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Esta ação não pode ser desfeita. Isso excluirá permanentemente o cadastro de <strong>{studentToEdit.name}</strong>.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleDeleteStudent}>Confirmar Exclusão</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        )}
-                    </CardHeader>
-                    <CardContent className="flex-grow overflow-hidden p-6">
-                        <StudentForm 
-                            student={studentToEdit} 
-                            onFormSubmit={handleFormSubmit} 
-                            isEditing={!!studentToEdit}
-                        />
-                    </CardContent>
-                </Card>
+                 {selectedStudent ? (
+                    <Card className="h-full flex flex-col">
+                        <CardHeader className="flex flex-row justify-between items-center border-b">
+                            <div>
+                                <CardTitle>{studentToEdit ? "Editar Aluno" : "Adicionar Novo Aluno"}</CardTitle>
+                                <CardDescription>
+                                    {studentToEdit ? `Modifique os dados de ${studentToEdit.name}` : "Preencha as informações do novo aluno"}
+                                </CardDescription>
+                            </div>
+                            {studentToEdit && (
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive">
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Excluir Aluno
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Esta ação não pode ser desfeita. Isso excluirá permanentemente o cadastro de <strong>{studentToEdit.name}</strong>.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleDeleteStudent}>Confirmar Exclusão</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            )}
+                        </CardHeader>
+                        <CardContent className="flex-grow overflow-hidden p-6">
+                            <StudentForm 
+                                student={studentToEdit} 
+                                onFormSubmit={handleFormSubmit} 
+                                isEditing={!!studentToEdit}
+                            />
+                        </CardContent>
+                    </Card>
+                 ) : (
+                    <WelcomeMessage />
+                 )}
             </div>
         </div>
     );
