@@ -4,13 +4,15 @@
 import { useState, useMemo, useEffect } from "react";
 import { ExamsTable } from "@/components/exams/exams-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search } from "lucide-react";
+import { Download, PlusCircle, Search, Award } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { Exam, Student } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const beltOrder: Record<string, number> = {
     'Amarela': 1,
@@ -19,6 +21,15 @@ const beltOrder: Record<string, number> = {
     'Azul': 4,
     'Marrom': 5,
     'Preta': 6,
+};
+
+const beltInfo: Record<string, { emoji: string; colorClass: string }> = {
+    'Amarela': { emoji: '🟡', colorClass: 'border-yellow-400' },
+    'Laranja': { emoji: '🟠', colorClass: 'border-orange-500' },
+    'Verde':   { emoji: '🟢', colorClass: 'border-green-500' },
+    'Azul':    { emoji: '🔵', colorClass: 'border-blue-500' },
+    'Marrom':  { emoji: '🟤', colorClass: 'border-amber-800' },
+    'Preta':   { emoji: '⚫', colorClass: 'border-gray-800' },
 };
 
 
@@ -46,6 +57,22 @@ export default function ExamesPage() {
         }
     }, [initialExams]);
 
+    const examCountsByBelt = useMemo(() => {
+        const counts: Record<string, number> = {};
+        if (!exams) return counts;
+
+        for (const belt of Object.keys(beltInfo)) {
+            counts[belt] = 0;
+        }
+
+        exams.forEach(exam => {
+            if (exam.targetBelt && counts.hasOwnProperty(exam.targetBelt)) {
+                counts[exam.targetBelt]++;
+            }
+        });
+        return counts;
+    }, [exams]);
+
 
     const filteredAndSortedExams = useMemo(() => {
         if (!exams) return [];
@@ -57,7 +84,10 @@ export default function ExamesPage() {
         return filtered.sort((a, b) => {
             const orderA = beltOrder[a.targetBelt] || 99;
             const orderB = beltOrder[b.targetBelt] || 99;
-            return orderA - orderB;
+            if (orderA !== orderB) {
+                return orderA - orderB;
+            }
+            return a.studentName.localeCompare(b.studentName);
         });
 
     }, [exams, searchQuery]);
@@ -87,8 +117,25 @@ export default function ExamesPage() {
 
     return (
         <>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 mb-4">
+                {Object.entries(beltInfo).map(([belt, { emoji, colorClass }]) => (
+                    <Card key={belt} className={`bg-card ${colorClass} border-2`}>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
+                                Inscritos Faixa {belt}
+                            </CardTitle>
+                            <span className="text-xl">{emoji}</span>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">
+                                {isLoading ? <Skeleton className="h-8 w-12"/> : examCountsByBelt[belt] ?? 0}
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
             <div className="flex items-center justify-between gap-4">
-                <h1 className="text-lg font-semibold md:text-2xl">Exames de Faixa</h1>
+                <h1 className="text-lg font-semibold md:text-2xl">Inscrições de Exame</h1>
                 <div className="flex items-center gap-2">
                     <Button onClick={handleAddNewExam}>
                         <PlusCircle className="mr-2 h-4 w-4" />
