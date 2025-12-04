@@ -63,8 +63,8 @@ export function RegisterPaymentForm({
   const router = useRouter();
   
   const [selectedStudent, setSelectedStudent] = useState<Student | undefined>(undefined);
-
-  const studentOptions = allStudents.map(s => ({ value: s.id, label: s.name }));
+  
+  const studentOptions = allStudents.slice().sort((a, b) => a.name.localeCompare(b.name)).map(s => ({ value: s.id, label: s.name }));
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

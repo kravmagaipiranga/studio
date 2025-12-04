@@ -10,6 +10,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 
 export default function NewPaymentPage() {
@@ -28,18 +29,27 @@ export default function NewPaymentPage() {
         return (
              <div className="space-y-4">
                 <Skeleton className="h-10 w-44" />
-                <div className="space-y-2">
-                    <Skeleton className="h-8 w-1/4" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
-                <div className="space-y-2">
-                    <Skeleton className="h-8 w-1/4" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
-                 <div className="space-y-2">
-                    <Skeleton className="h-8 w-1/4" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
+                 <Card className="w-full max-w-xl mx-auto">
+                    <CardHeader>
+                        <Skeleton className="h-8 w-1/2" />
+                        <Skeleton className="h-4 w-3/4" />
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Skeleton className="h-4 w-1/4" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                        <div className="space-y-2">
+                            <Skeleton className="h-4 w-1/4" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                         <div className="space-y-2">
+                            <Skeleton className="h-4 w-1/4" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                         <Skeleton className="h-10 w-full mt-4" />
+                    </CardContent>
+                 </Card>
             </div>
         )
     }
