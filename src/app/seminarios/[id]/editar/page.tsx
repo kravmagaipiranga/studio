@@ -1,3 +1,4 @@
+
 'use client';
 
 import { doc, collection } from "firebase/firestore";
@@ -9,24 +10,32 @@ import { notFound, useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+
 
 function EditSeminarSkeleton() {
     return (
-        <div className="space-y-4">
-            <Skeleton className="h-10 w-44" />
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-            </div>
-        </div>
+        <Card className="w-full max-w-xl mx-auto">
+            <CardHeader>
+                <Skeleton className="h-8 w-1/2" />
+                <Skeleton className="h-4 w-3/4" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <Skeleton className="h-10 w-full mt-4" />
+            </CardContent>
+        </Card>
     );
 }
 
@@ -49,14 +58,10 @@ export default function EditSeminarPage() {
   const { data: seminar, isLoading: isLoadingSeminar } = useDoc<Seminar>(seminarRef);
   const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
 
-  const isLoading = !isCreating && (isLoadingSeminar || isLoadingStudents);
+  const isLoading = isLoadingSeminar || isLoadingStudents;
 
   if (!isCreating && !seminar && !isLoading) {
      notFound();
-  }
-
-  if (isLoading) {
-    return <EditSeminarSkeleton />;
   }
 
   return (
@@ -69,7 +74,15 @@ export default function EditSeminarPage() {
                 </Button>
             </Link>
         </div>
-        <SeminarForm seminar={seminar} allStudents={students || []} isEditing={!isCreating} />
+        {isLoading ? (
+            <EditSeminarSkeleton />
+        ) : (
+            <SeminarForm 
+                seminar={seminar} 
+                allStudents={students || []} 
+                isEditing={!isCreating} 
+            />
+        )}
     </>
   );
 }

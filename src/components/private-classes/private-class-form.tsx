@@ -51,8 +51,8 @@ export function PrivateClassForm({ privateClass, allStudents, isEditing }: Priva
   const router = useRouter()
   const firestore = useFirestore();
 
-  const [selectedStudent, setSelectedStudent] = useState<Student | undefined>(undefined);
-  const studentOptions = allStudents.map(s => ({ value: s.id, label: s.name }));
+  const sortedStudents = allStudents.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const studentOptions = sortedStudents.map(s => ({ value: s.id, label: s.name }));
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -64,11 +64,9 @@ export function PrivateClassForm({ privateClass, allStudents, isEditing }: Priva
       paymentMethod: 'Pendente',
     },
   });
-
+  
   useEffect(() => {
     if (isEditing && privateClass) {
-        const student = allStudents.find(s => s.id === privateClass.studentId);
-        setSelectedStudent(student);
         form.reset({
             studentId: privateClass.studentId || "",
             classDate: privateClass.classDate ? format(new Date(privateClass.classDate + 'T00:00:00'), 'yyyy-MM-dd') : '',
@@ -76,41 +74,40 @@ export function PrivateClassForm({ privateClass, allStudents, isEditing }: Priva
             paymentStatus: privateClass.paymentStatus || "Pendente",
             paymentMethod: privateClass.paymentMethod || "Pendente",
         });
+    } else {
+        form.reset({
+            studentId: "",
+            classDate: format(new Date(), 'yyyy-MM-dd'),
+            paymentAmount: 150,
+            paymentStatus: 'Pendente',
+            paymentMethod: 'Pendente',
+        });
     }
-  }, [isEditing, privateClass, allStudents, form]);
-
-
-  useEffect(() => {
-    const subscription = form.watch((values, { name }) => {
-        if (name === 'studentId' && values.studentId) {
-            const student = allStudents.find(s => s.id === values.studentId);
-            setSelectedStudent(student);
-        }
-    });
-    return () => subscription.unsubscribe();
-  }, [form, allStudents]);
+  }, [isEditing, privateClass, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore || !selectedStudent) {
-        toast({ title: "Erro", description: "Aluno ou banco de dados não disponível.", variant: "destructive" });
+    if (!firestore) {
+        toast({ title: "Erro", description: "Banco de dados não disponível.", variant: "destructive" });
         return;
     };
+    const selectedStudent = allStudents.find(s => s.id === values.studentId);
+    if (!selectedStudent) {
+        toast({ title: "Erro", description: "Aluno não encontrado.", variant: "destructive" });
+        return;
+    }
 
     const privateClassId = isEditing && privateClass ? privateClass.id : doc(collection(firestore, "privateClasses")).id;
     
-    const privateClassData: Omit<PrivateClass, 'id'> = {
-        studentId: selectedStudent.id,
+    const privateClassData = {
+        ...values,
+        id: privateClassId,
         studentName: selectedStudent.name,
         studentBelt: selectedStudent.belt,
-        classDate: values.classDate,
-        paymentAmount: values.paymentAmount,
-        paymentStatus: values.paymentStatus,
-        paymentMethod: values.paymentMethod,
         paymentDate: privateClass?.paymentDate,
     };
     
     const docRef = doc(firestore, 'privateClasses', privateClassId);
-    setDocumentNonBlocking(docRef, { ...privateClassData, id: privateClassId }, { merge: true });
+    setDocumentNonBlocking(docRef, privateClassData, { merge: true });
 
     toast({
       title: isEditing ? "Aula Atualizada!" : "Aula Agendada!",
@@ -118,7 +115,6 @@ export function PrivateClassForm({ privateClass, allStudents, isEditing }: Priva
     })
     
     router.push('/aulas');
-    router.refresh();
   }
 
   return (

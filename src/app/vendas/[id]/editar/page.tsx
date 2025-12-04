@@ -1,3 +1,4 @@
+
 'use client';
 
 import { doc, collection } from "firebase/firestore";
@@ -9,24 +10,31 @@ import { notFound, useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
 function EditSaleSkeleton() {
     return (
-        <div className="space-y-4">
-            <Skeleton className="h-10 w-44" />
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-            </div>
-        </div>
+        <Card className="w-full max-w-xl mx-auto">
+            <CardHeader>
+                <Skeleton className="h-8 w-1/2" />
+                <Skeleton className="h-4 w-3/4" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <Skeleton className="h-10 w-full mt-4" />
+            </CardContent>
+        </Card>
     );
 }
 
@@ -49,14 +57,10 @@ export default function EditSalePage() {
   const { data: sale, isLoading: isLoadingSale } = useDoc<Sale>(saleRef);
   const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
 
-  const isLoading = !isCreating && (isLoadingSale || isLoadingStudents);
+  const isLoading = isLoadingSale || isLoadingStudents;
 
   if (!isCreating && !sale && !isLoading) {
      notFound();
-  }
-
-  if (isLoading) {
-    return <EditSaleSkeleton />;
   }
 
   return (
@@ -69,7 +73,15 @@ export default function EditSalePage() {
                 </Button>
             </Link>
         </div>
-        <SaleForm sale={sale} allStudents={students || []} isEditing={!isCreating} />
+        {isLoading ? (
+            <EditSaleSkeleton />
+        ) : (
+            <SaleForm 
+                sale={sale} 
+                allStudents={students || []} 
+                isEditing={!isCreating} 
+            />
+        )}
     </>
   );
 }

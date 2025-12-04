@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { collection, doc } from 'firebase/firestore'
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
@@ -52,8 +52,8 @@ export function SaleForm({ sale, allStudents, isEditing }: SaleFormProps) {
   const router = useRouter()
   const firestore = useFirestore();
 
-  const [selectedStudent, setSelectedStudent] = useState<Student | undefined>(undefined);
-  const studentOptions = allStudents.map(s => ({ value: s.id, label: s.name }));
+  const sortedStudents = allStudents.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const studentOptions = sortedStudents.map(s => ({ value: s.id, label: s.name }));
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -69,8 +69,6 @@ export function SaleForm({ sale, allStudents, isEditing }: SaleFormProps) {
 
   useEffect(() => {
      if (isEditing && sale) {
-        const student = allStudents.find(s => s.id === sale.studentId);
-        setSelectedStudent(student);
         form.reset({
             studentId: sale.studentId || "",
             item: sale.item || "",
@@ -79,40 +77,40 @@ export function SaleForm({ sale, allStudents, isEditing }: SaleFormProps) {
             paymentStatus: sale.paymentStatus || 'Pendente',
             paymentMethod: sale.paymentMethod || 'Pendente',
         });
+     } else {
+        form.reset({
+            studentId: "",
+            item: "",
+            value: 0,
+            date: format(new Date(), 'yyyy-MM-dd'),
+            paymentStatus: 'Pendente',
+            paymentMethod: 'Pendente',
+        });
      }
-  }, [isEditing, sale, allStudents, form]);
-
-
-  useEffect(() => {
-    const subscription = form.watch((values, { name }) => {
-        if (name === 'studentId' && values.studentId) {
-            const student = allStudents.find(s => s.id === values.studentId);
-            setSelectedStudent(student);
-        }
-    });
-    return () => subscription.unsubscribe();
-  }, [form, allStudents]);
+  }, [isEditing, sale, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore || !selectedStudent) {
-        toast({ title: "Erro", description: "Aluno ou banco de dados não disponível.", variant: "destructive" });
+    if (!firestore) {
+        toast({ title: "Erro", description: "Banco de dados não disponível.", variant: "destructive" });
         return;
     };
 
+    const selectedStudent = allStudents.find(s => s.id === values.studentId);
+    if (!selectedStudent) {
+        toast({ title: "Erro", description: "Aluno não encontrado.", variant: "destructive" });
+        return;
+    }
+
     const saleId = isEditing && sale ? sale.id : doc(collection(firestore, "sales")).id;
     
-    const saleData: Omit<Sale, 'id'> = {
-        studentId: selectedStudent.id,
+    const saleData = {
+        ...values,
+        id: saleId,
         studentName: selectedStudent.name,
-        item: values.item,
-        value: values.value,
-        date: values.date,
-        paymentStatus: values.paymentStatus,
-        paymentMethod: values.paymentMethod,
     };
     
     const docRef = doc(firestore, 'sales', saleId);
-    setDocumentNonBlocking(docRef, { ...saleData, id: saleId }, { merge: true });
+    setDocumentNonBlocking(docRef, saleData, { merge: true });
 
     toast({
       title: isEditing ? "Venda Atualizada!" : "Venda Registrada!",
@@ -120,7 +118,6 @@ export function SaleForm({ sale, allStudents, isEditing }: SaleFormProps) {
     })
     
     router.push('/vendas');
-    router.refresh();
   }
 
   return (

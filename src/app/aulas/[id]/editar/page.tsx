@@ -1,3 +1,4 @@
+
 'use client';
 
 import { doc, collection } from "firebase/firestore";
@@ -9,24 +10,31 @@ import { notFound, useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
 function EditPrivateClassSkeleton() {
     return (
-        <div className="space-y-4">
-            <Skeleton className="h-10 w-44" />
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-            </div>
-        </div>
+        <Card className="w-full max-w-xl mx-auto">
+            <CardHeader>
+                <Skeleton className="h-8 w-1/2" />
+                <Skeleton className="h-4 w-3/4" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <Skeleton className="h-10 w-full mt-4" />
+            </CardContent>
+        </Card>
     );
 }
 
@@ -49,14 +57,10 @@ export default function EditPrivateClassPage() {
   const { data: privateClass, isLoading: isLoadingClass } = useDoc<PrivateClass>(privateClassRef);
   const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
 
-  const isLoading = !isCreating && (isLoadingClass || isLoadingStudents);
+  const isLoading = isLoadingClass || isLoadingStudents;
 
   if (!isCreating && !privateClass && !isLoading) {
      notFound();
-  }
-
-  if (isLoading) {
-    return <EditPrivateClassSkeleton />;
   }
 
   return (
@@ -69,7 +73,15 @@ export default function EditPrivateClassPage() {
                 </Button>
             </Link>
         </div>
-        <PrivateClassForm privateClass={privateClass} allStudents={students || []} isEditing={!isCreating} />
+        {isLoading ? (
+            <EditPrivateClassSkeleton />
+        ) : (
+            <PrivateClassForm 
+                privateClass={privateClass} 
+                allStudents={students || []} 
+                isEditing={!isCreating} 
+            />
+        )}
     </>
   );
 }

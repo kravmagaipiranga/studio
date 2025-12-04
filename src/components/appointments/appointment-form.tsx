@@ -58,13 +58,22 @@ export function AppointmentForm({ appointment, isEditing }: AppointmentFormProps
 
   useEffect(() => {
     if (isEditing && appointment) {
+      form.reset({
+        name: appointment.name || "",
+        whatsapp: appointment.whatsapp || "",
+        email: appointment.email || "",
+        classDate: appointment.classDate ? format(new Date(appointment.classDate + 'T00:00:00'), 'yyyy-MM-dd') : '',
+        classTime: appointment.classTime || "20:00",
+        notes: appointment.notes || "",
+      });
+    } else {
         form.reset({
-            name: appointment.name || "",
-            whatsapp: appointment.whatsapp || "",
-            email: appointment.email || "",
-            classDate: appointment.classDate ? format(new Date(appointment.classDate + 'T00:00:00'), 'yyyy-MM-dd') : '',
-            classTime: appointment.classTime || "20:00",
-            notes: appointment.notes || "",
+            name: "",
+            whatsapp: "",
+            email: "",
+            classDate: format(new Date(), 'yyyy-MM-dd'),
+            classTime: "20:00",
+            notes: "",
         });
     }
   }, [appointment, isEditing, form]);
@@ -74,14 +83,15 @@ export function AppointmentForm({ appointment, isEditing }: AppointmentFormProps
     if (!firestore) return;
 
     const appointmentId = isEditing && appointment ? appointment.id : doc(collection(firestore, "appointments")).id;
-    const appointmentData: Omit<Appointment, 'id'> = {
+    const appointmentData = {
         ...values,
+        id: appointmentId,
         email: values.email || '',
         notes: values.notes || '',
     };
     
     const docRef = doc(firestore, 'appointments', appointmentId);
-    setDocumentNonBlocking(docRef, { ...appointmentData, id: appointmentId }, { merge: true });
+    setDocumentNonBlocking(docRef, appointmentData, { merge: true });
 
     toast({
       title: isEditing ? "Agendamento Atualizado!" : "Agendamento Criado!",
@@ -89,7 +99,6 @@ export function AppointmentForm({ appointment, isEditing }: AppointmentFormProps
     })
     
     router.push('/agendamentos');
-    router.refresh();
   }
 
   return (

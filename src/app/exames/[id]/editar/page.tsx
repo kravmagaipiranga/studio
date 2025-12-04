@@ -1,3 +1,4 @@
+
 'use client';
 
 import { doc, collection } from "firebase/firestore";
@@ -9,24 +10,32 @@ import { notFound, useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+
 
 function EditExamSkeleton() {
     return (
-        <div className="space-y-4">
-            <Skeleton className="h-10 w-44" />
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-            </div>
-        </div>
+        <Card className="w-full max-w-xl mx-auto">
+            <CardHeader>
+                <Skeleton className="h-8 w-1/2" />
+                <Skeleton className="h-4 w-3/4" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <Skeleton className="h-10 w-full mt-4" />
+            </CardContent>
+        </Card>
     );
 }
 
@@ -49,13 +58,9 @@ export default function EditExamPage() {
   const { data: exam, isLoading: isLoadingExam } = useDoc<Exam>(examRef);
   const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
 
-  const isLoading = !isCreating && (isLoadingExam || isLoadingStudents);
+  const isLoading = isLoadingExam || isLoadingStudents;
 
-  if (isLoading) {
-    return <EditExamSkeleton />;
-  }
-
-  if (!isCreating && !isLoadingExam && !exam) {
+  if (!isCreating && !exam && !isLoading) {
      notFound();
   }
 
@@ -69,7 +74,15 @@ export default function EditExamPage() {
                 </Button>
             </Link>
         </div>
-        <ExamForm exam={exam} allStudents={students || []} isEditing={!isCreating} />
+        {isLoading ? (
+            <EditExamSkeleton />
+        ) : (
+            <ExamForm 
+                exam={exam} 
+                allStudents={students || []} 
+                isEditing={!isCreating} 
+            />
+        )}
     </>
   );
 }

@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { collection, doc } from 'firebase/firestore'
 import { useRouter } from "next/navigation"
 import { differenceInYears, format } from "date-fns"
@@ -52,8 +52,8 @@ export function SeminarForm({ seminar, allStudents, isEditing }: SeminarFormProp
   const router = useRouter()
   const firestore = useFirestore();
 
-  const [selectedStudent, setSelectedStudent] = useState<Student | undefined>(undefined);
-  const studentOptions = allStudents.map(s => ({ value: s.id, label: s.name }));
+  const sortedStudents = allStudents.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const studentOptions = sortedStudents.map(s => ({ value: s.id, label: s.name }));
   const paymentStatus = form.watch("paymentStatus");
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -70,8 +70,6 @@ export function SeminarForm({ seminar, allStudents, isEditing }: SeminarFormProp
 
   useEffect(() => {
      if (isEditing && seminar) {
-        const student = allStudents.find(s => s.id === seminar.studentId);
-        setSelectedStudent(student);
         form.reset({
           studentId: seminar.studentId || "",
           topic: seminar.topic || "",
@@ -80,44 +78,44 @@ export function SeminarForm({ seminar, allStudents, isEditing }: SeminarFormProp
           paymentDate: seminar.paymentDate ? format(new Date(seminar.paymentDate + 'T00:00:00'), 'yyyy-MM-dd') : '',
           paymentMethod: seminar.paymentMethod || 'Pendente',
         });
+     } else {
+        form.reset({
+            studentId: "",
+            topic: "",
+            paymentAmount: 100,
+            paymentStatus: 'Pendente',
+            paymentDate: "",
+            paymentMethod: 'Pendente',
+        });
      }
-  }, [isEditing, seminar, allStudents, form]);
-
-
-  useEffect(() => {
-    const subscription = form.watch((values, { name }) => {
-        if (name === 'studentId' && values.studentId) {
-            const student = allStudents.find(s => s.id === values.studentId);
-            setSelectedStudent(student);
-        }
-    });
-    return () => subscription.unsubscribe();
-  }, [form, allStudents]);
+  }, [isEditing, seminar, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore || !selectedStudent) {
-        toast({ title: "Erro", description: "Aluno ou banco de dados não disponível.", variant: "destructive" });
+    if (!firestore) {
+        toast({ title: "Erro", description: "Banco de dados não disponível.", variant: "destructive" });
         return;
     };
+    const selectedStudent = allStudents.find(s => s.id === values.studentId);
+    if (!selectedStudent) {
+        toast({ title: "Erro", description: "Aluno não encontrado.", variant: "destructive" });
+        return;
+    }
 
     const seminarId = isEditing && seminar ? seminar.id : doc(collection(firestore, "seminars")).id;
     const studentAge = selectedStudent.dob ? differenceInYears(new Date(), new Date(selectedStudent.dob)) : 0;
     
-    const seminarData: Omit<Seminar, 'id'> = {
-        studentId: selectedStudent.id,
+    const seminarData = {
+        ...values,
+        id: seminarId,
         studentName: selectedStudent.name,
         studentBelt: selectedStudent.belt,
         studentCpf: selectedStudent.cpf,
         studentAge: studentAge,
-        topic: values.topic,
-        paymentAmount: values.paymentAmount,
-        paymentStatus: values.paymentStatus,
         paymentDate: values.paymentStatus === 'Pago' ? values.paymentDate : undefined,
-        paymentMethod: values.paymentMethod,
     };
     
     const docRef = doc(firestore, 'seminars', seminarId);
-    setDocumentNonBlocking(docRef, { ...seminarData, id: seminarId }, { merge: true });
+    setDocumentNonBlocking(docRef, seminarData, { merge: true });
 
     toast({
       title: isEditing ? "Inscrição Atualizada!" : "Inscrição Realizada!",
@@ -125,7 +123,6 @@ export function SeminarForm({ seminar, allStudents, isEditing }: SeminarFormProp
     })
     
     router.push('/seminarios');
-    router.refresh();
   }
 
   return (
