@@ -7,7 +7,7 @@ import { z } from "zod"
 import { useEffect, useState } from "react";
 import { collection, doc } from 'firebase/firestore'
 import { useRouter } from "next/navigation"
-import { differenceInYears } from "date-fns"
+import { differenceInYears, format } from "date-fns"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -37,6 +37,7 @@ const formSchema = z.object({
     z.number().positive("O valor deve ser positivo.")
   ),
   paymentStatus: z.enum(["Pago", "Pendente"]),
+  paymentDate: z.string().optional(),
   paymentMethod: z.enum(["Pix", "Cartão", "Dinheiro", "Pendente"]),
 });
 
@@ -53,6 +54,7 @@ export function SeminarForm({ seminar, allStudents, isEditing }: SeminarFormProp
 
   const [selectedStudent, setSelectedStudent] = useState<Student | undefined>(undefined);
   const studentOptions = allStudents.map(s => ({ value: s.id, label: s.name }));
+  const paymentStatus = form.watch("paymentStatus");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -61,6 +63,7 @@ export function SeminarForm({ seminar, allStudents, isEditing }: SeminarFormProp
       topic: "",
       paymentAmount: 100,
       paymentStatus: 'Pendente',
+      paymentDate: "",
       paymentMethod: 'Pendente',
     },
   });
@@ -69,14 +72,13 @@ export function SeminarForm({ seminar, allStudents, isEditing }: SeminarFormProp
      if (isEditing && seminar) {
         const student = allStudents.find(s => s.id === seminar.studentId);
         setSelectedStudent(student);
-        form.reset(seminar);
-     } else {
         form.reset({
-            studentId: "",
-            topic: "",
-            paymentAmount: 100,
-            paymentStatus: 'Pendente',
-            paymentMethod: 'Pendente',
+          studentId: seminar.studentId || "",
+          topic: seminar.topic || "",
+          paymentAmount: seminar.paymentAmount || 100,
+          paymentStatus: seminar.paymentStatus || 'Pendente',
+          paymentDate: seminar.paymentDate ? format(new Date(seminar.paymentDate + 'T00:00:00'), 'yyyy-MM-dd') : '',
+          paymentMethod: seminar.paymentMethod || 'Pendente',
         });
      }
   }, [isEditing, seminar, allStudents, form]);
@@ -110,6 +112,7 @@ export function SeminarForm({ seminar, allStudents, isEditing }: SeminarFormProp
         topic: values.topic,
         paymentAmount: values.paymentAmount,
         paymentStatus: values.paymentStatus,
+        paymentDate: values.paymentStatus === 'Pago' ? values.paymentDate : undefined,
         paymentMethod: values.paymentMethod,
     };
     
@@ -203,27 +206,42 @@ export function SeminarForm({ seminar, allStudents, isEditing }: SeminarFormProp
                     )}
                     />
                 </div>
-                 <FormField
-                    control={form.control}
-                    name="paymentMethod"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Forma de Pagamento</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="paymentDate"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Data do Pagamento</FormLabel>
                             <FormControl>
-                            <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                                <Input type="date" {...field} value={field.value ?? ''} disabled={paymentStatus !== 'Pago'} />
                             </FormControl>
-                            <SelectContent>
-                                <SelectItem value="Pendente">Pendente</SelectItem>
-                                <SelectItem value="Pix">Pix</SelectItem>
-                                <SelectItem value="Cartão">Cartão</SelectItem>
-                                <SelectItem value="Dinheiro">Dinheiro</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="paymentMethod"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Forma de Pagamento</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Pendente">Pendente</SelectItem>
+                                    <SelectItem value="Pix">Pix</SelectItem>
+                                    <SelectItem value="Cartão">Cartão</SelectItem>
+                                    <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
 
                 <Button type="submit" className="w-full mt-4">{isEditing ? "Salvar Alterações" : "Inscrever Aluno"}</Button>
             </form>
@@ -232,5 +250,3 @@ export function SeminarForm({ seminar, allStudents, isEditing }: SeminarFormProp
     </Card>
   )
 }
-
-    

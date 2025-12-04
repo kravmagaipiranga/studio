@@ -72,17 +72,12 @@ export function SaleForm({ sale, allStudents, isEditing }: SaleFormProps) {
         const student = allStudents.find(s => s.id === sale.studentId);
         setSelectedStudent(student);
         form.reset({
-            ...sale,
+            studentId: sale.studentId || "",
+            item: sale.item || "",
+            value: sale.value || 0,
             date: sale.date ? format(new Date(sale.date + 'T00:00:00'), 'yyyy-MM-dd') : '',
-        });
-     } else {
-        form.reset({
-            studentId: "",
-            item: "",
-            value: 0,
-            date: format(new Date(), 'yyyy-MM-dd'),
-            paymentStatus: 'Pendente',
-            paymentMethod: 'Pendente',
+            paymentStatus: sale.paymentStatus || 'Pendente',
+            paymentMethod: sale.paymentMethod || 'Pendente',
         });
      }
   }, [isEditing, sale, allStudents, form]);
@@ -251,5 +246,3 @@ export function SaleForm({ sale, allStudents, isEditing }: SaleFormProps) {
     </Card>
   )
 }
-
-    

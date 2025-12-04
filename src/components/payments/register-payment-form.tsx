@@ -78,27 +78,18 @@ export function RegisterPaymentForm({
   });
 
   useEffect(() => {
-      const studentToLoad = studentIdFromUrl ? allStudents.find(s => s.id === studentIdFromUrl) : undefined;
-      
-      if (studentToLoad) {
-        setSelectedStudent(studentToLoad);
-        form.reset({
-            studentId: studentToLoad.id,
-            planType: studentToLoad.planType || "Mensal",
-            planValue: studentToLoad.planValue || 0,
-            paymentDate: format(new Date(), 'yyyy-MM-dd'),
-            paymentCredits: studentToLoad.paymentCredits || "",
-        });
-      } else {
-         form.reset({
-            studentId: '',
-            planType: "Mensal",
-            planValue: 0,
-            paymentDate: format(new Date(), 'yyyy-MM-dd'),
-            paymentCredits: "",
-        });
-      }
-
+    const studentToLoad = studentIdFromUrl ? allStudents.find(s => s.id === studentIdFromUrl) : undefined;
+    
+    if (studentToLoad) {
+      setSelectedStudent(studentToLoad);
+      form.reset({
+          studentId: studentToLoad.id,
+          planType: studentToLoad.planType || "Mensal",
+          planValue: studentToLoad.planValue || 0,
+          paymentDate: format(new Date(), 'yyyy-MM-dd'),
+          paymentCredits: studentToLoad.paymentCredits || "",
+      });
+    }
   }, [studentIdFromUrl, allStudents, form]);
 
 
@@ -110,6 +101,7 @@ export function RegisterPaymentForm({
                 setSelectedStudent(foundStudent);
                 form.setValue('planType', foundStudent.planType || 'Mensal');
                 form.setValue('planValue', foundStudent.planValue || 0);
+                form.setValue('paymentCredits', foundStudent.paymentCredits || '');
             }
         }
     });
@@ -259,5 +251,3 @@ export function RegisterPaymentForm({
     </Card>
   )
 }
-
-    

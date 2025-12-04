@@ -70,16 +70,11 @@ export function PrivateClassForm({ privateClass, allStudents, isEditing }: Priva
         const student = allStudents.find(s => s.id === privateClass.studentId);
         setSelectedStudent(student);
         form.reset({
-            ...privateClass,
+            studentId: privateClass.studentId || "",
             classDate: privateClass.classDate ? format(new Date(privateClass.classDate + 'T00:00:00'), 'yyyy-MM-dd') : '',
-        });
-     } else {
-        form.reset({
-            studentId: "",
-            classDate: "",
-            paymentAmount: 150,
-            paymentStatus: 'Pendente',
-            paymentMethod: 'Pendente',
+            paymentAmount: privateClass.paymentAmount || 150,
+            paymentStatus: privateClass.paymentStatus || "Pendente",
+            paymentMethod: privateClass.paymentMethod || "Pendente",
         });
      }
   }, [isEditing, privateClass, allStudents, form]);
@@ -111,6 +106,7 @@ export function PrivateClassForm({ privateClass, allStudents, isEditing }: Priva
         paymentAmount: values.paymentAmount,
         paymentStatus: values.paymentStatus,
         paymentMethod: values.paymentMethod,
+        paymentDate: privateClass?.paymentDate,
     };
     
     const docRef = doc(firestore, 'privateClasses', privateClassId);
@@ -232,5 +228,3 @@ export function PrivateClassForm({ privateClass, allStudents, isEditing }: Priva
     </Card>
   )
 }
-
-    

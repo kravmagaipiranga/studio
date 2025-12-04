@@ -1,5 +1,4 @@
 
-
 export type Student = {
   id: string;
   name: string;
@@ -103,5 +102,3 @@ export type Sale = {
   paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
   paymentStatus: 'Pago' | 'Pendente';
 };
-
-    

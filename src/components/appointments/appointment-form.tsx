@@ -59,19 +59,12 @@ export function AppointmentForm({ appointment, isEditing }: AppointmentFormProps
   useEffect(() => {
     if (isEditing && appointment) {
         form.reset({
-            ...appointment,
+            name: appointment.name || "",
+            whatsapp: appointment.whatsapp || "",
+            email: appointment.email || "",
             classDate: appointment.classDate ? format(new Date(appointment.classDate + 'T00:00:00'), 'yyyy-MM-dd') : '',
-            email: appointment.email || '',
-            notes: appointment.notes || '',
-        });
-    } else {
-        form.reset({
-            name: "",
-            whatsapp: "",
-            email: "",
-            classDate: "",
-            classTime: "20:00",
-            notes: "",
+            classTime: appointment.classTime || "20:00",
+            notes: appointment.notes || "",
         });
     }
   }, [appointment, isEditing, form]);
@@ -144,7 +137,7 @@ export function AppointmentForm({ appointment, isEditing }: AppointmentFormProps
                         <FormItem>
                         <FormLabel>Email (Opcional)</FormLabel>
                         <FormControl>
-                            <Input type="email" placeholder="aluno@email.com" {...field} />
+                            <Input type="email" placeholder="aluno@email.com" {...field} value={field.value ?? ''} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -201,5 +194,3 @@ export function AppointmentForm({ appointment, isEditing }: AppointmentFormProps
     </Card>
   )
 }
-
-    
