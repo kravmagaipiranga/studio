@@ -79,7 +79,6 @@ interface StudentFormProps {
 export function StudentForm({ student, onFormSubmit, isEditing }: StudentFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
-  const router = useRouter();
 
   const defaultValues = {
     name: "",
@@ -523,5 +522,3 @@ export function StudentForm({ student, onFormSubmit, isEditing }: StudentFormPro
     </Form>
   )
 }
-
-    
