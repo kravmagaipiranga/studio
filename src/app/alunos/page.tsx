@@ -5,7 +5,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { collection, query, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { Student } from "@/lib/types";
+import { Student, Exam } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -15,6 +15,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { BulkImportDialog } from "@/components/students/bulk-import-dialog";
+import { Badge } from "@/components/ui/badge";
+import { differenceInMonths, differenceInYears } from "date-fns";
 
 type FilterType = 'Todos' | 'Ativo' | 'Inativo' | 'Vencido';
 
@@ -41,6 +43,26 @@ const statusEmojis: Record<string, string> = {
     'Pendente': '🚨'
 };
 
+function calculateTimeSince(dateString: string): string {
+    if (!dateString) return "";
+    const startDate = new Date(dateString);
+    const now = new Date();
+    const totalMonths = differenceInMonths(now, startDate);
+    
+    if (totalMonths < 1) return "< 1 mês";
+
+    const years = Math.floor(totalMonths / 12);
+    const months = totalMonths % 12;
+
+    if (years > 0 && months > 0) {
+        return `${years}a ${months}m`;
+    } else if (years > 0) {
+        return `${years} ${years > 1 ? 'anos' : 'ano'}`;
+    } else {
+        return `${months} ${months > 1 ? 'meses' : 'mês'}`;
+    }
+}
+
 
 export default function AlunosPage() {
     const firestore = useFirestore();
@@ -53,7 +75,15 @@ export default function AlunosPage() {
         return query(collection(firestore, 'students'), orderBy('name', 'asc'));
     }, [firestore]);
 
-    const { data: allStudents, isLoading } = useCollection<Student>(studentsQuery);
+    const examsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'exams'), orderBy('examDate', 'desc'));
+    }, [firestore]);
+
+    const { data: allStudents, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
+    const { data: allExams, isLoading: isLoadingExams } = useCollection<Exam>(examsQuery);
+
+    const isLoading = isLoadingStudents || isLoadingExams;
 
     const { activeStudentsCount, overdueStudentsCount } = useMemo(() => {
         if (!allStudents) return { activeStudentsCount: 0, overdueStudentsCount: 0 };
@@ -62,10 +92,36 @@ export default function AlunosPage() {
         return { activeStudentsCount: active, overdueStudentsCount: overdue };
     }, [allStudents]);
 
-    const filteredStudents = useMemo(() => {
-        if (!allStudents) return [];
+    const studentsWithTimeInBelt = useMemo(() => {
+        if (!allStudents || !allExams) return [];
 
-        let students = allStudents;
+        const examsByStudent = allExams.reduce((acc, exam) => {
+            if (!acc[exam.studentId]) {
+                acc[exam.studentId] = [];
+            }
+            acc[exam.studentId].push(exam);
+            return acc;
+        }, {} as Record<string, Exam[]>);
+
+        return allStudents.map(student => {
+            let timeInBelt = "";
+            const studentExams = examsByStudent[student.id];
+
+            if (student.belt !== 'Branca' && studentExams && studentExams.length > 0) {
+                // The query is already sorted by date desc, so the first one is the latest
+                timeInBelt = calculateTimeSince(studentExams[0].examDate);
+            } else {
+                timeInBelt = calculateTimeSince(student.startDate || student.registrationDate);
+            }
+            return { ...student, timeInBelt };
+        });
+
+    }, [allStudents, allExams]);
+
+    const filteredStudents = useMemo(() => {
+        if (!studentsWithTimeInBelt) return [];
+
+        let students = studentsWithTimeInBelt;
 
         if (activeFilter === 'Vencido') {
             students = students.filter(student => student.paymentStatus === 'Vencido');
@@ -81,7 +137,7 @@ export default function AlunosPage() {
 
         return students;
 
-    }, [allStudents, activeFilter, searchQuery]);
+    }, [studentsWithTimeInBelt, activeFilter, searchQuery]);
     
     const handleSelectStudent = (studentId: string) => {
         router.push(`/alunos/${studentId}/editar`);
@@ -208,7 +264,8 @@ export default function AlunosPage() {
                                     <User className="h-4 w-4" />
                                     <span>{statusEmojis[student.status] || '❔'}</span>
                                     <span>{beltEmojis[student.belt] || '❔'}</span>
-                                    {student.name}
+                                    <span className="flex-grow">{student.name}</span>
+                                    {student.timeInBelt && <Badge variant="secondary">{student.timeInBelt}</Badge>}
                                 </button>
                             ))}
                              {!isLoading && filteredStudents.length === 0 && (
