@@ -1,10 +1,11 @@
 
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { addMonths, format, parseISO } from 'date-fns';
+import { addMonths, format, parseISO, setDate } from 'date-fns';
 import { useEffect, useState } from "react";
 import { doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -83,12 +84,18 @@ export function RegisterPaymentForm({
 
   useEffect(() => {
     if (paymentDateWatcher && planTypeWatcher) {
+        if (planTypeWatcher === 'Bolsa') {
+            setCalculatedExpiryDate('Não se aplica');
+            return;
+        }
+
         try {
             const paymentDate = parseISO(paymentDateWatcher);
             let monthsToAdd = 1;
             if (planTypeWatcher === 'Trimestral') monthsToAdd = 3;
 
-            const expiryDate = addMonths(paymentDate, monthsToAdd);
+            const futureMonth = addMonths(paymentDate, monthsToAdd);
+            const expiryDate = setDate(futureMonth, 5); // Set due date to the 5th
             setCalculatedExpiryDate(format(expiryDate, 'dd/MM/yyyy'));
         } catch (e) {
             setCalculatedExpiryDate('');
@@ -142,22 +149,21 @@ export function RegisterPaymentForm({
         toast({ title: "Erro", description: "Aluno não encontrado.", variant: "destructive" });
         return;
     }
-
-    const paymentDate = new Date(values.paymentDate + "T00:00:00");
-    let expirationDate;
+    
+    const paymentDate = parseISO(values.paymentDate);
+    let expirationDate: Date | null = null;
+    
     if (values.planType === 'Mensal') {
-        expirationDate = addMonths(paymentDate, 1);
+        expirationDate = setDate(addMonths(paymentDate, 1), 5);
     } else if (values.planType === 'Trimestral') {
-        expirationDate = addMonths(paymentDate, 3);
-    } else { // Bolsa
-        expirationDate = addMonths(paymentDate, 1);
+        expirationDate = setDate(addMonths(paymentDate, 3), 5);
     }
 
     const updatedStudentData: Partial<Student> = {
         planType: values.planType,
         planValue: values.planValue,
-        lastPaymentDate: paymentDate.toISOString().split('T')[0],
-        planExpirationDate: expirationDate.toISOString().split('T')[0],
+        lastPaymentDate: values.paymentDate,
+        planExpirationDate: expirationDate ? expirationDate.toISOString().split('T')[0] : null,
         paymentStatus: 'Pago',
         paymentCredits: values.paymentCredits,
     };
