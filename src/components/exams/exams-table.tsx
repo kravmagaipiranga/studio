@@ -17,9 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Save, Trash2, XCircle } from "lucide-react"
+import { Save, Trash2 } from "lucide-react"
 import { Exam, Student } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
 import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
@@ -32,23 +31,19 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ExamsTableProps {
   exams: Exam[];
+  setExams: React.Dispatch<React.SetStateAction<Exam[]>>;
   allStudents: Student[];
   isLoading: boolean;
 }
 
-export function ExamsTable({ exams: initialExams, allStudents, isLoading }: ExamsTableProps) {
+export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTableProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [localExams, setLocalExams] = useState<Exam[]>([]);
   
   const studentOptions = allStudents.slice().sort((a,b) => a.name.localeCompare(b.name)).map(s => ({ value: s.id, label: s.name }));
 
-  useEffect(() => {
-    setLocalExams(initialExams);
-  }, [initialExams]);
-
   const handleInputChange = (examId: string, field: keyof Exam, value: any) => {
-    setLocalExams(prevExams =>
+    setExams(prevExams =>
       prevExams.map(exam => {
         if (exam.id === examId) {
           const updatedExam = { ...exam, [field]: value };
@@ -71,6 +66,16 @@ export function ExamsTable({ exams: initialExams, allStudents, isLoading }: Exam
   const handleSaveExam = (examToSave: Exam) => {
     if (!firestore) return;
     
+    // Validate required fields before saving
+    if (!examToSave.studentId || !examToSave.examDate || !examToSave.targetBelt) {
+        toast({
+            variant: "destructive",
+            title: "Campos Obrigatórios",
+            description: "Por favor, preencha Aluno, Data do Exame e Faixa antes de salvar."
+        });
+        return;
+    }
+
     const { isNew, id, ...examData } = examToSave;
     const finalId = isNew ? doc(collection(firestore, "exams")).id : id;
 
@@ -82,16 +87,16 @@ export function ExamsTable({ exams: initialExams, allStudents, isLoading }: Exam
         description: `A inscrição de ${examData.studentName} foi salva com sucesso.`
     });
     
-    // Optional: refetch or update local state to remove the 'isNew' flag
-    setLocalExams(prev => prev.map(ex => ex.id === examToSave.id ? { ...examToSave, id: finalId, isNew: false } : ex));
+    // Update local state to remove the 'isNew' flag and set the final ID
+    setExams(prev => prev.map(ex => ex.id === examToSave.id ? { ...examToSave, id: finalId, isNew: false } : ex));
   };
 
-  const handleDeleteExam = (examId: string) => {
+  const handleDeleteExam = (examId: string, studentName: string) => {
     if (!firestore) return;
     
     const isNewRow = examId.startsWith('new_');
     if (isNewRow) {
-        setLocalExams(prev => prev.filter(ex => ex.id !== examId));
+        setExams(prev => prev.filter(ex => ex.id !== examId));
         return;
     }
 
@@ -99,7 +104,7 @@ export function ExamsTable({ exams: initialExams, allStudents, isLoading }: Exam
     deleteDocumentNonBlocking(docRef);
     toast({
         title: "Inscrição Removida",
-        description: "A inscrição para o exame foi removida."
+        description: `A inscrição de ${studentName} foi removida.`
     })
   };
 
@@ -116,13 +121,14 @@ export function ExamsTable({ exams: initialExams, allStudents, isLoading }: Exam
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[250px]">Aluno</TableHead>
+              <TableHead className="w-[200px]">Aluno</TableHead>
               <TableHead>Data Exame</TableHead>
               <TableHead>Faixa</TableHead>
               <TableHead>Valor</TableHead>
               <TableHead>Pgto.</TableHead>
+              <TableHead>Data Pgto.</TableHead>
               <TableHead>Método</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="text-right w-[100px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -135,9 +141,10 @@ export function ExamsTable({ exams: initialExams, allStudents, isLoading }: Exam
                 <TableCell><Skeleton className="h-9 w-full" /></TableCell>
                 <TableCell><Skeleton className="h-9 w-full" /></TableCell>
                 <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                <TableCell><Skeleton className="h-9 w-full" /></TableCell>
               </TableRow>
             ))}
-            {!isLoading && localExams.map((exam) => (
+            {!isLoading && exams.map((exam) => (
               <TableRow key={exam.id} className={exam.isNew ? "bg-muted/50" : ""}>
                 <TableCell>
                   <Combobox
@@ -166,7 +173,7 @@ export function ExamsTable({ exams: initialExams, allStudents, isLoading }: Exam
                    </Select>
                 </TableCell>
                 <TableCell>
-                    <Input type="number" value={exam.paymentAmount} onChange={e => handleInputChange(exam.id, 'paymentAmount', parseFloat(e.target.value) || 0)} className="w-28" />
+                    <Input type="number" value={exam.paymentAmount} onChange={e => handleInputChange(exam.id, 'paymentAmount', parseFloat(e.target.value) || 0)} className="w-24" />
                 </TableCell>
                 <TableCell>
                   <Select value={exam.paymentStatus} onValueChange={(value) => handleInputChange(exam.id, 'paymentStatus', value)}>
@@ -176,6 +183,14 @@ export function ExamsTable({ exams: initialExams, allStudents, isLoading }: Exam
                       <SelectItem value="Pendente">Pendente</SelectItem>
                     </SelectContent>
                   </Select>
+                </TableCell>
+                 <TableCell>
+                    <Input 
+                        type="date" 
+                        value={exam.paymentDate || ''} 
+                        onChange={e => handleInputChange(exam.id, 'paymentDate', e.target.value)} 
+                        disabled={exam.paymentStatus !== 'Pago'}
+                    />
                 </TableCell>
                 <TableCell>
                   <Select value={exam.paymentMethod} onValueChange={(value) => handleInputChange(exam.id, 'paymentMethod', value)}>
@@ -194,7 +209,7 @@ export function ExamsTable({ exams: initialExams, allStudents, isLoading }: Exam
                         <Save className="h-4 w-4" />
                         <span className="sr-only">Salvar</span>
                     </Button>
-                    <Button variant="destructive" size="icon" onClick={() => handleDeleteExam(exam.id)}>
+                    <Button variant="destructive" size="icon" onClick={() => handleDeleteExam(exam.id, exam.studentName)}>
                         <Trash2 className="h-4 w-4" />
                         <span className="sr-only">Excluir</span>
                     </Button>
@@ -202,9 +217,9 @@ export function ExamsTable({ exams: initialExams, allStudents, isLoading }: Exam
                 </TableCell>
               </TableRow>
             ))}
-             {!isLoading && localExams.length === 0 && (
+             {!isLoading && exams.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10">
+                <TableCell colSpan={8} className="text-center py-10">
                   Nenhuma inscrição de exame encontrada. Clique em "Agendar Exame" para adicionar uma.
                 </TableCell>
               </TableRow>
@@ -215,4 +230,3 @@ export function ExamsTable({ exams: initialExams, allStudents, isLoading }: Exam
     </Card>
   );
 }
-

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ExamsTable } from "@/components/exams/exams-table";
 import { Button } from "@/components/ui/button";
 import { Download, PlusCircle, Search } from "lucide-react";
@@ -30,14 +30,14 @@ export default function ExamesPage() {
     const { data: initialExams, isLoading: isLoadingExams } = useCollection<Exam>(examsCollection);
     const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
 
-    useState(() => {
+    useEffect(() => {
         if (initialExams) {
             setExams(initialExams);
         }
     }, [initialExams]);
 
 
-    const filteredExams = (initialExams || []).filter(exam =>
+    const filteredExams = (exams || []).filter(exam =>
         exam.studentName.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -53,6 +53,7 @@ export default function ExamesPage() {
          examDate: new Date().toISOString().split('T')[0],
          targetBelt: "",
          paymentStatus: "Pendente",
+         paymentDate: "",
          paymentAmount: 200,
          paymentMethod: "Pendente",
          isNew: true, // Flag to identify new unsaved rows
@@ -93,6 +94,7 @@ export default function ExamesPage() {
             <div className="flex flex-1 rounded-lg shadow-sm mt-4">
                 <ExamsTable 
                     exams={filteredExams}
+                    setExams={setExams}
                     allStudents={students || []}
                     isLoading={isLoading}
                 />
