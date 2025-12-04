@@ -38,6 +38,7 @@ const formSchema = z.object({
     z.number().positive("O valor deve ser positivo.")
   ),
   paymentStatus: z.enum(["Pago", "Pendente"]),
+  paymentDate: z.string().optional(),
   paymentMethod: z.enum(["Pix", "Cartão", "Dinheiro", "Pendente"]),
 });
 
@@ -65,9 +66,12 @@ export function ExamForm({ exam, allStudents, isEditing }: ExamFormProps) {
       targetBelt: "",
       paymentAmount: 200,
       paymentStatus: 'Pendente',
+      paymentDate: "",
       paymentMethod: 'Pendente',
     },
   });
+
+  const paymentStatus = form.watch("paymentStatus");
 
   useEffect(() => {
     if (isEditing && exam) {
@@ -76,6 +80,7 @@ export function ExamForm({ exam, allStudents, isEditing }: ExamFormProps) {
         form.reset({
           ...exam,
           examDate: exam.examDate ? format(new Date(exam.examDate + 'T00:00:00'), 'yyyy-MM-dd') : '',
+          paymentDate: exam.paymentDate ? format(new Date(exam.paymentDate + 'T00:00:00'), 'yyyy-MM-dd') : '',
         });
     } else {
         form.reset({
@@ -84,6 +89,7 @@ export function ExamForm({ exam, allStudents, isEditing }: ExamFormProps) {
             targetBelt: "",
             paymentAmount: 200,
             paymentStatus: 'Pendente',
+            paymentDate: "",
             paymentMethod: 'Pendente',
         });
     }
@@ -118,6 +124,7 @@ export function ExamForm({ exam, allStudents, isEditing }: ExamFormProps) {
         targetBelt: values.targetBelt,
         paymentAmount: values.paymentAmount,
         paymentStatus: values.paymentStatus,
+        paymentDate: values.paymentStatus === 'Pago' ? values.paymentDate : undefined,
         paymentMethod: values.paymentMethod,
     };
     
@@ -236,27 +243,42 @@ export function ExamForm({ exam, allStudents, isEditing }: ExamFormProps) {
                     )}
                     />
                 </div>
-                 <FormField
-                    control={form.control}
-                    name="paymentMethod"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Forma de Pagamento</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="paymentDate"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Data do Pagamento</FormLabel>
                             <FormControl>
-                            <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                                <Input type="date" {...field} value={field.value ?? ''} disabled={paymentStatus !== 'Pago'} />
                             </FormControl>
-                            <SelectContent>
-                                <SelectItem value="Pendente">Pendente</SelectItem>
-                                <SelectItem value="Pix">Pix</SelectItem>
-                                <SelectItem value="Cartão">Cartão</SelectItem>
-                                <SelectItem value="Dinheiro">Dinheiro</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="paymentMethod"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Forma de Pagamento</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Pendente">Pendente</SelectItem>
+                                    <SelectItem value="Pix">Pix</SelectItem>
+                                    <SelectItem value="Cartão">Cartão</SelectItem>
+                                    <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
 
                 <Button type="submit" className="w-full mt-4">{isEditing ? "Salvar Alterações" : "Inscrever Aluno"}</Button>
             </form>
