@@ -3,11 +3,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { collection, doc, writeBatch } from "firebase/firestore";
+import { collection, doc, query, where, orderBy, writeBatch } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, User, Search, Import, HelpCircle } from "lucide-react";
+import { PlusCircle, User, Search, Import, HelpCircle, Users, UserX } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -76,13 +76,19 @@ export default function AlunosPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [pastedData, setPastedData] = useState("");
     const [columnMappings, setColumnMappings] = useState<ColumnMapping[]>(initialMappings);
+    const [showInactive, setShowInactive] = useState(false);
 
-    const studentsCollection = useMemoFirebase(() => {
+    const studentsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return collection(firestore, 'students');
-    }, [firestore]);
+        const statusToQuery = showInactive ? "Inativo" : "Ativo";
+        return query(
+            collection(firestore, 'students'), 
+            where('status', '==', statusToQuery),
+            orderBy('name', 'asc')
+        );
+    }, [firestore, showInactive]);
 
-    const { data: students, isLoading } = useCollection<Student>(studentsCollection);
+    const { data: students, isLoading } = useCollection<Student>(studentsQuery);
 
     const filteredStudents = (students || []).filter(student => 
         student.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -173,77 +179,86 @@ export default function AlunosPage() {
         <div className="h-full">
             <Card className="h-full flex flex-col">
                 <CardHeader className="border-b">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-4">
                          <div>
-                            <CardTitle>Alunos Cadastrados</CardTitle>
+                            <CardTitle>{showInactive ? "Alunos Inativos" : "Alunos Ativos"}</CardTitle>
                             <CardDescription>Gerencie os alunos da academia</CardDescription>
                         </div>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                 <Button variant="outline">
-                                    <Import className="mr-2 h-4 w-4" />
-                                    Ferramenta de Importação
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="max-w-4xl">
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Importar Alunos da Planilha</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Siga os passos para importar seus dados.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[60vh] overflow-y-auto p-2">
-                                    <div className="space-y-4">
-                                        <h3 className="font-semibold text-lg">Passo 1: Mapeie Suas Colunas</h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            Digite o nome exato do cabeçalho da sua planilha para cada campo correspondente.
-                                        </p>
-                                        <div className="space-y-3">
-                                            {columnMappings.map(mapping => (
-                                                <div key={mapping.name} className="grid grid-cols-3 items-center gap-2">
-                                                    <Label htmlFor={mapping.name} className="text-right flex items-center gap-1">
-                                                        {mapping.label}
-                                                         <TooltipProvider>
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>
-                                                                    <p>{mapping.hint}</p>
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        </TooltipProvider>
-                                                    </Label>
-                                                    <Input
-                                                        id={mapping.name}
-                                                        value={mapping.value}
-                                                        onChange={(e) => handleMappingChange(mapping.name, e.target.value)}
-                                                        className="col-span-2"
-                                                        placeholder={mapping.hint}
-                                                    />
-                                                </div>
-                                            ))}
+                        <div className="flex items-center gap-2">
+                             <Button variant="outline" onClick={() => setShowInactive(!showInactive)}>
+                                {showInactive ? (
+                                    <><Users className="mr-2 h-4 w-4" /> Ver Alunos Ativos</>
+                                ) : (
+                                    <><UserX className="mr-2 h-4 w-4" /> Ver Alunos Inativos</>
+                                )}
+                            </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                     <Button variant="outline">
+                                        <Import className="mr-2 h-4 w-4" />
+                                        Ferramenta de Importação
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="max-w-4xl">
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Importar Alunos da Planilha</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Siga os passos para importar seus dados.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[60vh] overflow-y-auto p-2">
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-lg">Passo 1: Mapeie Suas Colunas</h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                Digite o nome exato do cabeçalho da sua planilha para cada campo correspondente.
+                                            </p>
+                                            <div className="space-y-3">
+                                                {columnMappings.map(mapping => (
+                                                    <div key={mapping.name} className="grid grid-cols-3 items-center gap-2">
+                                                        <Label htmlFor={mapping.name} className="text-right flex items-center gap-1">
+                                                            {mapping.label}
+                                                             <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>{mapping.hint}</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        </Label>
+                                                        <Input
+                                                            id={mapping.name}
+                                                            value={mapping.value}
+                                                            onChange={(e) => handleMappingChange(mapping.name, e.target.value)}
+                                                            className="col-span-2"
+                                                            placeholder={mapping.hint}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-lg">Passo 2: Cole Seus Dados</h3>
+                                             <p className="text-sm text-muted-foreground">
+                                                Vá para sua planilha (Google Sheets/Excel), selecione todas as linhas (incluindo o cabeçalho) e copie. Depois, cole no campo abaixo.
+                                            </p>
+                                            <Textarea 
+                                                placeholder="Cole os dados copiados da sua planilha aqui..."
+                                                className="h-96"
+                                                value={pastedData}
+                                                onChange={(e) => setPastedData(e.target.value)}
+                                            />
                                         </div>
                                     </div>
-                                    <div className="space-y-4">
-                                        <h3 className="font-semibold text-lg">Passo 2: Cole Seus Dados</h3>
-                                         <p className="text-sm text-muted-foreground">
-                                            Vá para sua planilha (Google Sheets/Excel), selecione todas as linhas (incluindo o cabeçalho) e copie. Depois, cole no campo abaixo.
-                                        </p>
-                                        <Textarea 
-                                            placeholder="Cole os dados copiados da sua planilha aqui..."
-                                            className="h-96"
-                                            value={pastedData}
-                                            onChange={(e) => setPastedData(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleImport}>Importar Alunos</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleImport}>Importar Alunos</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0 flex-grow flex flex-col">
@@ -286,7 +301,7 @@ export default function AlunosPage() {
                             ))}
                              {!isLoading && filteredStudents.length === 0 && (
                                 <div className="text-center py-10 text-muted-foreground">
-                                    Nenhum aluno encontrado.
+                                    Nenhum aluno encontrado para esta visualização.
                                 </div>
                              )}
                         </div>
@@ -296,5 +311,7 @@ export default function AlunosPage() {
         </div>
     );
 }
+
+    
 
     
