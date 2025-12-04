@@ -36,7 +36,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 
 const formSchema = z.object({
   studentId: z.string({ required_error: "É necessário selecionar um aluno." }),
-  planType: z.enum(["Mensal", "Trimestral", "Bolsa"]),
+  planType: z.enum(["Mensal", "Trimestral", "Bolsa", "Outros"]),
   planValue: z.preprocess(
     (a) => {
         if (typeof a === 'string') return parseFloat(a.replace(',', '.'));
@@ -73,7 +73,7 @@ export function RegisterPaymentForm({
     defaultValues: {
         studentId: '',
         planType: "Mensal",
-        planValue: 0,
+        planValue: 315,
         paymentDate: format(new Date(), 'yyyy-MM-dd'),
         paymentCredits: "",
     },
@@ -83,8 +83,23 @@ export function RegisterPaymentForm({
   const planTypeWatcher = form.watch('planType');
 
   useEffect(() => {
+    switch (planTypeWatcher) {
+      case 'Mensal':
+        form.setValue('planValue', 315);
+        break;
+      case 'Trimestral':
+        form.setValue('planValue', 898);
+        break;
+      case 'Bolsa':
+      case 'Outros':
+        form.setValue('planValue', 0);
+        break;
+    }
+  }, [planTypeWatcher, form]);
+
+  useEffect(() => {
     if (paymentDateWatcher && planTypeWatcher) {
-        if (planTypeWatcher === 'Bolsa') {
+        if (planTypeWatcher === 'Bolsa' || planTypeWatcher === 'Outros') {
             setCalculatedExpiryDate('Não se aplica');
             return;
         }
@@ -111,10 +126,11 @@ export function RegisterPaymentForm({
     
     if (studentToLoad) {
       setSelectedStudent(studentToLoad);
+      const studentPlanType = studentToLoad.planType || 'Mensal';
       form.reset({
           studentId: studentToLoad.id,
-          planType: studentToLoad.planType || "Mensal",
-          planValue: studentToLoad.planValue || 0,
+          planType: studentPlanType,
+          planValue: studentToLoad.planValue || (studentPlanType === 'Mensal' ? 315 : (studentPlanType === 'Trimestral' ? 898 : 0)),
           paymentDate: format(new Date(), 'yyyy-MM-dd'),
           paymentCredits: studentToLoad.paymentCredits || "",
       });
@@ -128,8 +144,9 @@ export function RegisterPaymentForm({
             const foundStudent = allStudents.find(s => s.id === values.studentId);
             if (foundStudent && foundStudent.id !== selectedStudent?.id) {
                 setSelectedStudent(foundStudent);
-                form.setValue('planType', foundStudent.planType || 'Mensal');
-                form.setValue('planValue', foundStudent.planValue || 0);
+                const studentPlanType = foundStudent.planType || 'Mensal';
+                form.setValue('planType', studentPlanType);
+                form.setValue('planValue', foundStudent.planValue || (studentPlanType === 'Mensal' ? 315 : (studentPlanType === 'Trimestral' ? 898 : 0)));
                 form.setValue('paymentCredits', foundStudent.paymentCredits || '');
             }
         }
@@ -225,6 +242,7 @@ export function RegisterPaymentForm({
                             <SelectItem value="Mensal">Mensal</SelectItem>
                             <SelectItem value="Trimestral">Trimestral</SelectItem>
                             <SelectItem value="Bolsa">Bolsa</SelectItem>
+                            <SelectItem value="Outros">Outros</SelectItem>
                             </SelectContent>
                         </Select>
                         <FormMessage />
@@ -238,7 +256,12 @@ export function RegisterPaymentForm({
                         <FormItem>
                         <FormLabel>Valor (R$)</FormLabel>
                         <FormControl>
-                            <Input type="number" step="0.01" {...field} />
+                            <Input 
+                                type="number" 
+                                step="0.01" 
+                                {...field} 
+                                disabled={planTypeWatcher !== 'Outros'}
+                            />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
