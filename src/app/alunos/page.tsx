@@ -33,6 +33,12 @@ const beltEmojis: Record<string, string> = {
     'Preta': '⚫',
 };
 
+const statusEmojis: Record<string, string> = {
+    'Ativo': '✅',
+    'Inativo': '⛔',
+    'Pendente': '❔'
+};
+
 
 export default function AlunosPage() {
     const firestore = useFirestore();
@@ -148,6 +154,7 @@ export default function AlunosPage() {
                                     )}
                                 >
                                     <User className="h-4 w-4" />
+                                    <span>{statusEmojis[student.status] || '❔'}</span>
                                     <span>{beltEmojis[student.belt] || '❔'}</span>
                                     {student.name}
                                 </button>
