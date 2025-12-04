@@ -49,14 +49,17 @@ service cloud.firestore {
     // Collection Rules
     // ------------------------------------------------------------------------
 
-    match /students/{studentId} {
-      // Any signed-in user (the admin) can read student data.
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
+    // General read access for the entire collection for any signed-in user.
+    // This allows list operations (queries) to work.
+    match /students/{document=**} {
+        allow read: if isSignedIn();
+    }
 
-      // Only Admins can create, update, or delete students.
+    match /students/{studentId} {
+      // Write access for individual documents is restricted to Admins.
       allow create, update, delete: if isAdmin();
 
+      // Subcollection access rules
       match /payments/{paymentId} {
         // Owner and Admins can access payment subcollections.
         allow get, list: if isOwner(studentId) || isAdmin();
