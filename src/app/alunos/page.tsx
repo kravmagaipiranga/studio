@@ -38,7 +38,7 @@ const beltEmojis: Record<string, string> = {
 const statusEmojis: Record<string, string> = {
     'Ativo': '✅',
     'Inativo': '⛔',
-    'Pendente': '❔'
+    'Pendente': '⚠'
 };
 
 
