@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from "react";
-import { useUser, useAuth } from "@/firebase";
+import { useUser, useAuth, useFirebaseApp } from "@/firebase";
 import { updateProfile } from "firebase/auth";
 import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
 
@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function PerfilPage() {
     const { user, isUserLoading } = useUser();
     const auth = useAuth();
+    const firebaseApp = useFirebaseApp(); 
     const { toast } = useToast();
 
     const [displayName, setDisplayName] = useState('');
@@ -48,11 +49,11 @@ export default function PerfilPage() {
     };
 
     const handleSaveChanges = async () => {
-        if (!user || !auth) {
+        if (!user || !auth || !firebaseApp) {
              toast({
                 variant: "destructive",
                 title: "Erro",
-                description: "Usuário não autenticado. Faça login novamente.",
+                description: "Usuário não autenticado ou serviço indisponível. Faça login novamente.",
             });
             return;
         }
@@ -63,7 +64,8 @@ export default function PerfilPage() {
 
             // Se uma nova foto foi selecionada (e não é a URL antiga)
             if (newPhoto && newPhoto !== user.photoURL) {
-                const storage = getStorage();
+                // Inicializa o Storage com a instância do app
+                const storage = getStorage(firebaseApp);
                 const storageRef = ref(storage, `avatars/${user.uid}/profile.jpg`);
                 
                 // O newPhoto é um data URL (base64)
