@@ -1,0 +1,15 @@
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Regra de Segurança para Avatares de Usuário
+    // Permite que um usuário autenticado leia e escreva (crie, atualize, delete)
+    // seu próprio arquivo de avatar na pasta `avatars/{userId}`.
+    match /avatars/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+
+    
