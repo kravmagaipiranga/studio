@@ -1,7 +1,8 @@
+
 "use client"
 
 import * as React from "react"
-import { addDays, format } from "date-fns"
+import { format, startOfMonth, endOfMonth } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { DateRange } from "react-day-picker"
@@ -21,9 +22,10 @@ export function DatePickerWithRange({
   const [date, setDate] = React.useState<DateRange | undefined>()
 
   React.useEffect(() => {
+    const today = new Date()
     setDate({
-      from: new Date(2024, 0, 20),
-      to: addDays(new Date(2024, 0, 20), 20),
+      from: startOfMonth(today),
+      to: endOfMonth(today),
     })
   }, [])
 
