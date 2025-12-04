@@ -10,14 +10,12 @@ import { Student } from '@/lib/types';
 if (!admin.apps.length) {
   try {
     // When deployed to App Hosting, GOOGLE_APPLICATION_CREDENTIALS is automatically set
-    admin.initializeApp({
-      credential: admin.credential.applicationDefault(),
-      projectId: process.env.GCLOUD_PROJECT,
-    });
+    // and initializeApp() will work without arguments.
+    admin.initializeApp();
   } catch (error) {
     console.error('Firebase Admin Initialization Error:', error);
-    // For local development, you might need to set up credentials differently
-    // e.g., using a service account file.
+    // For local development, you might need to rely on the service account file
+    // or other credential mechanisms.
   }
 }
 
@@ -35,11 +33,8 @@ const HEADERS = [
 
 async function getGoogleSheetsClient() {
     const auth = new google.auth.GoogleAuth({
-        credentials: {
-            client_email: process.env.GOOGLE_CLIENT_EMAIL,
-            private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        },
         scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+        projectId: process.env.GCLOUD_PROJECT,
     });
 
     const authClient = await auth.getClient();
@@ -54,8 +49,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!SPREADSHEET_ID || !process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
-        return NextResponse.json({ error: 'Google Sheets API environment variables not configured.' }, { status: 500 });
+    if (!SPREADSHEET_ID) {
+        return NextResponse.json({ error: 'GOOGLE_SHEET_ID environment variable not configured.' }, { status: 500 });
     }
 
     try {
