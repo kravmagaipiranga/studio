@@ -119,7 +119,7 @@ export default function ExamesPage() {
         <>
             <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6 mb-4">
                 {Object.entries(beltInfo).map(([belt, { emoji, colorClass }]) => (
-                    <Card key={belt} className={`bg-card ${colorClass} border-2 flex flex-col justify-center min-h-[120px]`}>
+                    <Card key={belt} className={`bg-card ${colorClass} border-2 flex flex-col justify-center aspect-square`}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
                             <CardTitle className="text-sm font-medium">
                                 {belt}
