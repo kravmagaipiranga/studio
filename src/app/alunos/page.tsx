@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from "react";
@@ -14,6 +13,10 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { setDoc, writeBatch } from "firebase/firestore";
 
 type FilterType = 'Ativo' | 'Inativo' | 'Vencido';
 
@@ -23,15 +26,18 @@ const filterDescriptions: Record<FilterType, string> = {
     'Vencido': "Alunos com pagamentos vencidos."
 };
 
+
 export default function AlunosPage() {
     const firestore = useFirestore();
     const router = useRouter();
+    const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState("");
     const [activeFilter, setActiveFilter] = useState<FilterType>('Ativo');
-
+    const [importJson, setImportJson] = useState('');
+    const [isImporting, setIsImporting] = useState(false);
+    
     const studentsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        // Query simplificada: busca todos os alunos, ordenados por nome. A filtragem será feita no cliente.
         return query(collection(firestore, 'students'), orderBy('name', 'asc'));
     }, [firestore]);
 
@@ -42,14 +48,12 @@ export default function AlunosPage() {
 
         let students = allStudents;
 
-        // 1. Aplicar filtro de status (Ativo, Inativo, Vencido)
         if (activeFilter === 'Vencido') {
             students = students.filter(student => student.paymentStatus === 'Vencido');
-        } else { // 'Ativo' or 'Inativo'
+        } else {
             students = students.filter(student => student.status === activeFilter);
         }
 
-        // 2. Aplicar filtro de busca por nome
         if (searchQuery) {
             students = students.filter(student => 
                 student.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -59,14 +63,64 @@ export default function AlunosPage() {
         return students;
 
     }, [allStudents, activeFilter, searchQuery]);
-
-    const handleSelectStudent = (studentId: string) => {
-        router.push(`/alunos/${studentId}/editar`);
-    };
     
-    // Placeholder for CSV generation
+    const handleSelectStudent = (studentId: string) => {
+        router.push(`/alunos/${studentId}`);
+    };
+
     const handleGenerateReport = () => {
         alert("A funcionalidade de gerar relatório será implementada em breve.");
+    };
+
+    const handleImport = async () => {
+        if (!firestore) return;
+        setIsImporting(true);
+
+        try {
+            const data = JSON.parse(importJson);
+            if (!Array.isArray(data)) {
+                throw new Error("O JSON precisa ser um array de alunos.");
+            }
+
+            const batch = writeBatch(firestore);
+            let importedCount = 0;
+
+            data.forEach(item => {
+                const studentData: Partial<Student> = {
+                    name: item["Nome Completo"] || item["Nome"] || item.name,
+                    email: item["Email"] || item.email,
+                    cpf: item["CPF"] || item.cpf,
+                    phone: item["Whatsapp"] || item["Telefone"] || item.phone,
+                    registrationDate: new Date().toISOString(),
+                    status: 'Ativo',
+                    paymentStatus: 'Pendente',
+                    belt: item["Faixa"] || item.belt || 'Branca',
+                };
+                
+                if (studentData.name) {
+                    const docRef = collection(firestore, 'students');
+                    batch.set(doc(docRef), studentData);
+                    importedCount++;
+                }
+            });
+
+            await batch.commit();
+
+            toast({
+                title: "Importação Concluída",
+                description: `${importedCount} alunos foram importados com sucesso.`,
+            });
+
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: "Erro na Importação",
+                description: error.message || "Verifique o formato do JSON e tente novamente.",
+            });
+        } finally {
+            setIsImporting(false);
+            setImportJson('');
+        }
     };
 
     return (
@@ -79,7 +133,32 @@ export default function AlunosPage() {
                             <CardDescription>{filterDescriptions[activeFilter]}</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Link href="/alunos/novo/editar">
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button size="sm" variant="outline">Importar JSON</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Importar Alunos via JSON</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Cole o conteúdo do seu arquivo JSON abaixo. Certifique-se de que é um array de objetos, onde cada objeto representa um aluno.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <Textarea 
+                                        placeholder="Cole o JSON aqui..." 
+                                        className="min-h-[200px]"
+                                        value={importJson}
+                                        onChange={(e) => setImportJson(e.target.value)}
+                                    />
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleImport} disabled={isImporting || !importJson}>
+                                            {isImporting ? 'Importando...' : 'Importar Agora'}
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            <Link href="/alunos/novo">
                                 <Button size="sm">
                                     <PlusCircle className="mr-2 h-4 w-4" />
                                     Novo Aluno
