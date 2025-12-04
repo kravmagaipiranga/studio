@@ -25,12 +25,12 @@ const beltOrder: Record<string, number> = {
 };
 
 const beltInfo: Record<string, { emoji: string; colorClass: string }> = {
-    'Amarela': { emoji: '🟡', colorClass: 'border-yellow-400' },
-    'Laranja': { emoji: '🟠', colorClass: 'border-orange-500' },
-    'Verde':   { emoji: '🟢', colorClass: 'border-green-500' },
-    'Azul':    { emoji: '🔵', colorClass: 'border-blue-500' },
-    'Marrom':  { emoji: '🟤', colorClass: 'border-amber-800' },
-    'Preta':   { emoji: '⚫', colorClass: 'border-gray-800' },
+    'Amarela': { emoji: '🟡', colorClass: 'bg-yellow-400 text-black' },
+    'Laranja': { emoji: '🟠', colorClass: 'bg-orange-500 text-white' },
+    'Verde':   { emoji: '🟢', colorClass: 'bg-green-500 text-white' },
+    'Azul':    { emoji: '🔵', colorClass: 'bg-blue-500 text-white' },
+    'Marrom':  { emoji: '🟤', colorClass: 'bg-amber-800 text-white' },
+    'Preta':   { emoji: '⚫', colorClass: 'bg-gray-800 text-white' },
 };
 
 
@@ -120,16 +120,10 @@ export default function ExamesPage() {
         <>
             <div className="grid gap-2 grid-cols-6 mb-4">
                  {Object.entries(beltInfo).map(([belt, { emoji, colorClass }]) => (
-                    <Card key={belt} className={cn("bg-card border flex flex-col justify-center aspect-square", colorClass)}>
-                        <CardHeader className="flex flex-row items-start justify-between space-y-0 p-1 pb-0">
-                            <CardTitle className="text-[10px] font-medium">
-                                {belt}
-                            </CardTitle>
-                            <span className="text-base">{emoji}</span>
-                        </CardHeader>
-                        <CardContent className="p-1 pt-0 flex items-center justify-center">
-                            <div className="text-xl font-bold">
-                                {isLoading ? <Skeleton className="h-6 w-6"/> : examCountsByBelt[belt] ?? 0}
+                    <Card key={belt} className={cn("flex flex-col justify-center items-center w-10 h-10", colorClass)}>
+                        <CardContent className="p-0 flex items-center justify-center">
+                            <div className="text-lg font-bold">
+                                {isLoading ? <Skeleton className="h-6 w-6 bg-white/30"/> : examCountsByBelt[belt] ?? 0}
                             </div>
                         </CardContent>
                     </Card>
