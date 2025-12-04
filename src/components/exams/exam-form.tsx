@@ -53,7 +53,9 @@ export function ExamForm({ exam, allStudents, isEditing }: ExamFormProps) {
   const firestore = useFirestore();
   
   const [selectedStudent, setSelectedStudent] = useState<Student | undefined>(undefined);
-  const studentOptions = allStudents.map(s => ({ value: s.id, label: s.name }));
+  
+  const sortedStudents = allStudents.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const studentOptions = sortedStudents.map(s => ({ value: s.id, label: s.name }));
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
