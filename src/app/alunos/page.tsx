@@ -19,7 +19,7 @@ export default function AlunosPage() {
     const firestore = useFirestore();
     const { toast } = useToast();
     
-    const [selectedStudent, setSelectedStudent] = useState<Student | null | 'new'>(null);
+    const [selectedStudent, setSelectedStudent] = useState<Student | 'new' | null>(null);
 
     const studentsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -60,14 +60,7 @@ export default function AlunosPage() {
         }
     }
 
-    const getStudentFromState = () => {
-      if (selectedStudent && selectedStudent !== 'new') {
-        return selectedStudent;
-      }
-      return null;
-    }
-    
-    const studentToEdit = getStudentFromState();
+    const studentToEdit = selectedStudent && selectedStudent !== 'new' ? selectedStudent : null;
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 h-[calc(100vh-100px)]">
@@ -111,7 +104,7 @@ export default function AlunosPage() {
             <div className="md:col-span-2 lg:col-span-3 h-full">
                 {selectedStudent ? (
                     <Card className="h-full flex flex-col">
-                        <CardHeader className="flex flex-row justify-between items-center">
+                        <CardHeader className="flex flex-row justify-between items-center border-b">
                             <div>
                                 <CardTitle>{studentToEdit ? "Editar Aluno" : "Adicionar Novo Aluno"}</CardTitle>
                                 <CardDescription>
@@ -141,7 +134,7 @@ export default function AlunosPage() {
                                 </AlertDialog>
                             )}
                         </CardHeader>
-                        <CardContent className="flex-grow overflow-hidden">
+                        <CardContent className="flex-grow overflow-hidden p-6">
                            <StudentForm 
                                 student={studentToEdit} 
                                 onFormSubmit={handleFormSubmit} 
@@ -150,7 +143,7 @@ export default function AlunosPage() {
                         </CardContent>
                     </Card>
                 ) : (
-                    <Card className="h-full flex items-center justify-center">
+                    <Card className="h-full flex items-center justify-center bg-muted/20 border-dashed">
                         <div className="text-center text-muted-foreground">
                             <User className="mx-auto h-12 w-12" />
                             <p className="mt-4">Selecione um aluno na lista para ver os detalhes</p>
