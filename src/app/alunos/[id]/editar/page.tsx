@@ -40,7 +40,7 @@ function EditStudentSkeleton() {
 }
 
 export default function EditStudentPage({ params }: { params: { id: string } }) {
-  const id = params.id;
+  const { id } = params;
   const firestore = useFirestore();
   const router = useRouter();
   const isCreating = id === 'novo';
@@ -74,7 +74,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
                 </Button>
             </Link>
         </div>
-        <StudentForm student={student} onFormSubmit={handleFormSubmit} />
+        <StudentForm student={student} onFormSubmit={handleFormSubmit} isEditing={!isCreating} />
     </>
   );
 }
