@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from "react";
@@ -6,7 +7,7 @@ import { collection, query, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, User, Search, Download } from "lucide-react";
+import { PlusCircle, User, Search, Download, Upload } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ export default function AlunosPage() {
     const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState("");
     const [activeFilter, setActiveFilter] = useState<FilterType>('Ativo');
+    const [jsonInput, setJsonInput] = useState("");
     
     const studentsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -70,6 +72,61 @@ export default function AlunosPage() {
         alert("A funcionalidade de gerar relatório será implementada em breve.");
     };
 
+    const handleBulkImport = async () => {
+        if (!firestore) {
+            toast({ title: "Erro", description: "Conexão com o banco de dados não disponível.", variant: "destructive" });
+            return;
+        }
+
+        try {
+            const studentsToImport: Partial<Student>[] = JSON.parse(jsonInput);
+            
+            if (!Array.isArray(studentsToImport)) {
+                throw new Error("O JSON fornecido não é uma lista (array).");
+            }
+            
+            const batch = writeBatch(firestore);
+
+            studentsToImport.forEach(studentData => {
+                const newStudentRef = doc(collection(firestore, "students"));
+                const newStudent: Student = {
+                    id: newStudentRef.id,
+                    name: studentData.name || "Nome não informado",
+                    email: studentData.email || "",
+                    status: studentData.status || "Ativo",
+                    registrationDate: studentData.registrationDate || new Date().toISOString(),
+                    paymentStatus: studentData.paymentStatus || "Pendente",
+                    dob: studentData.dob || "",
+                    cpf: studentData.cpf || "",
+                    tshirtSize: studentData.tshirtSize || "M",
+                    pantsSize: studentData.pantsSize || "M",
+                    phone: studentData.phone || "",
+                    emergencyContacts: studentData.emergencyContacts || "",
+                    belt: studentData.belt || "Branca",
+                };
+                batch.set(newStudentRef, newStudent);
+            });
+
+            await batch.commit();
+
+            toast({
+                title: "Importação Concluída!",
+                description: `${studentsToImport.length} alunos foram importados com sucesso.`
+            });
+
+            setJsonInput(""); // Limpa o textarea
+            router.refresh(); // Atualiza a lista na tela
+
+        } catch (error: any) {
+            toast({
+                title: "Erro na Importação",
+                description: `Não foi possível importar os dados. Verifique o formato do JSON. Erro: ${error.message}`,
+                variant: "destructive"
+            });
+        }
+    };
+
+
     return (
         <div className="h-full">
             <Card className="h-full flex flex-col">
@@ -86,6 +143,33 @@ export default function AlunosPage() {
                                     Novo Aluno
                                 </Button>
                             </Link>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                        <Upload className="mr-2 h-4 w-4" />
+                                        Importar em Massa
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Importar Alunos em Massa</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Cole abaixo a lista de alunos em formato JSON. Cada aluno deve ser um objeto dentro de um array.
+                                            Ex: `[{"name": "Aluno Teste", "email": "teste@email.com", "status": "Ativo"}]`
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <Textarea
+                                        placeholder="Cole o seu JSON aqui..."
+                                        className="min-h-[200px] font-mono text-xs"
+                                        value={jsonInput}
+                                        onChange={(e) => setJsonInput(e.target.value)}
+                                    />
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleBulkImport}>Confirmar Importação</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                              <Button variant="outline" size="sm" onClick={handleGenerateReport}>
                                 <Download className="mr-2 h-4 w-4" />
                                 Gerar Relatório
