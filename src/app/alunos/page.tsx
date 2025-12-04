@@ -46,7 +46,7 @@ export default function AlunosPage() {
     const firestore = useFirestore();
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState("");
-    const [activeFilter, setActiveFilter] = useState<FilterType>('Ativo');
+    const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
     
     const studentsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
