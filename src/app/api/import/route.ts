@@ -5,7 +5,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as admin from 'firebase-admin';
 import { google } from 'googleapis';
 import { Student } from '@/lib/types';
-import { doc } from 'firebase/firestore';
 
 // Initialize Firebase Admin SDK if not already initialized
 if (!admin.apps.length) {
@@ -121,7 +120,7 @@ export async function GET(request: NextRequest) {
             // Remove any undefined fields before saving
             Object.keys(student).forEach(key => (student as any)[key] === undefined && delete (student as any)[key]);
             
-            // 4. Save to Firestore
+            // 4. Save to Firestore using Admin SDK syntax
             await db.collection('students').doc(newStudentId).set(student);
             importedCount++;
         }
