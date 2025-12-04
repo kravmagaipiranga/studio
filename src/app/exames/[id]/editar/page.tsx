@@ -1,4 +1,3 @@
-
 'use client';
 
 import { doc, collection } from "firebase/firestore";
@@ -50,7 +49,7 @@ export default function EditExamPage() {
   const { data: exam, isLoading: isLoadingExam } = useDoc<Exam>(examRef);
   const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
 
-  const isLoading = isLoadingExam || isLoadingStudents;
+  const isLoading = !isCreating && (isLoadingExam || isLoadingStudents);
 
   if (isLoading) {
     return <EditExamSkeleton />;

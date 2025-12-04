@@ -1,4 +1,3 @@
-
 "use client"
 
 import {
@@ -104,7 +103,7 @@ export function SalesTable({ sales, isLoading }: SalesTableProps) {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => router.push(`/vendas/${sale.id}/editar`)}>
-                          Editar/Registrar Pagamento
+                          Editar
                         </DropdownMenuItem>
                          <DropdownMenuItem className="text-destructive">
                           Cancelar Venda

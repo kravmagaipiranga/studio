@@ -1,4 +1,3 @@
-
 "use client"
 
 import {
@@ -110,7 +109,7 @@ export function SeminarsTable({ seminars, isLoading }: SeminarsTableProps) {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => router.push(`/seminarios/${seminar.id}/editar`)}>
-                          Editar/Registrar Pagamento
+                          Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => router.push(`/alunos/${seminar.studentId}`)}>
                           Ver Detalhes do Aluno

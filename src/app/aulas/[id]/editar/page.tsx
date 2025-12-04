@@ -1,4 +1,3 @@
-
 'use client';
 
 import { doc, collection } from "firebase/firestore";
@@ -50,7 +49,7 @@ export default function EditPrivateClassPage() {
   const { data: privateClass, isLoading: isLoadingClass } = useDoc<PrivateClass>(privateClassRef);
   const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
 
-  const isLoading = isLoadingClass || isLoadingStudents;
+  const isLoading = isEditing && (isLoadingClass || isLoadingStudents);
 
   if (isLoading) {
     return <EditPrivateClassSkeleton />;

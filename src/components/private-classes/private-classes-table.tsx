@@ -1,4 +1,3 @@
-
 "use client"
 
 import {
@@ -106,7 +105,7 @@ export function PrivateClassesTable({ privateClasses, isLoading }: PrivateClasse
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => router.push(`/aulas/${pc.id}/editar`)}>
-                          Editar/Registrar Pagamento
+                          Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => router.push(`/alunos/${pc.studentId}`)}>
                           Ver Detalhes do Aluno

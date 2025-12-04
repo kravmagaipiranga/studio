@@ -1,4 +1,3 @@
-
 "use client"
 
 import {
@@ -99,7 +98,7 @@ export function AppointmentsTable({ appointments, isLoading }: AppointmentsTable
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => router.push(`/agendamentos/${appointment.id}/editar`)}>
-                          Editar Agendamento
+                          Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                           Confirmar Presença

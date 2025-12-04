@@ -1,4 +1,3 @@
-
 "use client"
 
 import {
@@ -155,6 +154,9 @@ export function PaymentsTable({ students, isLoading }: PaymentsTableProps) {
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                         <DropdownMenuItem onSelect={() => router.push(`/pagamentos/novo/editar?aluno=${student.id}`)}>
                           Registrar Pagamento
+                        </DropdownMenuItem>
+                         <DropdownMenuItem onSelect={() => router.push(`/alunos/${student.id}/editar`)}>
+                          Ver Cadastro Completo
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

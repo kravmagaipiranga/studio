@@ -1,4 +1,3 @@
-
 'use client';
 
 import { doc, collection } from "firebase/firestore";
@@ -50,7 +49,7 @@ export default function EditSeminarPage() {
   const { data: seminar, isLoading: isLoadingSeminar } = useDoc<Seminar>(seminarRef);
   const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
 
-  const isLoading = isLoadingSeminar || isLoadingStudents;
+  const isLoading = !isCreating && (isLoadingSeminar || isLoadingStudents);
 
   if (isLoading) {
     return <EditSeminarSkeleton />;
