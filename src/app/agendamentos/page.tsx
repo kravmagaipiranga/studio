@@ -1,16 +1,19 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { AppointmentsTable } from "@/components/appointments/appointments-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search } from "lucide-react";
+import { Download, PlusCircle, Search, CalendarCheck } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { Appointment } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
 
 export default function AgendamentosPage() {
     const firestore = useFirestore();
@@ -23,6 +26,29 @@ export default function AgendamentosPage() {
 
     const { data: appointments, isLoading } = useCollection<Appointment>(appointmentsCollection);
 
+    const appointmentsThisWeekCount = useMemo(() => {
+        if (!appointments) return 0;
+    
+        const today = new Date();
+        const start = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+        const end = endOfWeek(today, { weekStartsOn: 1 }); // Sunday
+        // We only want until Saturday, so let's adjust
+        const endOfSaturday = new Date(end);
+        endOfSaturday.setDate(endOfSaturday.getDate() - 1);
+        
+        return appointments.filter(appointment => {
+            try {
+                const classDate = parseISO(appointment.classDate);
+                return isWithinInterval(classDate, { start, end: endOfSaturday });
+            } catch (error) {
+                // Ignore invalid dates
+                return false;
+            }
+        }).length;
+
+    }, [appointments]);
+
+
     const filteredAppointments = (appointments || []).filter(appointment =>
         appointment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (appointment.email && appointment.email.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -30,6 +56,22 @@ export default function AgendamentosPage() {
 
     return (
         <>
+            <div className="grid gap-4 md:grid-cols-3 mb-4">
+                <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                            Agendamentos na Semana
+                        </CardTitle>
+                        <CalendarCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                            {isLoading ? <Skeleton className="h-8 w-12"/> : appointmentsThisWeekCount}
+                        </div>
+                        <p className="text-xs text-muted-foreground">De Segunda a Sábado</p>
+                    </CardContent>
+                </Card>
+            </div>
             <div className="flex items-center justify-between gap-4">
                 <h1 className="text-lg font-semibold md:text-2xl">Agendamentos</h1>
                 <div className="flex items-center gap-2">
