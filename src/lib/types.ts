@@ -1,4 +1,5 @@
 
+
 export type Student = {
   id: string;
   name: string;
@@ -54,6 +55,7 @@ export type Exam = {
   paymentDate?: string;
   paymentAmount: number;
   paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+  isNew?: boolean; // Flag for new rows in UI
 };
 
 export type Seminar = {

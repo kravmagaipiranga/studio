@@ -1,6 +1,7 @@
 
 "use client"
 
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -18,123 +19,200 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Exam } from "@/lib/types"
+import { Save, Trash2, XCircle } from "lucide-react"
+import { Exam, Student } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
-import { useRouter } from "next/navigation"
+import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
+import { collection, doc } from "firebase/firestore";
+import { Input } from "../ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Combobox } from "../ui/combobox";
+import { differenceInYears } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 interface ExamsTableProps {
   exams: Exam[];
+  allStudents: Student[];
   isLoading: boolean;
 }
 
-export function ExamsTable({ exams, isLoading }: ExamsTableProps) {
-  const router = useRouter();
+export function ExamsTable({ exams: initialExams, allStudents, isLoading }: ExamsTableProps) {
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  const [localExams, setLocalExams] = useState<Exam[]>([]);
+  
+  const studentOptions = allStudents.slice().sort((a,b) => a.name.localeCompare(b.name)).map(s => ({ value: s.id, label: s.name }));
+
+  useEffect(() => {
+    setLocalExams(initialExams);
+  }, [initialExams]);
+
+  const handleInputChange = (examId: string, field: keyof Exam, value: any) => {
+    setLocalExams(prevExams =>
+      prevExams.map(exam => {
+        if (exam.id === examId) {
+          const updatedExam = { ...exam, [field]: value };
+
+          if (field === 'studentId') {
+            const selectedStudent = allStudents.find(s => s.id === value);
+            if (selectedStudent) {
+              updatedExam.studentName = selectedStudent.name;
+              updatedExam.studentCpf = selectedStudent.cpf;
+              updatedExam.studentAge = selectedStudent.dob ? differenceInYears(new Date(), new Date(selectedStudent.dob)) : 0;
+            }
+          }
+          return updatedExam;
+        }
+        return exam;
+      })
+    );
+  };
+  
+  const handleSaveExam = (examToSave: Exam) => {
+    if (!firestore) return;
+    
+    const { isNew, id, ...examData } = examToSave;
+    const finalId = isNew ? doc(collection(firestore, "exams")).id : id;
+
+    const docRef = doc(firestore, 'exams', finalId);
+    setDocumentNonBlocking(docRef, { ...examData, id: finalId }, { merge: true });
+
+    toast({
+        title: "Exame Salvo!",
+        description: `A inscrição de ${examData.studentName} foi salva com sucesso.`
+    });
+    
+    // Optional: refetch or update local state to remove the 'isNew' flag
+    setLocalExams(prev => prev.map(ex => ex.id === examToSave.id ? { ...examToSave, id: finalId, isNew: false } : ex));
+  };
+
+  const handleDeleteExam = (examId: string) => {
+    if (!firestore) return;
+    
+    const isNewRow = examId.startsWith('new_');
+    if (isNewRow) {
+        setLocalExams(prev => prev.filter(ex => ex.id !== examId));
+        return;
+    }
+
+    const docRef = doc(firestore, 'exams', examId);
+    deleteDocumentNonBlocking(docRef);
+    toast({
+        title: "Inscrição Removida",
+        description: "A inscrição para o exame foi removida."
+    })
+  };
+
 
   return (
-    <>
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Inscrições de Exame</CardTitle>
-          <CardDescription>
-            Acompanhe as inscrições e pagamentos para os próximos exames de faixa.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Aluno</TableHead>
-                <TableHead className="hidden sm:table-cell">CPF</TableHead>
-                <TableHead className="hidden sm:table-cell">Idade</TableHead>
-                <TableHead className="hidden md:table-cell">Data do Exame</TableHead>
-                <TableHead>Faixa Pretendida</TableHead>
-                <TableHead>Pagamento</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead>
-                  <span className="sr-only">Ações</span>
-                </TableHead>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Inscrições de Exame</CardTitle>
+        <CardDescription>
+          Acompanhe e edite as inscrições para os próximos exames de faixa.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[250px]">Aluno</TableHead>
+              <TableHead>Data Exame</TableHead>
+              <TableHead>Faixa</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Pgto.</TableHead>
+              <TableHead>Método</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && Array.from({length: 3}).map((_, index) => (
+              <TableRow key={index}>
+                <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                <TableCell><Skeleton className="h-9 w-full" /></TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && Array.from({length: 3}).map((_, index) => (
-                <TableRow key={index}>
-                  <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
-                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-12" /></TableCell>
-                  <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                  <TableCell className="text-right"><Skeleton className="h-5 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-8" /></TableCell>
-                </TableRow>
-              ))}
-              {!isLoading && exams.map((exam: Exam) => (
-                <TableRow key={exam.id}>
-                  <TableCell>
-                     <div className="font-medium">{exam.studentName}</div>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {exam.studentCpf}
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {exam.studentAge}
-                  </TableCell>
-                   <TableCell className="hidden md:table-cell">
-                      {new Date(exam.examDate + "T00:00:00").toLocaleDateString('pt-BR')}
-                  </TableCell>
-                  <TableCell>
-                     <Badge variant="secondary">{exam.targetBelt}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={exam.paymentStatus === 'Pago' ? 'outline' : 'destructive'}>
-                      {exam.paymentStatus}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {`R$ ${exam.paymentAmount.toFixed(2)}`}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end">
-                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Abrir menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => router.push(`/exames/${exam.id}/editar`)}>
-                          Editar/Registrar Pagamento
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push(`/alunos/${exam.studentId}`)}>
-                          Ver Detalhes do Aluno
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-               {!isLoading && exams.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-10">
-                    Nenhum exame agendado.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </>
-  )
+            ))}
+            {!isLoading && localExams.map((exam) => (
+              <TableRow key={exam.id} className={exam.isNew ? "bg-muted/50" : ""}>
+                <TableCell>
+                  <Combobox
+                    options={studentOptions}
+                    value={exam.studentId}
+                    onChange={(value) => handleInputChange(exam.id, 'studentId', value)}
+                    placeholder="Selecione..."
+                    searchPlaceholder="Buscar aluno..."
+                    notFoundText="Nenhum aluno encontrado."
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input type="date" value={exam.examDate} onChange={e => handleInputChange(exam.id, 'examDate', e.target.value)} />
+                </TableCell>
+                <TableCell>
+                   <Select value={exam.targetBelt} onValueChange={(value) => handleInputChange(exam.id, 'targetBelt', value)}>
+                      <SelectTrigger><SelectValue placeholder="Faixa..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Amarela">Amarela</SelectItem>
+                        <SelectItem value="Laranja">Laranja</SelectItem>
+                        <SelectItem value="Verde">Verde</SelectItem>
+                        <SelectItem value="Azul">Azul</SelectItem>
+                        <SelectItem value="Marrom">Marrom</SelectItem>
+                        <SelectItem value="Preta">Preta</SelectItem>
+                      </SelectContent>
+                   </Select>
+                </TableCell>
+                <TableCell>
+                    <Input type="number" value={exam.paymentAmount} onChange={e => handleInputChange(exam.id, 'paymentAmount', parseFloat(e.target.value) || 0)} className="w-28" />
+                </TableCell>
+                <TableCell>
+                  <Select value={exam.paymentStatus} onValueChange={(value) => handleInputChange(exam.id, 'paymentStatus', value)}>
+                    <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pago">Pago</SelectItem>
+                      <SelectItem value="Pendente">Pendente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <Select value={exam.paymentMethod} onValueChange={(value) => handleInputChange(exam.id, 'paymentMethod', value)}>
+                    <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pendente">Pendente</SelectItem>
+                      <SelectItem value="Pix">Pix</SelectItem>
+                      <SelectItem value="Cartão">Cartão</SelectItem>
+                      <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <Button variant="outline" size="icon" onClick={() => handleSaveExam(exam)}>
+                        <Save className="h-4 w-4" />
+                        <span className="sr-only">Salvar</span>
+                    </Button>
+                    <Button variant="destructive" size="icon" onClick={() => handleDeleteExam(exam.id)}>
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Excluir</span>
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+             {!isLoading && localExams.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-10">
+                  Nenhuma inscrição de exame encontrada. Clique em "Agendar Exame" para adicionar uma.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
 }
+
