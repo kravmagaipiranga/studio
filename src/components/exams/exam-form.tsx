@@ -75,23 +75,27 @@ export function ExamForm({ exam, allStudents, isEditing }: ExamFormProps) {
 
   useEffect(() => {
     if (isEditing && exam) {
-        const student = allStudents.find(s => s.id === exam.studentId);
-        setSelectedStudent(student);
-        form.reset({
-          ...exam,
-          examDate: exam.examDate ? format(new Date(exam.examDate + 'T00:00:00'), 'yyyy-MM-dd') : '',
-          paymentDate: exam.paymentDate ? format(new Date(exam.paymentDate + 'T00:00:00'), 'yyyy-MM-dd') : '',
-        });
+      const student = allStudents.find(s => s.id === exam.studentId);
+      setSelectedStudent(student);
+      form.reset({
+        studentId: exam.studentId || "",
+        examDate: exam.examDate ? format(new Date(exam.examDate + 'T00:00:00'), 'yyyy-MM-dd') : '',
+        targetBelt: exam.targetBelt || "",
+        paymentAmount: exam.paymentAmount || 200,
+        paymentStatus: exam.paymentStatus || "Pendente",
+        paymentDate: exam.paymentDate ? format(new Date(exam.paymentDate + 'T00:00:00'), 'yyyy-MM-dd') : '',
+        paymentMethod: exam.paymentMethod || "Pendente",
+      });
     } else {
-        form.reset({
-            studentId: "",
-            examDate: "",
-            targetBelt: "",
-            paymentAmount: 200,
-            paymentStatus: 'Pendente',
-            paymentDate: "",
-            paymentMethod: 'Pendente',
-        });
+      form.reset({
+        studentId: "",
+        examDate: "",
+        targetBelt: "",
+        paymentAmount: 200,
+        paymentStatus: 'Pendente',
+        paymentDate: "",
+        paymentMethod: 'Pendente',
+      });
     }
   }, [isEditing, exam, allStudents, form]);
 
@@ -287,5 +291,3 @@ export function ExamForm({ exam, allStudents, isEditing }: ExamFormProps) {
     </Card>
   )
 }
-
-    
