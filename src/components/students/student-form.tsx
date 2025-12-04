@@ -33,7 +33,6 @@ import { useDoc, useFirestore, useMemoFirebase, setDocumentNonBlocking } from "@
 import { Student } from "@/lib/types"
 import { Switch } from "../ui/switch"
 import { ScrollArea } from "../ui/scroll-area"
-import { removeUndefinedFields } from "@/lib/utils"
 import { Skeleton } from "../ui/skeleton"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion"
 import { Lightbulb } from "lucide-react"
@@ -194,7 +193,8 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     } else if (!isEditing) {
         form.reset(defaultValues);
     }
-  }, [student, isEditing, form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [student, isEditing, form.reset]);
 
   const handlePasteAndFill = () => {
     if (!pasteData) {
@@ -227,6 +227,15 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     setPasteData("");
   };
 
+  function removeUndefinedFields<T extends Record<string, any>>(obj: T): Partial<T> {
+    const newObj: Partial<T> = {};
+    for (const key in obj) {
+      if (obj[key] !== undefined) {
+        newObj[key] = obj[key];
+      }
+    }
+    return newObj;
+  }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) {
@@ -664,5 +673,3 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     </Form>
   )
 }
-
-    
