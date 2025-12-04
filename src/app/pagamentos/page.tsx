@@ -1,16 +1,18 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { collection } from "firebase/firestore";
 import { PaymentsTable } from "@/components/payments/payments-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search } from "lucide-react";
+import { Download, PlusCircle, Search, AlertCircle, CheckCircle } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { Student } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import Link from "next/link";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function PagamentosPage() {
     const firestore = useFirestore();
@@ -23,12 +25,59 @@ export default function PagamentosPage() {
 
     const { data: students, isLoading } = useCollection<Student>(studentsCollection);
 
+    const { paidInMonthCount, overdueCount } = useMemo(() => {
+        if (!students) return { paidInMonthCount: 0, overdueCount: 0 };
+        
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+
+        const paidInMonth = students.filter(student => {
+            if (!student.lastPaymentDate) return false;
+            const paymentDate = new Date(student.lastPaymentDate);
+            return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
+        }).length;
+
+        const overdue = students.filter(s => s.paymentStatus === 'Vencido').length;
+        
+        return { paidInMonthCount: paidInMonth, overdueCount: overdue };
+
+    }, [students]);
+
     const filteredStudents = (students || []).filter(student =>
         student.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
         <>
+            <div className="grid gap-4 md:grid-cols-2 mb-4">
+                <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                            Pagamentos no Mês
+                        </CardTitle>
+                        <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
+                            {isLoading ? <Skeleton className="h-8 w-12"/> : paidInMonthCount}
+                        </div>
+                    </CardContent>
+                </Card>
+                 <Card className="bg-rose-50 border-rose-200 dark:bg-rose-950 dark:border-rose-800">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-rose-800 dark:text-rose-200">
+                            Planos Vencidos
+                        </CardTitle>
+                        <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                    </CardHeader>
+                    <CardContent>
+                         <div className="text-2xl font-bold text-rose-900 dark:text-rose-100">
+                             {isLoading ? <Skeleton className="h-8 w-12"/> : overdueCount}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
             <div className="flex items-center justify-between gap-4">
                 <h1 className="text-lg font-semibold md:text-2xl">Gestão de Pagamentos</h1>
                 <div className="flex items-center gap-2">
