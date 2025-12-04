@@ -78,19 +78,19 @@ export default function AlunosPage() {
                 // Mapeia e limpa os dados do JSON para o formato Student
                 const studentData: Partial<Student> = removeUndefinedFields({
                     id: studentId,
-                    name: item["Nome Completo"] || item.name || '',
-                    email: item["E-mail"] || item.email || '',
-                    phone: item["WhatsApp"] || item.phone || '',
+                    name: item["Nome Completo"] || item["Nome"] || item.name || '',
+                    email: item["E-mail"] || item["Email"] || item.email || '',
+                    phone: item["WhatsApp"] || item["Telefone"] || item["Phone"] || item.phone || '',
                     cpf: item["CPF"] || item.cpf || '',
                     dob: item["Data de Nascimento"] ? new Date(item["Data de Nascimento"]).toISOString().split('T')[0] : '',
                     startDate: item["Início dos Treinos"] ? new Date(item["Início dos Treinos"]).toISOString().split('T')[0] : '',
-                    belt: item["Graduação Atual (Faixa)"] || item.belt || 'Branca',
-                    status: 'Ativo', // Define um padrão
-                    paymentStatus: 'Pendente', // Define um padrão
+                    belt: item["Graduação Atual (Faixa)"] || item["Faixa"] || item.belt || 'Branca',
+                    status: 'Ativo',
+                    paymentStatus: 'Pendente',
                     planType: item["Tipo de Plano"] || item.planType || 'Mensal',
-                    planValue: parseFloat(item["Valor do Plano"]) || 200,
-                    tshirtSize: item["Camiseta (Tamanho)"] || item.tshirtSize || 'M',
-                    pantsSize: item["Calça (Tamanho)"] || item.pantsSize || 'M',
+                    planValue: parseFloat(String(item["Valor do Plano"] || item.planValue || '200').replace(',', '.')) || 200,
+                    tshirtSize: item["Camiseta (Tamanho)"] || item["Tamanho Camiseta"] || item.tshirtSize || 'M',
+                    pantsSize: item["Calça (Tamanho)"] || item["Tamanho Calça"] || item.pantsSize || 'M',
                     emergencyContacts: item["Contato de Emergência"] || item.emergencyContacts || '',
                     medicalHistory: item["Histórico Médico"] || item.medicalHistory || '',
                     generalNotes: item["Observações Gerais"] || item.generalNotes || '',
