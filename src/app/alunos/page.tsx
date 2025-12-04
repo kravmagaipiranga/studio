@@ -55,9 +55,9 @@ const initialMappings: ColumnMapping[] = [
     { name: 'generalNotes', label: 'Observações Gerais', value: '', hint: 'Ex: Observações Gerais' },
 ];
 
-// Simple TSV to JSON parser
 function tsvToObjects(tsv: string): Record<string, string>[] {
     const lines = tsv.trim().split('\n');
+    if (lines.length < 2) return [];
     const headers = lines[0].split('\t').map(h => h.trim());
     return lines.slice(1).map(line => {
         const values = line.split('\t');
@@ -112,7 +112,7 @@ export default function AlunosPage() {
             return;
         }
         
-        const mappingLookup = new Map(columnMappings.map(m => [m.name, m.value]));
+        const mappingLookup = new Map(columnMappings.filter(m => m.value.trim() !== '').map(m => [m.name, m.value]));
         const nameColumn = mappingLookup.get('name');
 
         if (!nameColumn) {
@@ -212,32 +212,34 @@ export default function AlunosPage() {
                                             <p className="text-sm text-muted-foreground">
                                                 Digite o nome exato do cabeçalho da sua planilha para cada campo correspondente.
                                             </p>
-                                            <div className="space-y-3">
-                                                {columnMappings.map(mapping => (
-                                                    <div key={mapping.name} className="grid grid-cols-3 items-center gap-2">
-                                                        <Label htmlFor={mapping.name} className="text-right flex items-center gap-1">
-                                                            {mapping.label}
-                                                             <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>{mapping.hint}</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </Label>
-                                                        <Input
-                                                            id={mapping.name}
-                                                            value={mapping.value}
-                                                            onChange={(e) => handleMappingChange(mapping.name, e.target.value)}
-                                                            className="col-span-2"
-                                                            placeholder={mapping.hint}
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
+                                            <ScrollArea className="h-96 pr-4">
+                                                <div className="space-y-3">
+                                                    {initialMappings.map(mapping => (
+                                                        <div key={mapping.name} className="grid grid-cols-3 items-center gap-2">
+                                                            <Label htmlFor={mapping.name} className="text-right flex items-center justify-end gap-1">
+                                                                {mapping.label}
+                                                                <TooltipProvider>
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            <p>{mapping.hint}</p>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </TooltipProvider>
+                                                            </Label>
+                                                            <Input
+                                                                id={mapping.name}
+                                                                value={columnMappings.find(m => m.name === mapping.name)?.value || ''}
+                                                                onChange={(e) => handleMappingChange(mapping.name, e.target.value)}
+                                                                className="col-span-2"
+                                                                placeholder={mapping.hint}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </ScrollArea>
                                         </div>
                                         <div className="space-y-4">
                                             <h3 className="font-semibold text-lg">Passo 2: Cole Seus Dados</h3>
@@ -311,7 +313,3 @@ export default function AlunosPage() {
         </div>
     );
 }
-
-    
-
-    
