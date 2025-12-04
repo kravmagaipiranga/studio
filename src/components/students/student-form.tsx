@@ -193,7 +193,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     } else if (!isEditing) {
         form.reset(defaultValues);
     }
-  }, [student, isEditing, form.reset]);
+  }, [student, isEditing, form]);
 
   const handlePasteAndFill = () => {
     if (!pasteData) {
@@ -238,21 +238,23 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     
     const finalStudentId = isEditing && student ? student.id : doc(collection(firestore, "students")).id;
     
-    let studentData: Partial<Student> = {
+    // Combine os dados do formulário com os dados existentes que não estão no formulário
+    const studentData: Partial<Student> = {
         ...values,
         id: finalStudentId,
         registrationDate: student?.registrationDate || new Date().toISOString(),
-        planValue: values.planValue, 
+        planValue: values.planValue,
+        // Mantém dados financeiros que não são editados aqui
+        lastPaymentDate: student?.lastPaymentDate,
+        planExpirationDate: student?.planExpirationDate,
+        paymentStatus: student?.paymentStatus,
+        paymentCredits: student?.paymentCredits
     };
 
-    if (isEditing && student) {
-      studentData.lastPaymentDate = student.lastPaymentDate;
-      studentData.planExpirationDate = student.planExpirationDate;
-      studentData.paymentStatus = student.paymentStatus;
-      studentData.paymentCredits = student.paymentCredits;
-    } else {
+    if (!isEditing) {
       studentData.paymentStatus = 'Pendente';
     }
+
 
     const docRef = doc(firestore, 'students', finalStudentId);
     setDocumentNonBlocking(docRef, studentData, { merge: true });
@@ -660,5 +662,3 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     </Form>
   )
 }
-
-    
