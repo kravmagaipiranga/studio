@@ -49,14 +49,14 @@ export default function EditPrivateClassPage() {
   const { data: privateClass, isLoading: isLoadingClass } = useDoc<PrivateClass>(privateClassRef);
   const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
 
-  const isLoading = isEditing && (isLoadingClass || isLoadingStudents);
+  const isLoading = !isCreating && (isLoadingClass || isLoadingStudents);
+
+  if (!isCreating && !privateClass && !isLoading) {
+     notFound();
+  }
 
   if (isLoading) {
     return <EditPrivateClassSkeleton />;
-  }
-
-  if (!isCreating && !isLoadingClass && !privateClass) {
-     notFound();
   }
 
   return (

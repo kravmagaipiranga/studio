@@ -66,7 +66,7 @@ export function PrivateClassForm({ privateClass, allStudents, isEditing }: Priva
   });
 
   useEffect(() => {
-     if (isEditing && privateClass) {
+    if (isEditing && privateClass) {
         const student = allStudents.find(s => s.id === privateClass.studentId);
         setSelectedStudent(student);
         form.reset({
@@ -76,7 +76,7 @@ export function PrivateClassForm({ privateClass, allStudents, isEditing }: Priva
             paymentStatus: privateClass.paymentStatus || "Pendente",
             paymentMethod: privateClass.paymentMethod || "Pendente",
         });
-     }
+    }
   }, [isEditing, privateClass, allStudents, form]);
 
 

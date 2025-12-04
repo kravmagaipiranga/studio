@@ -51,12 +51,12 @@ export default function EditSalePage() {
 
   const isLoading = !isCreating && (isLoadingSale || isLoadingStudents);
 
-  if (isLoading) {
-    return <EditSaleSkeleton />;
+  if (!isCreating && !sale && !isLoading) {
+     notFound();
   }
 
-  if (!isCreating && !isLoadingSale && !sale) {
-     notFound();
+  if (isLoading) {
+    return <EditSaleSkeleton />;
   }
 
   return (

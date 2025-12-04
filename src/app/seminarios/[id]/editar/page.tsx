@@ -51,12 +51,12 @@ export default function EditSeminarPage() {
 
   const isLoading = !isCreating && (isLoadingSeminar || isLoadingStudents);
 
-  if (isLoading) {
-    return <EditSeminarSkeleton />;
+  if (!isCreating && !seminar && !isLoading) {
+     notFound();
   }
 
-  if (!isCreating && !isLoadingSeminar && !seminar) {
-     notFound();
+  if (isLoading) {
+    return <EditSeminarSkeleton />;
   }
 
   return (

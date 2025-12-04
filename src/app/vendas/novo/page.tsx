@@ -1,2 +1,6 @@
-// This file is no longer needed and will be removed.
-// The functionality is now handled by /src/app/vendas/[id]/editar/page.tsx
+'use client';
+import { redirect } from 'next/navigation';
+
+export default function NewSaleRedirectPage() {
+    redirect('/vendas/novo/editar');
+}
