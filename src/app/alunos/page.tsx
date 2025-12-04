@@ -19,7 +19,7 @@ export default function AlunosPage() {
     const firestore = useFirestore();
     const { toast } = useToast();
     
-    const [selectedStudent, setSelectedStudent] = useState<Student | 'new' | null>(null);
+    const [selectedStudent, setSelectedStudent] = useState<Student | 'new' | null>('new');
 
     const studentsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -37,7 +37,7 @@ export default function AlunosPage() {
     };
 
     const handleFormSubmit = () => {
-        setSelectedStudent(null);
+        setSelectedStudent('new');
     }
     
     const handleDeleteStudent = async () => {
@@ -50,7 +50,7 @@ export default function AlunosPage() {
                 title: "Aluno Excluído",
                 description: `${selectedStudent.name} foi removido com sucesso.`,
             });
-            setSelectedStudent(null);
+            setSelectedStudent('new');
         } catch (error) {
             toast({
                 variant: "destructive",
@@ -102,56 +102,45 @@ export default function AlunosPage() {
 
             {/* Coluna do Formulário/Detalhes */}
             <div className="md:col-span-2 lg:col-span-3 h-full">
-                {selectedStudent ? (
-                    <Card className="h-full flex flex-col">
-                        <CardHeader className="flex flex-row justify-between items-center border-b">
-                            <div>
-                                <CardTitle>{studentToEdit ? "Editar Aluno" : "Adicionar Novo Aluno"}</CardTitle>
-                                <CardDescription>
-                                    {studentToEdit ? `Modifique os dados de ${studentToEdit.name}` : "Preencha as informações do novo aluno"}
-                                </CardDescription>
-                            </div>
-                            {studentToEdit && (
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="destructive">
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Excluir Aluno
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Esta ação não pode ser desfeita. Isso excluirá permanentemente o cadastro de <strong>{studentToEdit.name}</strong>.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDeleteStudent}>Confirmar Exclusão</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            )}
-                        </CardHeader>
-                        <CardContent className="flex-grow overflow-hidden p-6">
-                           <StudentForm 
-                                student={studentToEdit} 
-                                onFormSubmit={handleFormSubmit} 
-                                isEditing={!!studentToEdit}
-                            />
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <Card className="h-full flex items-center justify-center bg-muted/20 border-dashed">
-                        <div className="text-center text-muted-foreground">
-                            <User className="mx-auto h-12 w-12" />
-                            <p className="mt-4">Selecione um aluno na lista para ver os detalhes</p>
-                            <p>ou</p>
-                            <Button variant="link" className="p-0 h-auto" onClick={handleAddNew}>adicione um novo aluno</Button>
+                <Card className="h-full flex flex-col">
+                    <CardHeader className="flex flex-row justify-between items-center border-b">
+                        <div>
+                            <CardTitle>{studentToEdit ? "Editar Aluno" : "Adicionar Novo Aluno"}</CardTitle>
+                            <CardDescription>
+                                {studentToEdit ? `Modifique os dados de ${studentToEdit.name}` : "Preencha as informações do novo aluno"}
+                            </CardDescription>
                         </div>
-                    </Card>
-                )}
+                        {studentToEdit && (
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Excluir Aluno
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Esta ação não pode ser desfeita. Isso excluirá permanentemente o cadastro de <strong>{studentToEdit.name}</strong>.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleDeleteStudent}>Confirmar Exclusão</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        )}
+                    </CardHeader>
+                    <CardContent className="flex-grow overflow-hidden p-6">
+                        <StudentForm 
+                            student={studentToEdit} 
+                            onFormSubmit={handleFormSubmit} 
+                            isEditing={!!studentToEdit}
+                        />
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );
