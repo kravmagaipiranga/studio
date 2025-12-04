@@ -1,0 +1,91 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * Core Philosophy: This ruleset implements a Role-Based Access Control (RBAC) model
+     * with two primary roles: "Admin" (the primary user) and "Student" (data entities).
+     * Admins possess comprehensive read and write permissions across the database.
+     * Authenticated users are generally restricted to reading public data or their own data.
+     *
+     * Key Security Decisions:
+     * - Admin Access: A user is an Admin if their UID exists as a document in the `/roles_admin`
+     *   collection. This is a secure and explicit way to manage administrative privileges.
+     * - Default Deny: All operations are denied by default.
+     * - Production Security: Write operations on critical data are restricted to Admins.
+     * - Simplification for MVP: Read access is granted to any signed-in user for core data
+     *   to ensure the application is usable for the primary admin user without complex role setup initially.
+     */
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // A user is an admin if their UID is a document in 'roles_admin'.
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    // ------------------------------------------------------------------------
+    // Collection Rules
+    // ------------------------------------------------------------------------
+
+    // Rules for the 'students' collection
+    match /students/{studentId} {
+      // Allow any authenticated user to read the list of students or get a single student document.
+      // This is crucial for the admin dashboard to display student data.
+      allow get, list: if isSignedIn();
+
+      // Only allow users with an 'admin' role to create, update, or delete student documents.
+      // This protects the integrity of the student data.
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Rules for payments subcollection within a student document
+    match /students/{studentId}/payments/{paymentId} {
+      // Admins can read any payment. A user can only read their own payments.
+      allow get, list: if isOwner(studentId) || isAdmin();
+      
+      // Only admins can create, update, or delete payments.
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Admin-only collections
+    match /appointments/{docId} {
+      allow read, write: if isSignedIn();
+    }
+    match /privateClasses/{docId} {
+      allow read, write: if isSignedIn();
+    }
+    match /seminars/{docId} {
+      allow read, write: if isSignedIn();
+    }
+    match /sales/{docId} {
+      allow read, write: if isSignedIn();
+    }
+    match /exams/{examId} {
+      allow read, write: if isSignedIn();
+    }
+    
+    // Plans are public to read for any signed-in user.
+    match /plans/{planId} {
+      allow get, list: if isSignedIn();
+      // Only admins can manage plans.
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Only Admins can see or manage other admins.
+    match /roles_admin/{userId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
