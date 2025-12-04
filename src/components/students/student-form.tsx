@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { collection, doc } from 'firebase/firestore'
 import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -72,13 +73,13 @@ const formSchema = z.object({
 
 interface StudentFormProps {
   student?: Student | null;
-  onFormSubmit: () => void;
   isEditing: boolean;
 }
 
-export function StudentForm({ student, onFormSubmit, isEditing }: StudentFormProps) {
+export function StudentForm({ student, isEditing }: StudentFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const router = useRouter();
 
   const defaultValues = {
     name: "",
@@ -171,7 +172,7 @@ export function StudentForm({ student, onFormSubmit, isEditing }: StudentFormPro
       description: isEditing ? `Os dados de ${values.name} foram atualizados.` : `${values.name} foi adicionado com sucesso.`,
     })
     
-    onFormSubmit();
+    router.push('/alunos');
   }
 
   return (
@@ -517,12 +518,10 @@ export function StudentForm({ student, onFormSubmit, isEditing }: StudentFormPro
                 </div>
             </ScrollArea>
             <div className="flex-shrink-0 flex justify-end pt-6 gap-2 border-t mt-auto">
-                <Button type="button" variant="outline" onClick={onFormSubmit}>Cancelar</Button>
+                <Button type="button" variant="outline" onClick={() => router.back()}>Cancelar</Button>
                 <Button type="submit">{isEditing ? "Salvar Alterações" : "Adicionar Aluno"}</Button>
             </div>
         </form>
     </Form>
   )
 }
-
-    
