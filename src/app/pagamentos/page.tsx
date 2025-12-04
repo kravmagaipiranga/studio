@@ -34,7 +34,7 @@ export default function PagamentosPage() {
         const paidInMonth = students.filter(student => {
             if (!student.lastPaymentDate) return false;
             const paymentDate = new Date(student.lastPaymentDate);
-            return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
+            return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear && student.status === 'Ativo';
         }).length;
 
         const overdue = students.filter(s => s.paymentStatus === 'Vencido').length;
@@ -53,7 +53,7 @@ export default function PagamentosPage() {
                 <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
-                            Pagamentos no Mês
+                            Total de Alunos Ativos Pagantes
                         </CardTitle>
                         <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     </CardHeader>
