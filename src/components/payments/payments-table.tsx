@@ -70,9 +70,13 @@ Kida!
 
 Self Defence School of the Year 2025 – South East Brazil | GHP Active Lifestyle Awards 2025 
 O Centro de Treinamento Krav Magá Ipiranga foi oficialmente premiado com o título "Self Defence School of the Year 2025 – South East Brazil", no GHP Active Lifestyle Awards 2025.
+
 O prêmio reconhece instituições que se destacam na promoção de saúde, bem-estar, estilo de vida ativo e segurança pessoal, avaliando critérios como impacto social, qualidade dos serviços, compromisso com os alunos, profissionalismo e contribuição para o desenvolvimento da comunidade.
+
 O primeiro, maior e mais equipado Centro de Treinamento de Krav Magá da região, atua na formação de alunos de todas as idades, desenvolvendo habilidades físicas, mentais, controle emocional, e habilidades de tomada de decisão sob pressão, além de elevar a autoestima e a autoconfiança de seus alunos.
+
 “Receber esse reconhecimento internacional como Self Defence School of the Year 2025 – South East Brazil é a confirmação de que nosso trabalho vai além do tatame. Formamos pessoas mais fortes, seguras e preparadas para a vida real”, destaca a direção do centro.
+
 A premiação coloca o Centro de Treinamento de Krav Magá Ipiranga entre as principais escolas de defesa pessoal reconhecidas mundialmente no setor de lifestyle ativo.`
     );
     return `mailto:${student.email}?subject=${subject}&body=${body}`;
