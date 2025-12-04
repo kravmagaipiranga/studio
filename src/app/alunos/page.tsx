@@ -23,6 +23,16 @@ const filterDescriptions: Record<FilterType, string> = {
     'Vencido': "Alunos com pagamentos vencidos."
 };
 
+const beltEmojis: Record<string, string> = {
+    'Branca': '⚪',
+    'Amarela': '🟡',
+    'Laranja': '🟠',
+    'Verde': '🟢',
+    'Azul': '🔵',
+    'Marrom': '🟤',
+    'Preta': '⚫',
+};
+
 
 export default function AlunosPage() {
     const firestore = useFirestore();
@@ -138,6 +148,7 @@ export default function AlunosPage() {
                                     )}
                                 >
                                     <User className="h-4 w-4" />
+                                    <span>{beltEmojis[student.belt] || '❔'}</span>
                                     {student.name}
                                 </button>
                             ))}
