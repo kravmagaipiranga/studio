@@ -101,6 +101,7 @@ A premiação coloca o Centro de Treinamento de Krav Magá Ipiranga entre as pri
                 <TableHead className="hidden md:table-cell">Último Pgto.</TableHead>
                 <TableHead className="hidden md:table-cell">Validade</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-center">Cobrar Aluno</TableHead>
                 <TableHead>
                   <span className="sr-only">Ações</span>
                 </TableHead>
@@ -120,6 +121,7 @@ A premiação coloca o Centro de Treinamento de Krav Magá Ipiranga entre as pri
                   <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
                   <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-20" /></TableCell>
                   <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                 </TableRow>
               ))}
@@ -147,25 +149,7 @@ A premiação coloca o Centro de Treinamento de Krav Magá Ipiranga entre as pri
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center justify-end gap-4">
-                      {student.paymentCredits && (
-                        <TooltipProvider>
-                           <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="text-blue-500 hover:text-blue-700">
-                                <Info className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Créditos: {student.paymentCredits}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
-                      
-                      <div className="flex flex-col items-center">
-                        <span className="text-xs text-muted-foreground mb-1">Cobrar Aluno</span>
-                        <div className="flex items-center gap-1">
+                     <div className="flex items-center justify-center gap-1">
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -198,8 +182,23 @@ A premiação coloca o Centro de Treinamento de Krav Magá Ipiranga entre as pri
                             </TooltipProvider>
                           )}
                         </div>
-                      </div>
-
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-2">
+                       {student.paymentCredits && (
+                        <TooltipProvider>
+                           <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="text-blue-500 hover:text-blue-700">
+                                <Info className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Créditos: {student.paymentCredits}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                      <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button aria-haspopup="true" size="icon" variant="ghost">
