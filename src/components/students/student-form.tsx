@@ -129,32 +129,30 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
 
   const { data: student, isLoading } = useDoc<Student>(studentRef);
 
-  const defaultValues = {
-    name: "",
-    dob: "",
-    cpf: "",
-    phone: "",
-    email: "",
-    tshirtSize: "M",
-    pantsSize: "M",
-    emergencyContacts: "",
-    belt: 'Branca' as const,
-    status: 'Ativo' as const,
-    startDate: "",
-    lastExamDate: "",
-    readyForReview: false,
-    generalNotes: "",
-    medicalHistory: "",
-    planType: 'Mensal' as const,
-    planValue: 200,
-    fikmAnnuityPaid: false,
-    fikmAnnuityPaymentDate: "",
-    fikmAnnuityPaymentMethod: 'Pendente' as const,
-  };
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues,
+    defaultValues: {
+      name: "",
+      dob: "",
+      cpf: "",
+      phone: "",
+      email: "",
+      tshirtSize: "M",
+      pantsSize: "M",
+      emergencyContacts: "",
+      belt: 'Branca' as const,
+      status: 'Ativo' as const,
+      startDate: "",
+      lastExamDate: "",
+      readyForReview: false,
+      generalNotes: "",
+      medicalHistory: "",
+      planType: 'Mensal' as const,
+      planValue: 200,
+      fikmAnnuityPaid: false,
+      fikmAnnuityPaymentDate: "",
+      fikmAnnuityPaymentMethod: 'Pendente' as const,
+    },
   });
 
   const dobValue = form.watch("dob");
@@ -197,8 +195,6 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
         fikmAnnuityPaymentDate: student.fikmAnnuityPaymentDate ? student.fikmAnnuityPaymentDate.split('T')[0] : '',
         fikmAnnuityPaymentMethod: student.fikmAnnuityPaymentMethod || 'Pendente',
       });
-    } else if (!isEditing) {
-        form.reset(defaultValues);
     }
   }, [student, isEditing, form]);
 
@@ -451,7 +447,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                             )}
                         />
                     </div>
-                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                         <FormField
                             control={form.control}
                             name="lastExamDate"
@@ -469,8 +465,8 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                             control={form.control}
                             name="readyForReview"
                             render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm h-[58px] mt-2">
-                                    <FormLabel className="mr-4">Apto para Revisão?</FormLabel>
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm h-10">
+                                    <FormLabel className="mr-4 mb-0">Apto para Revisão?</FormLabel>
                                     <FormControl>
                                         <Switch
                                         checked={field.value}
@@ -529,13 +525,13 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                     </div>
 
                     <h3 className="text-lg font-medium border-b pb-2 pt-4">Anuidade FIKM</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                         <FormField
                             control={form.control}
                             name="fikmAnnuityPaid"
                             render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm sm:col-span-1 h-[58px] mt-2">
-                                    <FormLabel className="mr-4">Paga?</FormLabel>
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm h-10">
+                                    <FormLabel className="mr-4 mb-0">Anuidade Paga?</FormLabel>
                                     <FormControl>
                                         <Switch
                                         checked={field.value}
