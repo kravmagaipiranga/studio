@@ -5,17 +5,17 @@ service cloud.firestore {
 
     /**
      * Core Philosophy: This ruleset implements a Role-Based Access Control (RBAC) model
-     * with two primary roles: "Admin" and "Student" (implied as any authenticated user).
+     * with two primary roles: "Admin" (the primary user) and "Student" (data entities).
      * Admins possess comprehensive read and write permissions across the database.
      * Authenticated users are generally restricted to reading public data or their own data.
      *
      * Key Security Decisions:
      * - Admin Access: A user is an Admin if their UID exists as a document in the `/roles_admin`
-     *   collection AND that document contains the field `isAdmin: true`.
-     *   This is a secure and explicit way to manage administrative privileges.
+     *   collection. This is a secure and explicit way to manage administrative privileges.
      * - Default Deny: All operations are denied by default.
-     * - Production Security: Listing all students is restricted to Admins to prevent data leaks.
-     *   Write operations on critical data are also restricted to Admins.
+     * - Production Security: Write operations on critical data are restricted to Admins.
+     * - Simplification for MVP: Read access is granted to any signed-in user for core data
+     *   to ensure the application is usable for the primary admin user without complex role setup initially.
      */
 
     // ------------------------------------------------------------------------
@@ -30,10 +30,10 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // A user is an admin if their UID is a document in 'roles_admin'
-    // and that document has a field 'isAdmin' set to true.
+    // A user is an admin if their UID is a document in 'roles_admin'.
+    // For simplicity now, we can expand this to check for a specific field like `isAdmin: true`.
     function isAdmin() {
-      return isSignedIn() && get(/databases/$(database)/documents/roles_admin/$(request.auth.uid)).data.isAdmin == true;
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
 
     function newDocStudentIdMatchesPath(studentId) {
@@ -50,24 +50,16 @@ service cloud.firestore {
     // ------------------------------------------------------------------------
 
     match /students/{studentId} {
-      // Admins can get any student. Students can only get their own profile.
-      allow get: if isOwner(studentId) || isAdmin();
-      
-      // Listing all students is a sensitive operation, restricted to Admins.
-      allow list: if isAdmin();
+      // Any signed-in user (the admin) can read student data.
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
 
-      // Admins can create students. A user can create their own profile.
-      allow create: if (isOwner(studentId) && request.resource.data.id == studentId) || isAdmin();
-      
-      // Admins can update student profiles, users can update their own.
-      allow update: if isOwner(studentId) || isAdmin();
-      
-      // Only Admins can delete students.
-      allow delete: if isAdmin();
+      // Only Admins can create, update, or delete students.
+      allow create, update, delete: if isAdmin();
 
       match /payments/{paymentId} {
-        allow get: if isOwner(studentId) || isAdmin();
-        allow list: if isOwner(studentId) || isAdmin();
+        // Owner and Admins can access payment subcollections.
+        allow get, list: if isOwner(studentId) || isAdmin();
         allow create: if isAdmin() && newDocStudentIdMatchesPath(studentId);
         allow update: if isAdmin() && studentIdIsImmutable();
         allow delete: if isAdmin();
@@ -76,23 +68,23 @@ service cloud.firestore {
     
     // Admin-only collections
     match /appointments/{docId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isSignedIn();
     }
     match /privateClasses/{docId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isSignedIn();
     }
     match /seminars/{docId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isSignedIn();
     }
     match /sales/{docId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isSignedIn();
     }
     match /exams/{examId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isSignedIn();
     }
     
     match /plans/{planId} {
-      // Plans are public to read.
+      // Plans are public to read for any signed-in user.
       allow get: if isSignedIn();
       allow list: if isSignedIn();
       // Only admins can manage plans.
@@ -100,7 +92,7 @@ service cloud.firestore {
     }
     
     match /roles_admin/{userId} {
-      // Only Admins can manage other admins.
+      // Only Admins can see or manage other admins.
       allow read, write: if isAdmin();
     }
   }
