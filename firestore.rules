@@ -6,7 +6,7 @@ service cloud.firestore {
     /**
      * Core Philosophy: This ruleset implements a Role-Based Access Control (RBAC) model
      * with two primary roles: "Admin" (the primary user) and "Student" (data entities).
-     * Admins possess comprehensive read and write permissions across the database.
+     * Admins possess comprehensive write permissions across the database.
      * Authenticated users are generally restricted to reading public data or their own data.
      *
      * Key Security Decisions:
