@@ -2,7 +2,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { collection } from "firebase/firestore";
+import { collection, doc, deleteDoc } from "firebase/firestore";
 import { StudentsTable } from "@/components/students/students-table";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Upload, Search } from "lucide-react";
@@ -10,16 +10,19 @@ import { Student } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Input } from "@/components/ui/input";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-
+import { StudentFormDialog } from "@/components/students/student-form-dialog";
+import { DeleteStudentDialog } from "@/components/students/delete-student-dialog";
 
 export default function AlunosPage() {
     const firestore = useFirestore();
-    const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
+    
     const [searchQuery, setSearchQuery] = useState("");
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+    const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const studentsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -41,6 +44,43 @@ export default function AlunosPage() {
         student.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const handleAddStudent = () => {
+        setEditingStudent(null);
+        setIsFormOpen(true);
+    };
+
+    const handleEditStudent = (student: Student) => {
+        setEditingStudent(student);
+        setIsFormOpen(true);
+    };
+
+    const handleDeleteStudent = (student: Student) => {
+        setDeletingStudent(student);
+        setIsDeleteDialogOpen(true);
+    }
+
+    const confirmDeleteStudent = async () => {
+        if (!firestore || !deletingStudent) return;
+        
+        try {
+            const studentDocRef = doc(firestore, 'students', deletingStudent.id);
+            await deleteDoc(studentDocRef);
+            toast({
+                title: "Aluno Excluído",
+                description: `${deletingStudent.name} foi removido com sucesso.`,
+            });
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Erro ao Excluir",
+                description: "Não foi possível remover o aluno. Tente novamente.",
+            });
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setDeletingStudent(null);
+        }
+    }
+
     return (
         <>
             <div className="flex items-center justify-between">
@@ -57,12 +97,10 @@ export default function AlunosPage() {
                         accept=".csv"
                         onChange={handleFileChange}
                     />
-                    <Link href="/alunos/novo/editar">
-                        <Button>
-                            <PlusCircle className="h-4 w-4 mr-2" />
-                            Adicionar Aluno
-                        </Button>
-                    </Link>
+                    <Button onClick={handleAddStudent}>
+                        <PlusCircle className="h-4 w-4 mr-2" />
+                        Adicionar Aluno
+                    </Button>
                 </div>
             </div>
              <div className="mt-4 flex items-center justify-between gap-4">
@@ -81,8 +119,25 @@ export default function AlunosPage() {
                 <StudentsTable 
                     students={filteredStudents || []} 
                     isLoading={isLoading}
+                    onEdit={handleEditStudent}
+                    onDelete={handleDeleteStudent}
                 />
             </div>
+
+            <StudentFormDialog 
+                isOpen={isFormOpen}
+                onOpenChange={setIsFormOpen}
+                student={editingStudent}
+                onFormSubmit={() => setIsFormOpen(false)}
+            />
+
+            <DeleteStudentDialog
+                isOpen={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+                studentName={deletingStudent?.name || ''}
+                onConfirmDelete={confirmDeleteStudent}
+            />
         </>
     );
 }
+
