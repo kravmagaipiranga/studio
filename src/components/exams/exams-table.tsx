@@ -36,6 +36,15 @@ interface ExamsTableProps {
   isLoading: boolean;
 }
 
+const beltEmojis: Record<string, string> = {
+    'Amarela': '🟡',
+    'Laranja': '🟠',
+    'Verde': '🟢',
+    'Azul': '🔵',
+    'Marrom': '🟤',
+    'Preta': '⚫',
+};
+
 export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTableProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -166,14 +175,21 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
                 </TableCell>
                 <TableCell>
                    <Select value={exam.targetBelt} onValueChange={(value) => handleInputChange(exam.id, 'targetBelt', value)}>
-                      <SelectTrigger><SelectValue placeholder="Faixa..." /></SelectTrigger>
+                      <SelectTrigger>
+                        <SelectValue>
+                           <div className="flex items-center gap-2">
+                                {beltEmojis[exam.targetBelt] && <span>{beltEmojis[exam.targetBelt]}</span>}
+                                {exam.targetBelt || "Faixa..."}
+                           </div>
+                        </SelectValue>
+                      </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Amarela">Amarela</SelectItem>
-                        <SelectItem value="Laranja">Laranja</SelectItem>
-                        <SelectItem value="Verde">Verde</SelectItem>
-                        <SelectItem value="Azul">Azul</SelectItem>
-                        <SelectItem value="Marrom">Marrom</SelectItem>
-                        <SelectItem value="Preta">Preta</SelectItem>
+                        <SelectItem value="Amarela">🟡 Amarela</SelectItem>
+                        <SelectItem value="Laranja">🟠 Laranja</SelectItem>
+                        <SelectItem value="Verde">🟢 Verde</SelectItem>
+                        <SelectItem value="Azul">🔵 Azul</SelectItem>
+                        <SelectItem value="Marrom">🟤 Marrom</SelectItem>
+                        <SelectItem value="Preta">⚫ Preta</SelectItem>
                       </SelectContent>
                    </Select>
                 </TableCell>
