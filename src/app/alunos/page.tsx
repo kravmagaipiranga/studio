@@ -7,7 +7,7 @@ import { collection, query, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, User, Search, Download, Upload } from "lucide-react";
+import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -55,6 +55,13 @@ export default function AlunosPage() {
 
     const { data: allStudents, isLoading } = useCollection<Student>(studentsQuery);
 
+    const { activeStudentsCount, overdueStudentsCount } = useMemo(() => {
+        if (!allStudents) return { activeStudentsCount: 0, overdueStudentsCount: 0 };
+        const active = allStudents.filter(s => s.status === 'Ativo').length;
+        const overdue = allStudents.filter(s => s.paymentStatus === 'Vencido').length;
+        return { activeStudentsCount: active, overdueStudentsCount: overdue };
+    }, [allStudents]);
+
     const filteredStudents = useMemo(() => {
         if (!allStudents) return [];
 
@@ -87,8 +94,37 @@ export default function AlunosPage() {
     const cardTitleSuffix = activeFilter === 'Todos' ? activeFilter : `${activeFilter}s`;
 
     return (
-        <div className="h-full">
-            <Card className="h-full flex flex-col">
+        <div className="h-full flex flex-col gap-4">
+             <div className="grid gap-4 md:grid-cols-2">
+                <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                            Total de Alunos Ativos
+                        </CardTitle>
+                        <UserCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
+                            {isLoading ? <Skeleton className="h-8 w-12"/> : activeStudentsCount}
+                        </div>
+                    </CardContent>
+                </Card>
+                 <Card className="bg-rose-50 border-rose-200 dark:bg-rose-950 dark:border-rose-800">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-rose-800 dark:text-rose-200">
+                            Planos Vencidos
+                        </CardTitle>
+                        <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                    </CardHeader>
+                    <CardContent>
+                         <div className="text-2xl font-bold text-rose-900 dark:text-rose-100">
+                             {isLoading ? <Skeleton className="h-8 w-12"/> : overdueStudentsCount}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <Card className="h-full flex flex-col flex-grow">
                 <CardHeader className="border-b">
                     <div className="flex items-start justify-between gap-4">
                          <div>
