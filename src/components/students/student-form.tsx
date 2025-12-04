@@ -187,25 +187,25 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
         return;
     }
 
-    const values = pasteData.split('\t'); // Split by tab character
+    const values = pasteData.split('\t'); 
 
-    const [name, dob, cpf, phone, email] = values;
+    const [name, dob, cpf, phone, email, belt, status, startDate] = values;
 
     if (name) form.setValue("name", name.trim());
-    if (dob) {
-      // Basic date format validation/conversion if needed
-      // For now, assuming YYYY-MM-DD
-      form.setValue("dob", dob.trim());
-    }
+    if (dob) form.setValue("dob", dob.trim());
     if (cpf) form.setValue("cpf", cpf.trim());
     if (phone) form.setValue("phone", phone.trim());
     if (email) form.setValue("email", email.trim());
+    if (belt) form.setValue("belt", belt.trim());
+    if (status) form.setValue("status", status.trim() as 'Ativo' | 'Inativo' | 'Pendente');
+    if (startDate) form.setValue("startDate", startDate.trim());
+
 
     toast({
         title: "Formulário Preenchido",
         description: "Os dados foram preenchidos. Por favor, revise antes de salvar.",
     });
-    setPasteData(""); // Clear textarea after processing
+    setPasteData("");
   };
 
 
@@ -272,9 +272,9 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                           <AccordionContent>
                             <div className="p-4 border rounded-lg bg-muted/50 space-y-3">
                                 <p className="text-sm text-muted-foreground">
-                                    Copie uma linha de uma planilha (Excel, Sheets) e cole no campo abaixo para preencher os dados automaticamente.
+                                    Copie uma linha de uma planilha e cole no campo abaixo.
                                     A ordem das colunas deve ser: <br/>
-                                    <code className="font-mono text-xs">Nome | Data de Nascimento (AAAA-MM-DD) | CPF | Telefone | Email</code>
+                                    <code className="font-mono text-xs">Nome | Data de Nasc. (AAAA-MM-DD) | CPF | Telefone | Email | Faixa | Status | Início (AAAA-MM-DD)</code>
                                 </p>
                                 <Textarea 
                                     placeholder="Cole os dados aqui..."
@@ -633,5 +633,3 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     </Form>
   )
 }
-
-    
