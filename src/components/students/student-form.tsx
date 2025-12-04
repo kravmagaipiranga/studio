@@ -72,12 +72,12 @@ const formSchema = z.object({
 interface StudentFormProps {
   student?: Student | null;
   onFormSubmit: () => void;
+  isEditing: boolean;
 }
 
-export function StudentForm({ student, onFormSubmit }: StudentFormProps) {
+export function StudentForm({ student, onFormSubmit, isEditing }: StudentFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
-  const isEditing = !!student;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -178,8 +178,8 @@ export function StudentForm({ student, onFormSubmit }: StudentFormProps) {
 
   return (
     <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <ScrollArea className="h-[60vh] pr-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 h-full flex flex-col">
+            <ScrollArea className="flex-grow pr-4 -mr-4">
             <div className="space-y-6">
                 <h3 className="text-lg font-medium border-b pb-2">Informações Pessoais</h3>
                 <FormField
@@ -518,7 +518,7 @@ export function StudentForm({ student, onFormSubmit }: StudentFormProps) {
                 />
                 </div>
             </ScrollArea>
-            <div className="flex justify-end pt-6 gap-2">
+            <div className="flex-shrink-0 flex justify-end pt-6 gap-2">
                 <Button type="button" variant="outline" onClick={onFormSubmit}>Cancelar</Button>
                 <Button type="submit">{isEditing ? "Salvar Alterações" : "Adicionar Aluno"}</Button>
             </div>
