@@ -119,15 +119,15 @@ export default function ExamesPage() {
         <>
             <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6 mb-4">
                 {Object.entries(beltInfo).map(([belt, { emoji, colorClass }]) => (
-                    <Card key={belt} className={`bg-card ${colorClass} border-2`}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <Card key={belt} className={`bg-card ${colorClass} border-2 flex flex-col justify-center min-h-[120px]`}>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
                             <CardTitle className="text-sm font-medium">
                                 {belt}
                             </CardTitle>
-                            <span className="text-xl">{emoji}</span>
+                            <span className="text-2xl">{emoji}</span>
                         </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">
+                        <CardContent className="p-4 pt-0">
+                            <div className="text-3xl font-bold">
                                 {isLoading ? <Skeleton className="h-8 w-12"/> : examCountsByBelt[belt] ?? 0}
                             </div>
                         </CardContent>
