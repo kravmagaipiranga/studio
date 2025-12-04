@@ -193,7 +193,6 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     } else if (!isEditing) {
         form.reset(defaultValues);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [student, isEditing, form.reset]);
 
   const handlePasteAndFill = () => {
@@ -227,16 +226,6 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     setPasteData("");
   };
 
-  function removeUndefinedFields<T extends Record<string, any>>(obj: T): Partial<T> {
-    const newObj: Partial<T> = {};
-    for (const key in obj) {
-      if (obj[key] !== undefined) {
-        newObj[key] = obj[key];
-      }
-    }
-    return newObj;
-  }
-
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) {
       toast({
@@ -265,10 +254,8 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
       studentData.paymentStatus = 'Pendente';
     }
 
-    const cleanedStudentData = removeUndefinedFields(studentData);
-
     const docRef = doc(firestore, 'students', finalStudentId);
-    setDocumentNonBlocking(docRef, cleanedStudentData, { merge: true });
+    setDocumentNonBlocking(docRef, studentData, { merge: true });
 
     toast({
       title: isEditing ? "Aluno Atualizado!" : "Cadastro Realizado!",
@@ -673,3 +660,5 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     </Form>
   )
 }
+
+    
