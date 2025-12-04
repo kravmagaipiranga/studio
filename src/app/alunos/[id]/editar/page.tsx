@@ -1,4 +1,3 @@
-
 'use client';
 
 import { doc, deleteDoc } from "firebase/firestore";

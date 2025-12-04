@@ -1,4 +1,3 @@
-
 'use client';
 
 import { StudentForm } from "@/components/students/student-form";
