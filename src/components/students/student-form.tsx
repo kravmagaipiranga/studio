@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { collection, doc } from 'firebase/firestore'
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -33,6 +33,8 @@ import { Switch } from "../ui/switch"
 import { ScrollArea } from "../ui/scroll-area"
 import { removeUndefinedFields } from "@/lib/utils"
 import { Skeleton } from "../ui/skeleton"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion"
+import { Lightbulb } from "lucide-react"
 
 const formSchema = z.object({
   name: z.string().min(2, "O nome completo deve ter pelo menos 2 caracteres."),
@@ -113,6 +115,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const router = useRouter();
+  const [pasteData, setPasteData] = useState("");
 
   const studentRef = useMemoFirebase(() => {
     if (!firestore || !studentId) return null;
@@ -174,6 +177,38 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     }
   }, [student, isEditing, form]);
 
+  const handlePasteAndFill = () => {
+    if (!pasteData) {
+        toast({
+            variant: "destructive",
+            title: "Nenhum dado para analisar",
+            description: "Por favor, cole os dados do aluno no campo de texto.",
+        });
+        return;
+    }
+
+    const values = pasteData.split('\t'); // Split by tab character
+
+    const [name, dob, cpf, phone, email] = values;
+
+    if (name) form.setValue("name", name.trim());
+    if (dob) {
+      // Basic date format validation/conversion if needed
+      // For now, assuming YYYY-MM-DD
+      form.setValue("dob", dob.trim());
+    }
+    if (cpf) form.setValue("cpf", cpf.trim());
+    if (phone) form.setValue("phone", phone.trim());
+    if (email) form.setValue("email", email.trim());
+
+    toast({
+        title: "Formulário Preenchido",
+        description: "Os dados foram preenchidos. Por favor, revise antes de salvar.",
+    });
+    setPasteData(""); // Clear textarea after processing
+  };
+
+
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) {
       toast({
@@ -224,6 +259,35 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 h-full flex flex-col">
             <ScrollArea className="flex-grow pr-4 -mr-4">
                 <div className="space-y-6">
+
+                    {!isEditing && (
+                      <Accordion type="single" collapsible className="w-full">
+                        <AccordionItem value="item-1">
+                          <AccordionTrigger>
+                            <div className="flex items-center gap-2">
+                                <Lightbulb className="h-4 w-4 text-yellow-500" />
+                                Importação Rápida
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="p-4 border rounded-lg bg-muted/50 space-y-3">
+                                <p className="text-sm text-muted-foreground">
+                                    Copie uma linha de uma planilha (Excel, Sheets) e cole no campo abaixo para preencher os dados automaticamente.
+                                    A ordem das colunas deve ser: <br/>
+                                    <code className="font-mono text-xs">Nome | Data de Nascimento (AAAA-MM-DD) | CPF | Telefone | Email</code>
+                                </p>
+                                <Textarea 
+                                    placeholder="Cole os dados aqui..."
+                                    value={pasteData}
+                                    onChange={(e) => setPasteData(e.target.value)}
+                                />
+                                <Button type="button" onClick={handlePasteAndFill}>Analisar e Preencher</Button>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    )}
+
                     <h3 className="text-lg font-medium border-b pb-2">Informações Pessoais</h3>
                     <FormField
                         control={form.control}
@@ -569,3 +633,5 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     </Form>
   )
 }
+
+    
