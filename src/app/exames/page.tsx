@@ -118,9 +118,9 @@ export default function ExamesPage() {
 
     return (
         <>
-            <div className="grid gap-2 grid-cols-6 mb-4">
+            <div className="flex mb-4">
                  {Object.entries(beltInfo).map(([belt, { emoji, colorClass }]) => (
-                    <Card key={belt} className={cn("flex flex-col justify-center items-center w-10 h-10", colorClass)}>
+                    <Card key={belt} className={cn("flex flex-col justify-center items-center w-10 h-10 rounded-none first:rounded-l-md last:rounded-r-md", colorClass)}>
                         <CardContent className="p-0 flex items-center justify-center">
                             <div className="text-lg font-bold">
                                 {isLoading ? <Skeleton className="h-6 w-6 bg-white/30"/> : examCountsByBelt[belt] ?? 0}
