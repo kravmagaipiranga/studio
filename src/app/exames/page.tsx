@@ -13,6 +13,7 @@ import { collection, doc } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 const beltOrder: Record<string, number> = {
     'Amarela': 1,
@@ -117,18 +118,18 @@ export default function ExamesPage() {
 
     return (
         <>
-            <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6 mb-4">
-                {Object.entries(beltInfo).map(([belt, { emoji, colorClass }]) => (
-                    <Card key={belt} className={`bg-card ${colorClass} border-2 flex flex-col justify-center aspect-square`}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
-                            <CardTitle className="text-sm font-medium">
+            <div className="grid gap-2 grid-cols-6 mb-4">
+                 {Object.entries(beltInfo).map(([belt, { emoji, colorClass }]) => (
+                    <Card key={belt} className={cn("bg-card border flex flex-col justify-center aspect-square", colorClass)}>
+                        <CardHeader className="flex flex-row items-start justify-between space-y-0 p-1 pb-0">
+                            <CardTitle className="text-[10px] font-medium">
                                 {belt}
                             </CardTitle>
-                            <span className="text-2xl">{emoji}</span>
+                            <span className="text-base">{emoji}</span>
                         </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <div className="text-3xl font-bold">
-                                {isLoading ? <Skeleton className="h-8 w-12"/> : examCountsByBelt[belt] ?? 0}
+                        <CardContent className="p-1 pt-0 flex items-center justify-center">
+                            <div className="text-xl font-bold">
+                                {isLoading ? <Skeleton className="h-6 w-6"/> : examCountsByBelt[belt] ?? 0}
                             </div>
                         </CardContent>
                     </Card>
