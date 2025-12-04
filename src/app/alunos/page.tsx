@@ -15,9 +15,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 
-type FilterType = 'Ativo' | 'Inativo' | 'Vencido';
+type FilterType = 'Todos' | 'Ativo' | 'Inativo' | 'Vencido';
 
 const filterDescriptions: Record<FilterType, string> = {
+    'Todos': "Lista completa de todos os alunos cadastrados.",
     'Ativo': "Alunos com matrícula ativa.",
     'Inativo': "Alunos que não estão mais ativos.",
     'Vencido': "Alunos com pagamentos vencidos."
@@ -60,7 +61,7 @@ export default function AlunosPage() {
 
         if (activeFilter === 'Vencido') {
             students = students.filter(student => student.paymentStatus === 'Vencido');
-        } else {
+        } else if (activeFilter !== 'Todos') {
             students = students.filter(student => student.status === activeFilter);
         }
 
@@ -82,13 +83,15 @@ export default function AlunosPage() {
         alert("A funcionalidade de gerar relatório será implementada em breve.");
     };
 
+    const cardTitleSuffix = activeFilter === 'Todos' ? activeFilter : `${activeFilter}s`;
+
     return (
         <div className="h-full">
             <Card className="h-full flex flex-col">
                 <CardHeader className="border-b">
                     <div className="flex items-start justify-between gap-4">
                          <div>
-                            <CardTitle>Alunos - {activeFilter}s</CardTitle>
+                            <CardTitle>Alunos - {cardTitleSuffix}</CardTitle>
                             <CardDescription>{filterDescriptions[activeFilter]}</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
@@ -107,7 +110,13 @@ export default function AlunosPage() {
                 </CardHeader>
                 <CardContent className="p-0 flex-grow flex flex-col">
                      <div className="p-4 space-y-4 border-b">
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                             <Button 
+                                variant={activeFilter === 'Todos' ? 'default' : 'outline'}
+                                onClick={() => setActiveFilter('Todos')}
+                             >
+                                Listar Todos
+                             </Button>
                              <Button 
                                 variant={activeFilter === 'Ativo' ? 'default' : 'outline'}
                                 onClick={() => setActiveFilter('Ativo')}
