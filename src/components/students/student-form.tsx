@@ -7,6 +7,8 @@ import { z } from "zod"
 import { collection, doc } from 'firebase/firestore'
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { differenceInYears, parseISO } from "date-fns"
+
 
 import { Button } from "@/components/ui/button"
 import {
@@ -116,6 +118,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
   const firestore = useFirestore();
   const router = useRouter();
   const [pasteData, setPasteData] = useState("");
+  const [age, setAge] = useState<number | null>(null);
 
   const studentRef = useMemoFirebase(() => {
     if (!firestore || !studentId) return null;
@@ -149,6 +152,22 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues,
   });
+
+  const dobValue = form.watch("dob");
+
+  useEffect(() => {
+    if (dobValue) {
+      try {
+        const birthDate = parseISO(dobValue);
+        const calculatedAge = differenceInYears(new Date(), birthDate);
+        setAge(calculatedAge);
+      } catch (error) {
+        setAge(null);
+      }
+    } else {
+      setAge(null);
+    }
+  }, [dobValue]);
 
   useEffect(() => {
     if (isEditing && student) {
@@ -302,12 +321,12 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                         </FormItem>
                         )}
                     />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <FormField
                         control={form.control}
                         name="dob"
                         render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="sm:col-span-2">
                             <FormLabel>Data de Nascimento</FormLabel>
                             <FormControl>
                                 <Input type="date" {...field} value={field.value ?? ''} />
@@ -316,6 +335,20 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                             </FormItem>
                         )}
                         />
+                        <FormItem>
+                            <FormLabel>Idade</FormLabel>
+                            <FormControl>
+                                <Input 
+                                    type="text" 
+                                    value={age !== null ? `${age} anos` : "..."} 
+                                    disabled 
+                                    className="disabled:opacity-100 disabled:cursor-default" 
+                                />
+                            </FormControl>
+                        </FormItem>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <FormField
                         control={form.control}
                         name="cpf"
@@ -329,9 +362,6 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                             </FormItem>
                         )}
                         />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <FormField
                             control={form.control}
                             name="phone"
@@ -345,20 +375,21 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                                 </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name="email"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Email</FormLabel>
-                                <FormControl>
-                                    <Input type="email" placeholder="aluno@email.com" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
                     </div>
+                    
+                    <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                                <Input type="email" placeholder="aluno@email.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                     
                     <h3 className="text-lg font-medium border-b pb-2 pt-4">Controle Interno</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
