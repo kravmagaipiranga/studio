@@ -193,7 +193,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     } else if (!isEditing) {
         form.reset(defaultValues);
     }
-  }, [student, isEditing, form]);
+  }, [student, isEditing, form.reset]);
 
   const handlePasteAndFill = () => {
     if (!pasteData) {
@@ -244,17 +244,12 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
         id: finalStudentId,
         registrationDate: student?.registrationDate || new Date().toISOString(),
         planValue: values.planValue,
-        // Mantém dados financeiros que não são editados aqui
-        lastPaymentDate: student?.lastPaymentDate,
-        planExpirationDate: student?.planExpirationDate,
-        paymentStatus: student?.paymentStatus,
-        paymentCredits: student?.paymentCredits
+        // Mantém dados financeiros que não são editados aqui, ou define como null se for novo aluno
+        lastPaymentDate: student?.lastPaymentDate || null,
+        planExpirationDate: student?.planExpirationDate || null,
+        paymentStatus: student?.paymentStatus || 'Pendente', // Define um status padrão para novos alunos
+        paymentCredits: student?.paymentCredits || null,
     };
-
-    if (!isEditing) {
-      studentData.paymentStatus = 'Pendente';
-    }
-
 
     const docRef = doc(firestore, 'students', finalStudentId);
     setDocumentNonBlocking(docRef, studentData, { merge: true });
