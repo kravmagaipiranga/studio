@@ -147,7 +147,7 @@ A premiação coloca o Centro de Treinamento de Krav Magá Ipiranga entre as pri
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-4">
                       {student.paymentCredits && (
                         <TooltipProvider>
                            <Tooltip>
@@ -163,37 +163,43 @@ A premiação coloca o Centro de Treinamento de Krav Magá Ipiranga entre as pri
                         </TooltipProvider>
                       )}
                       
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <a href={generateMailToLink(student)} target="_blank">
-                              <Button variant="ghost" size="icon">
-                                <Mail className="h-4 w-4" />
-                                <span className="sr-only">Enviar Cobrança por Email</span>
-                              </Button>
-                            </a>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Enviar Cobrança por Email</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      
-                      {student.paymentStatus === 'Vencido' && (
-                         <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={() => openWhatsApp(student.name)}>
-                                <MessageCircle className="h-4 w-4" />
-                                <span className="sr-only">Cobrar via WhatsApp</span>
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Cobrar via WhatsApp</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
+                      <div className="flex flex-col items-center">
+                        <span className="text-xs text-muted-foreground mb-1">Cobrar Aluno</span>
+                        <div className="flex items-center gap-1">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <a href={generateMailToLink(student)} target="_blank">
+                                  <Button variant="ghost" size="icon">
+                                    <Mail className="h-4 w-4" />
+                                    <span className="sr-only">Enviar Cobrança por Email</span>
+                                  </Button>
+                                </a>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Enviar Cobrança por Email</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          {student.paymentStatus === 'Vencido' && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon" onClick={() => openWhatsApp(student.name)}>
+                                    <MessageCircle className="h-4 w-4" />
+                                    <span className="sr-only">Cobrar via WhatsApp</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Cobrar via WhatsApp</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                      </div>
+
                      <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button aria-haspopup="true" size="icon" variant="ghost">
