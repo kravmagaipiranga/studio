@@ -5,7 +5,7 @@ import { useState, useMemo } from "react";
 import { collection } from "firebase/firestore";
 import { PaymentsTable } from "@/components/payments/payments-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search, AlertCircle, CheckCircle } from "lucide-react";
+import { Download, PlusCircle, Search, AlertCircle, CheckCircle, ClipboardClock } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { Student } from "@/lib/types";
@@ -13,7 +13,7 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { parseISO } from "date-fns";
+import { parseISO, isAfter } from "date-fns";
 
 export default function PagamentosPage() {
     const firestore = useFirestore();
@@ -26,11 +26,12 @@ export default function PagamentosPage() {
 
     const { data: students, isLoading } = useCollection<Student>(studentsCollection);
 
-    const { paidInMonthCount, overdueCount } = useMemo(() => {
-        if (!students) return { paidInMonthCount: 0, overdueCount: 0 };
+    const { paidInMonthCount, overdueCount, activeQuarterlyPlansCount } = useMemo(() => {
+        if (!students) return { paidInMonthCount: 0, overdueCount: 0, activeQuarterlyPlansCount: 0 };
         
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
+        const today = new Date();
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
 
         const paidInMonth = students.filter(student => {
             if (!student.lastPaymentDate) return false;
@@ -39,8 +40,15 @@ export default function PagamentosPage() {
         }).length;
 
         const overdue = students.filter(s => s.paymentStatus === 'Vencido').length;
+
+        const activeQuarterly = students.filter(student => {
+            return student.planType === 'Trimestral' && 
+                   student.status === 'Ativo' && 
+                   student.planExpirationDate && 
+                   isAfter(parseISO(student.planExpirationDate), today);
+        }).length;
         
-        return { paidInMonthCount: paidInMonth, overdueCount: overdue };
+        return { paidInMonthCount: paidInMonth, overdueCount: overdue, activeQuarterlyPlansCount: activeQuarterly };
 
     }, [students]);
 
@@ -60,7 +68,7 @@ export default function PagamentosPage() {
 
     return (
         <>
-            <div className="grid gap-4 md:grid-cols-2 mb-4">
+            <div className="grid gap-4 md:grid-cols-3 mb-4">
                 <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
@@ -84,6 +92,19 @@ export default function PagamentosPage() {
                     <CardContent>
                          <div className="text-2xl font-bold text-rose-900 dark:text-rose-100">
                              {isLoading ? <Skeleton className="h-8 w-12"/> : overdueCount}
+                        </div>
+                    </CardContent>
+                </Card>
+                 <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                            Planos Trimestrais Vigentes
+                        </CardTitle>
+                        <ClipboardClock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </CardHeader>
+                    <CardContent>
+                         <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                             {isLoading ? <Skeleton className="h-8 w-12"/> : activeQuarterlyPlansCount}
                         </div>
                     </CardContent>
                 </Card>
