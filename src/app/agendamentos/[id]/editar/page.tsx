@@ -6,7 +6,7 @@ import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { Appointment } from "@/lib/types";
 import { AppointmentForm } from "@/components/appointments/appointment-form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -31,8 +31,9 @@ function EditAppointmentSkeleton() {
     );
 }
 
-export default function EditAppointmentPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function EditAppointmentPage() {
+  const params = useParams();
+  const id = params.id as string;
   const firestore = useFirestore();
   const isCreating = id === 'novo';
 

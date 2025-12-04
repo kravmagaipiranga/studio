@@ -6,7 +6,7 @@ import { useDoc, useCollection, useFirestore, useMemoFirebase } from "@/firebase
 import { Exam, Student } from "@/lib/types";
 import { ExamForm } from "@/components/exams/exam-form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -31,8 +31,9 @@ function EditExamSkeleton() {
     );
 }
 
-export default function EditExamPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function EditExamPage() {
+  const params = useParams();
+  const id = params.id as string;
   const firestore = useFirestore();
   const isCreating = id === 'novo';
 

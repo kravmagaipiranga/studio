@@ -1,3 +1,4 @@
+
 'use client';
 
 import { doc, deleteDoc } from "firebase/firestore";
@@ -5,7 +6,7 @@ import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student } from "@/lib/types";
 import { StudentForm } from "@/components/students/student-form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { notFound, useRouter } from "next/navigation";
+import { notFound, useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -33,8 +34,9 @@ function EditStudentSkeleton() {
     );
 }
 
-export default function EditStudentPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function EditStudentPage() {
+  const params = useParams();
+  const id = params.id as string;
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
