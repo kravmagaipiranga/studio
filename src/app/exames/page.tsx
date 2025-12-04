@@ -12,6 +12,16 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
 
+const beltOrder: Record<string, number> = {
+    'Amarela': 1,
+    'Laranja': 2,
+    'Verde': 3,
+    'Azul': 4,
+    'Marrom': 5,
+    'Preta': 6,
+};
+
+
 export default function ExamesPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
@@ -37,9 +47,21 @@ export default function ExamesPage() {
     }, [initialExams]);
 
 
-    const filteredExams = (exams || []).filter(exam =>
-        exam.studentName.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredAndSortedExams = useMemo(() => {
+        if (!exams) return [];
+        
+        let filtered = exams.filter(exam =>
+            exam.studentName.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+
+        return filtered.sort((a, b) => {
+            const orderA = beltOrder[a.targetBelt] || 99;
+            const orderB = beltOrder[b.targetBelt] || 99;
+            return orderA - orderB;
+        });
+
+    }, [exams, searchQuery]);
+
 
     const handleAddNewExam = () => {
        if (!firestore) return;
@@ -93,7 +115,7 @@ export default function ExamesPage() {
             </div>
             <div className="flex flex-1 rounded-lg shadow-sm mt-4">
                 <ExamsTable 
-                    exams={filteredExams}
+                    exams={filteredAndSortedExams}
                     setExams={setExams}
                     allStudents={students || []}
                     isLoading={isLoading}

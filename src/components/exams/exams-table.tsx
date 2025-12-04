@@ -48,7 +48,8 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
         if (exam.id === examId) {
           const updatedExam = { ...exam, [field]: value };
 
-          if (field === 'studentId') {
+          // If a new student is selected for a new row, populate their data
+          if (field === 'studentId' && exam.isNew) {
             const selectedStudent = allStudents.find(s => s.id === value);
             if (selectedStudent) {
               updatedExam.studentName = selectedStudent.name;
@@ -88,7 +89,7 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
     });
     
     // Update local state to remove the 'isNew' flag and set the final ID
-    setExams(prev => prev.map(ex => ex.id === examToSave.id ? { ...examToSave, id: finalId, isNew: false } : ex));
+    setExams(prev => prev.map(ex => ex.id === examToSave.id ? { ...examData, id: finalId, isNew: false } : ex));
   };
 
   const handleDeleteExam = (examId: string, studentName: string) => {
@@ -114,7 +115,7 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
       <CardHeader>
         <CardTitle>Inscrições de Exame</CardTitle>
         <CardDescription>
-          Acompanhe e edite as inscrições para os próximos exames de faixa.
+          Acompanhe e edite as inscrições para os próximos exames de faixa. As linhas são ordenadas por faixa.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -146,15 +147,19 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
             ))}
             {!isLoading && exams.map((exam) => (
               <TableRow key={exam.id} className={exam.isNew ? "bg-muted/50" : ""}>
-                <TableCell>
-                  <Combobox
-                    options={studentOptions}
-                    value={exam.studentId}
-                    onChange={(value) => handleInputChange(exam.id, 'studentId', value)}
-                    placeholder="Selecione..."
-                    searchPlaceholder="Buscar aluno..."
-                    notFoundText="Nenhum aluno encontrado."
-                  />
+                <TableCell className="font-medium">
+                  {exam.isNew ? (
+                    <Combobox
+                        options={studentOptions}
+                        value={exam.studentId}
+                        onChange={(value) => handleInputChange(exam.id, 'studentId', value)}
+                        placeholder="Selecione..."
+                        searchPlaceholder="Buscar aluno..."
+                        notFoundText="Nenhum aluno encontrado."
+                    />
+                  ) : (
+                    exam.studentName
+                  )}
                 </TableCell>
                 <TableCell>
                   <Input type="date" value={exam.examDate} onChange={e => handleInputChange(exam.id, 'examDate', e.target.value)} />
