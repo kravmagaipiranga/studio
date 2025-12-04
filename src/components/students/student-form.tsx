@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { collection, doc } from 'firebase/firestore'
 import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -79,6 +80,7 @@ interface StudentFormProps {
 export function StudentForm({ student, onFormSubmit, isEditing = false }: StudentFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -176,6 +178,9 @@ export function StudentForm({ student, onFormSubmit, isEditing = false }: Studen
     
     if (onFormSubmit) {
       onFormSubmit();
+    } else {
+      router.push('/alunos');
+      router.refresh();
     }
   }
 
@@ -190,7 +195,7 @@ export function StudentForm({ student, onFormSubmit, isEditing = false }: Studen
         <CardContent>
             <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <ScrollArea className="h-[calc(100vh-250px)] pr-4">
+                <ScrollArea className="h-[calc(100vh-350px)] pr-4">
                 <div className="space-y-6">
                     <h3 className="text-lg font-medium border-b pb-2">Informações Pessoais</h3>
                     <FormField
