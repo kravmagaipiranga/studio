@@ -6,6 +6,7 @@ import { getApps, initializeApp } from 'firebase/app';
 import { firebaseConfig } from './config';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 interface FirebaseClientProviderProps {
   children: ReactNode;
@@ -14,27 +15,15 @@ interface FirebaseClientProviderProps {
 export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
   const firebaseServices = useMemo(() => {
     // Initialize Firebase on the client side, once per component mount.
-    if (getApps().length === 0) {
-       try {
-        // Important! initializeApp() is called without any arguments because Firebase App Hosting
-        // integrates with the initializeApp() function to provide the environment variables needed to
-        // populate the FirebaseOptions in production. It is critical that we attempt to call initializeApp()
-        // without arguments.
-        initializeApp();
-      } catch (e) {
-        // Only warn in production because it's normal to use the firebaseConfig to initialize
-        // during development
-        if (process.env.NODE_ENV === "production") {
-          console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
-        }
-        initializeApp(firebaseConfig);
-      }
-    }
-    const app = getApps()[0];
+    // This now consistently uses the firebaseConfig object for both development and production,
+    // avoiding the "app/no-options" error in local development.
+    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    
     return {
       firebaseApp: app,
       auth: getAuth(app),
       firestore: getFirestore(app),
+      storage: getStorage(app),
     };
   }, []); // Empty dependency array ensures this runs only once on mount
 
@@ -43,6 +32,7 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
       firebaseApp={firebaseServices.firebaseApp}
       auth={firebaseServices.auth}
       firestore={firebaseServices.firestore}
+      storage={firebaseServices.storage}
     >
       {children}
     </FirebaseProvider>

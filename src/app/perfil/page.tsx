@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from "react";
-import { useUser, useAuth, useFirebaseApp } from "@/firebase";
+import { useUser, useAuth, useStorage } from "@/firebase";
 import { updateProfile } from "firebase/auth";
-import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
+import { ref, uploadString, getDownloadURL } from "firebase/storage";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function PerfilPage() {
     const { user, isUserLoading } = useUser();
     const auth = useAuth();
-    const firebaseApp = useFirebaseApp(); 
+    const storage = useStorage(); 
     const { toast } = useToast();
 
     const [displayName, setDisplayName] = useState('');
@@ -49,7 +48,7 @@ export default function PerfilPage() {
     };
 
     const handleSaveChanges = async () => {
-        if (!user || !auth || !firebaseApp) {
+        if (!user || !auth || !storage) {
              toast({
                 variant: "destructive",
                 title: "Erro",
@@ -64,8 +63,6 @@ export default function PerfilPage() {
 
             // Se uma nova foto foi selecionada (e não é a URL antiga)
             if (newPhoto && newPhoto !== user.photoURL) {
-                // Inicializa o Storage com a instância do app
-                const storage = getStorage(firebaseApp);
                 const storageRef = ref(storage, `avatars/${user.uid}/profile.jpg`);
                 
                 // O newPhoto é um data URL (base64)
