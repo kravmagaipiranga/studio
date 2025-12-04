@@ -1,7 +1,6 @@
 
 "use client"
 
-import { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   Card,
@@ -21,9 +20,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Student } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog"
-import { useFirestore } from "@/firebase"
-import { useToast } from "@/hooks/use-toast"
 
 interface StudentsTableProps {
   students: Student[];
