@@ -1,8 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
-import Link from "next/link";
+import { useState, useMemo, useEffect } from "react";
 import { AppointmentsTable } from "@/components/appointments/appointments-table";
 import { Button } from "@/components/ui/button";
 import { Download, PlusCircle, Search, CalendarCheck } from "lucide-react";
@@ -11,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Appointment } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
+import { v4 as uuidv4 } from 'uuid';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
@@ -18,13 +18,20 @@ import { startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
 export default function AgendamentosPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
 
     const appointmentsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
         return collection(firestore, 'appointments');
     }, [firestore]);
 
-    const { data: appointments, isLoading } = useCollection<Appointment>(appointmentsCollection);
+    const { data: initialAppointments, isLoading } = useCollection<Appointment>(appointmentsCollection);
+
+    useEffect(() => {
+        if (initialAppointments) {
+            setAppointments(initialAppointments);
+        }
+    }, [initialAppointments]);
 
     const appointmentsThisWeekCount = useMemo(() => {
         if (!appointments) return 0;
@@ -32,7 +39,6 @@ export default function AgendamentosPage() {
         const today = new Date();
         const start = startOfWeek(today, { weekStartsOn: 1 }); // Monday
         const end = endOfWeek(today, { weekStartsOn: 1 }); // Sunday
-        // We only want until Saturday, so let's adjust
         const endOfSaturday = new Date(end);
         endOfSaturday.setDate(endOfSaturday.getDate() - 1);
         
@@ -41,18 +47,29 @@ export default function AgendamentosPage() {
                 const classDate = parseISO(appointment.classDate);
                 return isWithinInterval(classDate, { start, end: endOfSaturday });
             } catch (error) {
-                // Ignore invalid dates
                 return false;
             }
         }).length;
-
     }, [appointments]);
-
 
     const filteredAppointments = (appointments || []).filter(appointment =>
         appointment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (appointment.email && appointment.email.toLowerCase().includes(searchQuery.toLowerCase()))
     );
+
+    const handleAddNewAppointment = () => {
+       const newAppointment: Appointment = {
+         id: `new_${uuidv4()}`,
+         name: "",
+         whatsapp: "",
+         email: "",
+         classDate: new Date().toISOString().split('T')[0],
+         classTime: "20:00",
+         notes: "",
+         isNew: true,
+       };
+       setAppointments(prev => [newAppointment, ...prev]);
+    };
 
     return (
         <>
@@ -75,12 +92,10 @@ export default function AgendamentosPage() {
             <div className="flex items-center justify-between gap-4">
                 <h1 className="text-lg font-semibold md:text-2xl">Agendamentos</h1>
                 <div className="flex items-center gap-2">
-                     <Link href="/agendamentos/novo/editar">
-                        <Button>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Novo Agendamento
-                        </Button>
-                     </Link>
+                    <Button onClick={handleAddNewAppointment}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Novo Agendamento
+                    </Button>
                     <Button variant="outline">
                         <Download className="mr-2 h-4 w-4" />
                         Gerar Relatório
@@ -103,6 +118,7 @@ export default function AgendamentosPage() {
              <div className="flex flex-1 rounded-lg shadow-sm mt-4">
                 <AppointmentsTable 
                     appointments={filteredAppointments}
+                    setAppointments={setAppointments}
                     isLoading={isLoading}
                 />
             </div>

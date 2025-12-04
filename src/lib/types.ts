@@ -70,6 +70,7 @@ export type Seminar = {
   paymentDate?: string;
   paymentAmount: number;
   paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+  isNew?: boolean; // Flag for new rows in UI
 };
 
 export type PrivateClass = {
@@ -82,6 +83,7 @@ export type PrivateClass = {
   paymentDate?: string;
   paymentAmount: number;
   paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+  isNew?: boolean; // Flag for new rows in UI
 };
 
 export type Appointment = {
@@ -92,6 +94,7 @@ export type Appointment = {
   classDate: string;
   classTime: string;
   notes?: string;
+  isNew?: boolean; // Flag for new rows in UI
 };
 
 export type Sale = {

@@ -1,45 +1,76 @@
 
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 import { SeminarsTable } from "@/components/seminars/seminars-table";
 import { Button } from "@/components/ui/button";
 import { Download, PlusCircle, Search } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
-import { Seminar } from "@/lib/types";
+import { Seminar, Student } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
+import { v4 as uuidv4 } from 'uuid';
 
 export default function SeminariosPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
+    const [seminars, setSeminars] = useState<Seminar[]>([]);
 
     const seminarsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
         return collection(firestore, 'seminars');
     }, [firestore]);
+    
+    const studentsCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'students');
+    }, [firestore]);
 
+    const { data: initialSeminars, isLoading: isLoadingSeminars } = useCollection<Seminar>(seminarsCollection);
+    const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
 
-    const { data: seminars, isLoading: isLoadingSeminars } = useCollection<Seminar>(seminarsCollection);
+    useEffect(() => {
+        if (initialSeminars) {
+            setSeminars(initialSeminars);
+        }
+    }, [initialSeminars]);
+
+    const handleAddNewSeminar = () => {
+       if (!firestore) return;
+
+       const newSeminar: Seminar = {
+         id: `new_${uuidv4()}`,
+         topic: "",
+         studentId: "",
+         studentName: "",
+         studentBelt: "",
+         studentCpf: "",
+         studentAge: 0,
+         paymentStatus: "Pendente",
+         paymentAmount: 100,
+         paymentMethod: "Pendente",
+         isNew: true,
+       };
+       setSeminars(prev => [newSeminar, ...prev]);
+    };
 
     const filteredSeminars = (seminars || []).filter(seminar =>
         seminar.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         seminar.topic.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const isLoading = isLoadingSeminars || isLoadingStudents;
+
     return (
         <>
             <div className="flex items-center justify-between gap-4">
                 <h1 className="text-lg font-semibold md:text-2xl">Seminários e Cursos</h1>
                 <div className="flex items-center gap-2">
-                     <Link href="/seminarios/novo/editar">
-                        <Button>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Nova Inscrição
-                        </Button>
-                     </Link>
+                    <Button onClick={handleAddNewSeminar}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Nova Inscrição
+                    </Button>
                     <Button variant="outline">
                         <Download className="mr-2 h-4 w-4" />
                         Gerar Relatório
@@ -62,7 +93,9 @@ export default function SeminariosPage() {
              <div className="flex flex-1 rounded-lg shadow-sm mt-4">
                 <SeminarsTable 
                     seminars={filteredSeminars}
-                    isLoading={isLoadingSeminars}
+                    setSeminars={setSeminars}
+                    allStudents={students || []}
+                    isLoading={isLoading}
                 />
             </div>
         </>
