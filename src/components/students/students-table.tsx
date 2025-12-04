@@ -2,6 +2,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import {
   Card,
   CardContent,
@@ -34,7 +35,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useFirestore, deleteDocumentNonBlocking } from "@/firebase"
 import { doc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
-import { useRouter } from "next/navigation"
 
 interface StudentsTableProps {
   students: Student[];
@@ -43,8 +43,8 @@ interface StudentsTableProps {
 
 export function StudentsTable({ students, isLoading }: StudentsTableProps) {
   const firestore = useFirestore();
-  const { toast } = useToast();
   const router = useRouter();
+  const { toast } = useToast();
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
 
   const handleDelete = (student: Student) => {
@@ -61,9 +61,9 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
     });
     setDeletingStudent(null);
   };
-
-  const handleEdit = (studentId: string) => {
-    router.push(`/alunos/${studentId}`);
+  
+  const handleEdit = (student: Student) => {
+    router.push(`/alunos/${student.id}/editar`);
   };
 
   return (
@@ -124,7 +124,7 @@ export function StudentsTable({ students, isLoading }: StudentsTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onSelect={() => handleEdit(student.id)}>
+                        <DropdownMenuItem onSelect={() => handleEdit(student)}>
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />

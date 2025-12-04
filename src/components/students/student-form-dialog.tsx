@@ -9,32 +9,32 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { Student } from "@/lib/types"
-import { StudentForm } from "@/components/auth/registration-form"
+import { StudentForm } from "@/components/students/student-form"
 
 interface StudentFormDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  student?: Student;
+  student?: Student | null;
+  onFormSubmit: () => void;
 }
 
 export function StudentFormDialog({
   isOpen,
   onOpenChange,
   student,
+  onFormSubmit,
 }: StudentFormDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{student ? "Editar Aluno" : "Adicionar Aluno"}</DialogTitle>
+          <DialogTitle>{student ? "Editar Aluno" : "Adicionar Novo Aluno"}</DialogTitle>
           <DialogDescription>
             {student ? "Altere as informações abaixo para atualizar o cadastro." : "Preencha os dados para adicionar um novo aluno."}
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4 max-h-[80vh] overflow-y-auto pr-4">
-            <StudentForm student={student} />
-        </div>
+        <StudentForm student={student} onFormSubmit={onFormSubmit} />
       </DialogContent>
     </Dialog>
   )
