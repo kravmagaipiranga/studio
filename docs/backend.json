@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Student": {
@@ -39,6 +40,10 @@
         "address": {
           "type": "string",
           "description": "The student's address."
+        },
+        "readyForReview": {
+          "type": "boolean",
+          "description": "Indicates if the student is ready for a belt review."
         }
       },
       "required": [

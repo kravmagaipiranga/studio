@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -47,6 +48,8 @@ const formSchema = z.object({
   email: z.string().email("Por favor, insira um endereço de e-mail válido."),
   
   startDate: z.string().optional(),
+  lastExamDate: z.string().optional(),
+  readyForReview: z.boolean().optional(),
   belt: z.string().min(1, "A faixa é obrigatória"),
   status: z.string().min(1, "O status do aluno é obrigatório"),
   
@@ -138,6 +141,8 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     belt: 'Branca' as const,
     status: 'Ativo' as const,
     startDate: "",
+    lastExamDate: "",
+    readyForReview: false,
     generalNotes: "",
     medicalHistory: "",
     planType: 'Mensal' as const,
@@ -182,6 +187,8 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
         belt: student.belt || 'Branca',
         status: student.status || 'Ativo',
         startDate: student.startDate ? student.startDate.split('T')[0] : '',
+        lastExamDate: student.lastExamDate ? student.lastExamDate.split('T')[0] : '',
+        readyForReview: student.readyForReview || false,
         generalNotes: student.generalNotes || "",
         medicalHistory: student.medicalHistory || "",
         planType: student.planType || 'Mensal',
@@ -193,7 +200,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     } else if (!isEditing) {
         form.reset(defaultValues);
     }
-  }, [student, isEditing, form.reset]);
+  }, [student, isEditing, form]);
 
   const handlePasteAndFill = () => {
     if (!pasteData) {
@@ -238,16 +245,14 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     
     const finalStudentId = isEditing && student ? student.id : doc(collection(firestore, "students")).id;
     
-    // Combine os dados do formulário com os dados existentes que não estão no formulário
     const studentData: Partial<Student> = {
         ...values,
         id: finalStudentId,
         registrationDate: student?.registrationDate || new Date().toISOString(),
         planValue: values.planValue,
-        // Mantém dados financeiros que não são editados aqui, ou define como null se for novo aluno
         lastPaymentDate: student?.lastPaymentDate || null,
         planExpirationDate: student?.planExpirationDate || null,
-        paymentStatus: student?.paymentStatus || 'Pendente', // Define um status padrão para novos alunos
+        paymentStatus: student?.paymentStatus || 'Pendente', 
         paymentCredits: student?.paymentCredits || null,
     };
 
@@ -442,6 +447,36 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                                     <Input type="date" {...field} value={field.value ?? ''} />
                                 </FormControl>
                                 <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                        <FormField
+                            control={form.control}
+                            name="lastExamDate"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Último Exame de Faixa</FormLabel>
+                                <FormControl>
+                                    <Input type="date" {...field} value={field.value ?? ''} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="readyForReview"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm h-[58px] mt-2">
+                                    <FormLabel className="mr-4">Apto para Revisão?</FormLabel>
+                                    <FormControl>
+                                        <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        />
+                                    </FormControl>
                                 </FormItem>
                             )}
                         />
