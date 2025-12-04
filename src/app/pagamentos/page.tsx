@@ -5,7 +5,7 @@ import { useState, useMemo } from "react";
 import { collection } from "firebase/firestore";
 import { PaymentsTable } from "@/components/payments/payments-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search, AlertCircle, CheckCircle, ClipboardClock } from "lucide-react";
+import { Download, PlusCircle, Search, AlertCircle, CheckCircle, ClipboardCheck } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { Student } from "@/lib/types";
@@ -100,7 +100,7 @@ export default function PagamentosPage() {
                         <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
                             Planos Trimestrais Vigentes
                         </CardTitle>
-                        <ClipboardClock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <ClipboardCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     </CardHeader>
                     <CardContent>
                          <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
