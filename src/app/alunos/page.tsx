@@ -7,7 +7,7 @@ import { collection, query, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student, Exam } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck } from "lucide-react";
+import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck, Award } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { BulkImportDialog } from "@/components/students/bulk-import-dialog";
 import { Badge } from "@/components/ui/badge";
 import { differenceInMonths, differenceInYears } from "date-fns";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type FilterType = 'Todos' | 'Ativo' | 'Inativo' | 'Vencido';
 
@@ -265,6 +266,18 @@ export default function AlunosPage() {
                                     <span>{statusEmojis[student.status] || '❔'}</span>
                                     <span>{beltEmojis[student.belt] || '❔'}</span>
                                     <span className="flex-grow">{student.name}</span>
+                                    {student.readyForReview && (
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger>
+                                                     <Award className="h-4 w-4 text-yellow-500" />
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Apto para revisão</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    )}
                                     {student.timeInBelt && <Badge variant="secondary">{student.timeInBelt}</Badge>}
                                 </button>
                             ))}
