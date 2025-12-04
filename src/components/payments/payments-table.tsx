@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, MessageCircle, Info } from "lucide-react"
+import { MoreHorizontal, MessageCircle, Info, Mail } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +48,29 @@ export function PaymentsTable({ students, isLoading }: PaymentsTableProps) {
   const openWhatsApp = (studentName: string) => {
     const message = encodeURIComponent(`Olá ${studentName}, este é um lembrete amigável sobre seu pagamento pendente para o Krav Magá IPIRANGA.`);
     window.open(`https://wa.me/?text=${message}`, '_blank');
+  };
+
+  const generateMailToLink = (student: Student) => {
+    const subject = encodeURIComponent("Lembrete de Pagamento - Krav Magá IPIRANGA");
+    const body = encodeURIComponent(
+`Olá ${student.name},
+
+Este é um lembrete amigável sobre a mensalidade do Krav Magá IPIRANGA.
+
+Plano: ${student.planType || 'Não especificado'}
+Valor: R$ ${student.planValue ? student.planValue.toFixed(2) : 'N/A'}
+Vencimento: ${student.planExpirationDate ? new Date(student.planExpirationDate + "T00:00:00").toLocaleDateString('pt-BR') : 'N/A'}
+
+Para regularizar seu pagamento, você pode realizar um PIX para a chave: (SEU PIX AQUI)
+
+Após realizar o pagamento, por favor, envie o comprovante para este e-mail ou via WhatsApp.
+
+Agradecemos a sua atenção.
+Oss!
+
+Krav Magá IPIRANGA`
+    );
+    return `mailto:${student.email}?subject=${subject}&body=${body}`;
   };
   
   return (
@@ -95,6 +118,7 @@ export function PaymentsTable({ students, isLoading }: PaymentsTableProps) {
                 <TableRow key={student.id}>
                   <TableCell>
                     <div className="font-medium">{student.name}</div>
+                    <div className="text-sm text-muted-foreground">{student.email}</div>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <Badge variant="outline">{student.planType || 'N/A'}</Badge>
@@ -129,6 +153,23 @@ export function PaymentsTable({ students, isLoading }: PaymentsTableProps) {
                           </Tooltip>
                         </TooltipProvider>
                       )}
+                      
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a href={generateMailToLink(student)} target="_blank">
+                              <Button variant="ghost" size="icon">
+                                <Mail className="h-4 w-4" />
+                                <span className="sr-only">Enviar Cobrança por Email</span>
+                              </Button>
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Enviar Cobrança por Email</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      
                       {student.paymentStatus === 'Vencido' && (
                          <TooltipProvider>
                           <Tooltip>
