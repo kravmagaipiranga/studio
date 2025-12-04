@@ -7,13 +7,13 @@ import { notFound } from "next/navigation";
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StudentForm } from "@/components/auth/registration-form";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { StudentForm } from "@/components/auth/registration-form";
 
-function EditStudentSkeleton() {
+function StudentDetailSkeleton() {
     return (
         <Card className="w-full max-w-4xl mx-auto">
             <CardHeader>
@@ -38,31 +38,28 @@ function EditStudentSkeleton() {
     );
 }
 
-export default function EditStudentPage({ params }: { params: { id: string } }) {
+
+export default function StudentDetailPage({ params }: { params: { id: string } }) {
     const { id } = params;
     const firestore = useFirestore();
-    const isCreating = id === 'novo';
 
     const studentRef = useMemoFirebase(() => {
-        if (!firestore || isCreating) return null;
+        if (!firestore) return null;
         return doc(firestore, "students", id);
-    }, [firestore, id, isCreating]);
+    }, [firestore, id]);
 
     const { data: student, isLoading } = useDoc<Student>(studentRef);
 
     if (isLoading) {
-        return <EditStudentSkeleton />;
+        return <StudentDetailSkeleton />;
     }
 
-    if (!isCreating && !isLoading && !student) {
+    if (!isLoading && !student) {
         notFound();
     }
     
-    const cardTitle = isCreating ? "Adicionar Novo Aluno" : "Editar Aluno";
-    const cardDescription = isCreating ? "Crie um novo cadastro." : "Edite os dados do aluno.";
-
     return (
-        <>
+         <>
             <div className="flex items-center justify-between mb-4">
                 <Link href="/alunos">
                     <Button variant="outline">
@@ -73,13 +70,14 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
             </div>
             <Card className="w-full max-w-4xl mx-auto">
                 <CardHeader>
-                    <CardTitle>{cardTitle}</CardTitle>
-                    <CardDescription>{cardDescription}</CardDescription>
+                    <CardTitle>Detalhes do Aluno</CardTitle>
+                    <CardDescription>Visualizando informações de {student?.name}.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <StudentForm student={student} isEditing={!isCreating} />
+                   <StudentForm student={student} isEditing={true} />
                 </CardContent>
             </Card>
         </>
     );
 }
+
