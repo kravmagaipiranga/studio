@@ -1,15 +1,12 @@
+
 "use client"
 
 import { signOut } from "firebase/auth"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -17,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth, useUser } from "@/firebase"
 import { useToast } from "@/hooks/use-toast"
+import { Button } from "./ui/button"
 
 export function UserNav() {
   const { user } = useUser();
@@ -44,12 +42,7 @@ export function UserNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-9 w-9">
-            <AvatarImage src={user?.photoURL || "https://picsum.photos/seed/admin/100/100"} alt="@admin" data-ai-hint="person face" />
-            <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
-          </Avatar>
-        </Button>
+        <Button variant="ghost">Admin</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
@@ -60,12 +53,6 @@ export function UserNav() {
             </p>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem asChild>
-            <Link href="/perfil">Perfil</Link>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={handleLogout}>
           Sair
