@@ -232,3 +232,5 @@ export function PrivateClassForm({ privateClass, allStudents, isEditing }: Priva
     </Card>
   )
 }
+
+    

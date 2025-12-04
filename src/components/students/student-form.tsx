@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { collection, doc } from 'firebase/firestore'
 import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -78,6 +79,7 @@ interface StudentFormProps {
 export function StudentForm({ student, onFormSubmit, isEditing }: StudentFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const router = useRouter();
 
   const defaultValues = {
     name: "",
@@ -521,3 +523,5 @@ export function StudentForm({ student, onFormSubmit, isEditing }: StudentFormPro
     </Form>
   )
 }
+
+    

@@ -251,3 +251,5 @@ export function SaleForm({ sale, allStudents, isEditing }: SaleFormProps) {
     </Card>
   )
 }
+
+    

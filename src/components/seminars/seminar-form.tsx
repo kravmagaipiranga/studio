@@ -232,3 +232,5 @@ export function SeminarForm({ seminar, allStudents, isEditing }: SeminarFormProp
     </Card>
   )
 }
+
+    
