@@ -180,7 +180,7 @@ export function RegisterPaymentForm({
         planType: values.planType,
         planValue: values.planValue,
         lastPaymentDate: values.paymentDate,
-        planExpirationDate: expirationDate ? expirationDate.toISOString().split('T')[0] : null,
+        planExpirationDate: expirationDate ? expirationDate.toISOString().split('T')[0] : undefined,
         paymentStatus: 'Pago',
         paymentCredits: values.paymentCredits,
     };

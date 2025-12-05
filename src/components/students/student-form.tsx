@@ -148,7 +148,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
       generalNotes: "",
       medicalHistory: "",
       planType: 'Mensal' as const,
-      planValue: 200,
+      planValue: 315,
       fikmAnnuityPaid: false,
       fikmAnnuityPaymentDate: "",
       fikmAnnuityPaymentMethod: 'Pendente' as const,
@@ -190,7 +190,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
         generalNotes: student.generalNotes || "",
         medicalHistory: student.medicalHistory || "",
         planType: student.planType || 'Mensal',
-        planValue: student.planValue ?? 200,
+        planValue: student.planValue ?? 315,
         fikmAnnuityPaid: student.fikmAnnuityPaid || false,
         fikmAnnuityPaymentDate: student.fikmAnnuityPaymentDate ? student.fikmAnnuityPaymentDate.split('T')[0] : '',
         fikmAnnuityPaymentMethod: student.fikmAnnuityPaymentMethod || 'Pendente',
@@ -246,10 +246,10 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
         id: finalStudentId,
         registrationDate: student?.registrationDate || new Date().toISOString(),
         planValue: values.planValue,
-        lastPaymentDate: student?.lastPaymentDate || null,
-        planExpirationDate: student?.planExpirationDate || null,
+        lastPaymentDate: student?.lastPaymentDate || undefined,
+        planExpirationDate: student?.planExpirationDate || undefined,
         paymentStatus: student?.paymentStatus || 'Pendente', 
-        paymentCredits: student?.paymentCredits || null,
+        paymentCredits: student?.paymentCredits || undefined,
     };
 
     const docRef = doc(firestore, 'students', finalStudentId);
@@ -512,7 +512,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                                 <Input 
                                     type="number" 
                                     step="0.01" 
-                                    placeholder="200.00" 
+                                    placeholder="315.00" 
                                     {...field} 
                                     value={field.value ?? ''}
                                     onChange={event => field.onChange(event.target.value === '' ? undefined : parseFloat(event.target.value))} 

@@ -34,8 +34,8 @@ export type Student = {
   planType?: 'Mensal' | 'Trimestral' | 'Bolsa' | 'Outros';
   planValue?: number;
   lastPaymentDate?: string;
-  planExpirationDate?: string;
-  paymentCredits?: string;
+  planExpirationDate?: string | null;
+  paymentCredits?: string | null;
 };
 
 export type RevenueData = {

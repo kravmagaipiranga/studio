@@ -67,7 +67,7 @@ export function BulkImportDialog({ children }: BulkImportDialogProps) {
         registrationDate: new Date().toISOString(),
         paymentStatus: 'Pendente',
         planType: 'Mensal',
-        planValue: 200,
+        planValue: 315,
       };
 
       const docRef = doc(firestore, 'students', newStudentId);
