@@ -55,7 +55,9 @@ export default function AulasPage() {
                 }
                 if (isWithinInterval(classDate, { start: monthStart, end: monthEnd })) {
                     monthlyCount++;
-                    monthlyRevenue += pc.paymentAmount || 0;
+                    if(pc.paymentStatus === "Pago") {
+                        monthlyRevenue += pc.paymentAmount || 0;
+                    }
                 }
             } catch (error) {
                 // Ignore invalid dates
@@ -120,7 +122,7 @@ export default function AulasPage() {
                  <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
-                            Valor a Receber (Mês)
+                            Valor Recebido (Mês)
                         </CardTitle>
                         <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     </CardHeader>
@@ -166,5 +168,4 @@ export default function AulasPage() {
             </div>
         </>
     );
-
-    
+}
