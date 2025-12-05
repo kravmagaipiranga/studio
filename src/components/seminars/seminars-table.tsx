@@ -2,13 +2,6 @@
 "use client"
 
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
   Table,
   TableBody,
   TableCell,
@@ -28,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Combobox } from "../ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { differenceInYears } from "date-fns"
+import { Textarea } from "../ui/textarea"
 
 interface SeminarsTableProps {
   seminars: Seminar[];
@@ -108,83 +102,76 @@ export function SeminarsTable({ seminars, setSeminars, allStudents, isLoading }:
   };
 
   return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Inscrições em Seminários</CardTitle>
-          <CardDescription>
-            Acompanhe as inscrições e pagamentos para os próximos seminários e cursos.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div className="w-full border rounded-lg overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Tema</TableHead>
-                <TableHead className="w-[200px]">Aluno</TableHead>
-                <TableHead>Pagamento</TableHead>
-                <TableHead>Forma Pgto.</TableHead>
-                <TableHead>Valor</TableHead>
+                <TableHead>Detalhes da Inscrição</TableHead>
                 <TableHead className="text-right w-[100px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading && Array.from({length: 3}).map((_, index) => (
                  <TableRow key={index}>
-                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                    <TableCell colSpan={2}><Skeleton className="h-24 w-full" /></TableCell>
                  </TableRow>
               ))}
               {!isLoading && seminars.map((seminar: Seminar) => (
                 <TableRow key={seminar.id} className={seminar.isNew ? "bg-muted/50" : ""}>
-                  <TableCell>
-                    <Input placeholder="Tema do seminário" value={seminar.topic} onChange={e => handleInputChange(seminar.id, 'topic', e.target.value)} />
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {seminar.isNew ? (
-                      <Combobox
-                          options={studentOptions}
-                          value={seminar.studentId}
-                          onChange={(value) => handleInputChange(seminar.id, 'studentId', value)}
-                          placeholder="Selecione..."
-                          searchPlaceholder="Buscar aluno..."
-                          notFoundText="Nenhum aluno encontrado."
-                      />
-                    ) : (
-                      <div className="flex flex-col">
-                        <span>{seminar.studentName}</span>
-                        <Badge variant="secondary" className="w-fit">{seminar.studentBelt}</Badge>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Select value={seminar.paymentStatus} onValueChange={(value) => handleInputChange(seminar.id, 'paymentStatus', value)}>
-                      <SelectTrigger className="w-[100px]"><SelectValue placeholder="..." /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Pago">Pago</SelectItem>
-                        <SelectItem value="Pendente">Pendente</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Select value={seminar.paymentMethod} onValueChange={(value) => handleInputChange(seminar.id, 'paymentMethod', value)}>
-                      <SelectTrigger className="w-[110px]"><SelectValue placeholder="..." /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Pendente">Pendente</SelectItem>
-                        <SelectItem value="Pix">Pix</SelectItem>
-                        <SelectItem value="Cartão">Cartão</SelectItem>
-                        <SelectItem value="Dinheiro">Dinheiro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                      <Input type="number" value={seminar.paymentAmount} onChange={e => handleInputChange(seminar.id, 'paymentAmount', parseFloat(e.target.value) || 0)} className="w-24" />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-2">
+                    <TableCell className="p-4">
+                        <div className="space-y-2 mb-4">
+                           <label className="text-xs font-semibold text-muted-foreground">Tema do Seminário / Curso</label>
+                           <Textarea placeholder="Ex: Defesa contra Ameaças com Faca" value={seminar.topic} onChange={e => handleInputChange(seminar.id, 'topic', e.target.value)} />
+                        </div>
+                        <div className="space-y-2 mb-4">
+                            <label className="text-xs font-semibold text-muted-foreground">Aluno</label>
+                            {seminar.isNew ? (
+                              <Combobox
+                                  options={studentOptions}
+                                  value={seminar.studentId}
+                                  onChange={(value) => handleInputChange(seminar.id, 'studentId', value)}
+                                  placeholder="Selecione..."
+                                  searchPlaceholder="Buscar aluno..."
+                                  notFoundText="Nenhum aluno encontrado."
+                              />
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <Input disabled value={seminar.studentName} />
+                                <Badge variant="secondary" className="w-fit whitespace-nowrap">{seminar.studentBelt}</Badge>
+                              </div>
+                            )}
+                        </div>
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-semibold text-muted-foreground">Valor (R$)</label>
+                                <Input type="number" value={seminar.paymentAmount} onChange={e => handleInputChange(seminar.id, 'paymentAmount', parseFloat(e.target.value) || 0)} />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-semibold text-muted-foreground">Status do Pagamento</label>
+                                <Select value={seminar.paymentStatus} onValueChange={(value) => handleInputChange(seminar.id, 'paymentStatus', value)}>
+                                  <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Pago">Pago</SelectItem>
+                                    <SelectItem value="Pendente">Pendente</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                               <label className="text-xs font-semibold text-muted-foreground">Forma de Pagamento</label>
+                               <Select value={seminar.paymentMethod} onValueChange={(value) => handleInputChange(seminar.id, 'paymentMethod', value)}>
+                                  <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Pendente">Pendente</SelectItem>
+                                    <SelectItem value="Pix">Pix</SelectItem>
+                                    <SelectItem value="Cartão">Cartão</SelectItem>
+                                    <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </TableCell>
+                  <TableCell className="align-top text-right p-4">
+                    <div className="flex flex-col items-center justify-start gap-2">
                         <Button variant="outline" size="icon" onClick={() => handleSaveSeminar(seminar)}>
                             <Save className="h-4 w-4" />
                             <span className="sr-only">Salvar</span>
@@ -199,14 +186,13 @@ export function SeminarsTable({ seminars, setSeminars, allStudents, isLoading }:
               ))}
                {!isLoading && seminars.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10">
+                  <TableCell colSpan={2} className="text-center py-10">
                     Nenhuma inscrição em seminário encontrada.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+      </div>
   )
 }

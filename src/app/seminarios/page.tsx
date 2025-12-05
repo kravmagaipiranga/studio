@@ -90,7 +90,7 @@ export default function SeminariosPage() {
                 </div>
                 <DatePickerWithRange />
             </div>
-             <div className="flex flex-1 rounded-lg shadow-sm mt-4">
+             <div className="flex flex-1 rounded-lg mt-4">
                 <SeminarsTable 
                     seminars={filteredSeminars}
                     setSeminars={setSeminars}

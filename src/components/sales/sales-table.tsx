@@ -2,13 +2,6 @@
 "use client"
 
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
   Table,
   TableBody,
   TableCell,
@@ -27,6 +20,7 @@ import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Combobox } from "../ui/combobox";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "../ui/textarea"
 
 interface SalesTableProps {
   sales: Sale[];
@@ -103,85 +97,79 @@ export function SalesTable({ sales, setSales, allStudents, isLoading }: SalesTab
   };
 
   return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Histórico de Vendas</CardTitle>
-          <CardDescription>
-            Vendas de produtos como uniformes, equipamentos, etc. Edite diretamente na tabela.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div className="w-full border rounded-lg overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Aluno</TableHead>
-                <TableHead>Item</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Forma Pgto.</TableHead>
+                <TableHead>Detalhes da Venda</TableHead>
                 <TableHead className="text-right w-[100px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
                {isLoading && Array.from({length: 3}).map((_, index) => (
                  <TableRow key={index}>
-                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                    <TableCell colSpan={2}><Skeleton className="h-24 w-full" /></TableCell>
                  </TableRow>
               ))}
               {!isLoading && sales.map((sale: Sale) => (
                 <TableRow key={sale.id} className={sale.isNew ? "bg-muted/50" : ""}>
-                  <TableCell className="font-medium">
-                     {sale.isNew ? (
-                        <Combobox
-                            options={studentOptions}
-                            value={sale.studentId}
-                            onChange={(value) => handleInputChange(sale.id, 'studentId', value)}
-                            placeholder="Selecione..."
-                            searchPlaceholder="Buscar aluno..."
-                            notFoundText="Nenhum aluno encontrado."
-                        />
-                     ) : (
-                        sale.studentName
-                     )}
+                  <TableCell className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                           <label className="text-xs font-semibold text-muted-foreground">Aluno</label>
+                           {sale.isNew ? (
+                              <Combobox
+                                  options={studentOptions}
+                                  value={sale.studentId}
+                                  onChange={(value) => handleInputChange(sale.id, 'studentId', value)}
+                                  placeholder="Selecione..."
+                                  searchPlaceholder="Buscar aluno..."
+                                  notFoundText="Nenhum aluno encontrado."
+                              />
+                           ) : (
+                              <Input disabled value={sale.studentName} />
+                           )}
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-muted-foreground">Data da Venda</label>
+                            <Input type="date" value={sale.date} onChange={e => handleInputChange(sale.id, 'date', e.target.value)} />
+                        </div>
+                    </div>
+                    <div className="space-y-2 mt-4">
+                        <label className="text-xs font-semibold text-muted-foreground">Item / Descrição</label>
+                        <Textarea placeholder="Ex: Uniforme completo, Faixa, etc." value={sale.item} onChange={e => handleInputChange(sale.id, 'item', e.target.value)} />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-muted-foreground">Valor (R$)</label>
+                            <Input type="number" value={sale.value} onChange={e => handleInputChange(sale.id, 'value', parseFloat(e.target.value) || 0)} />
+                        </div>
+                        <div className="space-y-2">
+                           <label className="text-xs font-semibold text-muted-foreground">Status do Pagamento</label>
+                           <Select value={sale.paymentStatus} onValueChange={(value) => handleInputChange(sale.id, 'paymentStatus', value)}>
+                              <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Pago">Pago</SelectItem>
+                                <SelectItem value="Pendente">Pendente</SelectItem>
+                              </SelectContent>
+                            </Select>
+                        </div>
+                         <div className="space-y-2">
+                           <label className="text-xs font-semibold text-muted-foreground">Forma de Pagamento</label>
+                           <Select value={sale.paymentMethod} onValueChange={(value) => handleInputChange(sale.id, 'paymentMethod', value)}>
+                              <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Pendente">Pendente</SelectItem>
+                                <SelectItem value="Pix">Pix</SelectItem>
+                                <SelectItem value="Cartão">Cartão</SelectItem>
+                                <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                              </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                   </TableCell>
-                  <TableCell>
-                    <Input placeholder="Ex: Uniforme" value={sale.item} onChange={e => handleInputChange(sale.id, 'item', e.target.value)} />
-                  </TableCell>
-                  <TableCell>
-                    <Input type="date" value={sale.date} onChange={e => handleInputChange(sale.id, 'date', e.target.value)} />
-                  </TableCell>
-                   <TableCell>
-                    <Input type="number" value={sale.value} onChange={e => handleInputChange(sale.id, 'value', parseFloat(e.target.value) || 0)} className="w-24" />
-                  </TableCell>
-                  <TableCell>
-                     <Select value={sale.paymentStatus} onValueChange={(value) => handleInputChange(sale.id, 'paymentStatus', value)}>
-                        <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pago">Pago</SelectItem>
-                          <SelectItem value="Pendente">Pendente</SelectItem>
-                        </SelectContent>
-                      </Select>
-                  </TableCell>
-                  <TableCell>
-                     <Select value={sale.paymentMethod} onValueChange={(value) => handleInputChange(sale.id, 'paymentMethod', value)}>
-                        <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pendente">Pendente</SelectItem>
-                          <SelectItem value="Pix">Pix</SelectItem>
-                          <SelectItem value="Cartão">Cartão</SelectItem>
-                          <SelectItem value="Dinheiro">Dinheiro</SelectItem>
-                        </SelectContent>
-                      </Select>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-2">
+                  <TableCell className="align-top text-right p-4">
+                    <div className="flex flex-col items-center justify-start gap-2">
                         <Button variant="outline" size="icon" onClick={() => handleSaveSale(sale)}>
                             <Save className="h-4 w-4" />
                             <span className="sr-only">Salvar</span>
@@ -196,14 +184,13 @@ export function SalesTable({ sales, setSales, allStudents, isLoading }: SalesTab
               ))}
               {!isLoading && sales.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-10">
+                  <TableCell colSpan={2} className="text-center py-10">
                     Nenhuma venda encontrada. Clique em "Nova Venda" para adicionar uma.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+      </div>
   )
 }

@@ -86,7 +86,7 @@ export default function VendasPage() {
                 </div>
                 <DatePickerWithRange />
             </div>
-             <div className="flex flex-1 rounded-lg shadow-sm mt-4">
+             <div className="flex flex-1 rounded-lg mt-4">
                 <SalesTable 
                     sales={filteredSales}
                     setSales={setSales}
