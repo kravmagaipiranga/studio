@@ -18,6 +18,7 @@ import { collection, doc } from "firebase/firestore";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "../ui/textarea";
 
 interface PrivateClassesTableProps {
   privateClasses: PrivateClass[];
@@ -160,6 +161,14 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, isLoadi
                           </SelectContent>
                         </Select>
                     </div>
+                </div>
+                <div className="space-y-2 mt-4">
+                    <label className="text-xs font-semibold text-muted-foreground">Anotações Gerais</label>
+                    <Textarea 
+                        placeholder="Observações sobre a aula ou o aluno..."
+                        value={pc.notes || ""} 
+                        onChange={e => handleInputChange(pc.id, 'notes', e.target.value)}
+                    />
                 </div>
               </TableCell>
               <TableCell className="align-top text-right p-4">

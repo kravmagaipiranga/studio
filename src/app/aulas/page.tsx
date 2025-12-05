@@ -83,6 +83,7 @@ export default function AulasPage() {
          paymentAmount: 150, // Calculated from numberOfClasses * pricePerClass
          paymentStatus: "Pendente",
          paymentMethod: "Pendente",
+         notes: "",
          isNew: true,
        };
        setPrivateClasses(prev => [newClass, ...prev]);

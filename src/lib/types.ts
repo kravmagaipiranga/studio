@@ -84,6 +84,7 @@ export type PrivateClass = {
   paymentStatus: 'Pago' | 'Pendente';
   paymentDate?: string;
   paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+  notes?: string;
   isNew?: boolean; // Flag for new rows in UI
 };
 
@@ -109,5 +110,6 @@ export type Sale = {
   paymentStatus: 'Pago' | 'Pendente';
   isNew?: boolean; // Flag for new rows in UI
 };
+
 
 
