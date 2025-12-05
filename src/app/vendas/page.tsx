@@ -1,44 +1,72 @@
 
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 import { SalesTable } from "@/components/sales/sales-table";
 import { Button } from "@/components/ui/button";
 import { Download, PlusCircle, Search } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
-import { Sale } from "@/lib/types";
+import { Sale, Student } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
+import { v4 as uuidv4 } from "uuid";
 
 export default function VendasPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
+    const [sales, setSales] = useState<Sale[]>([]);
 
     const salesCollection = useMemoFirebase(() => {
         if (!firestore) return null;
         return collection(firestore, 'sales');
     }, [firestore]);
 
-    const { data: sales, isLoading: isLoadingSales } = useCollection<Sale>(salesCollection);
+    const studentsCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'students');
+    }, [firestore]);
+
+    const { data: initialSales, isLoading: isLoadingSales } = useCollection<Sale>(salesCollection);
+    const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
+
+    useEffect(() => {
+        if (initialSales) {
+            setSales(initialSales);
+        }
+    }, [initialSales]);
+
+    const handleAddNewSale = () => {
+        const newSale: Sale = {
+            id: `new_${uuidv4()}`,
+            studentId: "",
+            studentName: "",
+            item: "",
+            value: 0,
+            date: new Date().toISOString().split('T')[0],
+            paymentMethod: "Pendente",
+            paymentStatus: "Pendente",
+            isNew: true,
+        };
+        setSales(prev => [newSale, ...prev]);
+    };
 
     const filteredSales = (sales || []).filter(sale =>
         sale.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         sale.item.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const isLoading = isLoadingSales || isLoadingStudents;
+
     return (
         <>
             <div className="flex items-center justify-between gap-4">
                 <h1 className="text-lg font-semibold md:text-2xl">Vendas Gerais</h1>
                 <div className="flex items-center gap-2">
-                     <Link href="/vendas/novo/editar">
-                        <Button>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Nova Venda
-                        </Button>
-                     </Link>
+                     <Button onClick={handleAddNewSale}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Nova Venda
+                    </Button>
                     <Button variant="outline">
                         <Download className="mr-2 h-4 w-4" />
                         Gerar Relatório
@@ -61,7 +89,9 @@ export default function VendasPage() {
              <div className="flex flex-1 rounded-lg shadow-sm mt-4">
                 <SalesTable 
                     sales={filteredSales}
-                    isLoading={isLoadingSales}
+                    setSales={setSales}
+                    allStudents={students || []}
+                    isLoading={isLoading}
                 />
             </div>
         </>

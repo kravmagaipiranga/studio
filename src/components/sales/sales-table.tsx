@@ -18,99 +18,178 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Sale } from "@/lib/types"
+import { Save, Trash2 } from "lucide-react"
+import { Sale, Student } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
-import { useRouter } from "next/navigation"
+import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
+import { collection, doc } from "firebase/firestore";
+import { Input } from "../ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Combobox } from "../ui/combobox";
+import { useToast } from "@/hooks/use-toast";
 
 interface SalesTableProps {
   sales: Sale[];
+  setSales: React.Dispatch<React.SetStateAction<Sale[]>>;
+  allStudents: Student[];
   isLoading: boolean;
 }
 
-export function SalesTable({ sales, isLoading }: SalesTableProps) {
-  const router = useRouter();
+export function SalesTable({ sales, setSales, allStudents, isLoading }: SalesTableProps) {
+  const firestore = useFirestore();
+  const { toast } = useToast();
   
+  const studentOptions = allStudents.slice().sort((a,b) => a.name.localeCompare(b.name)).map(s => ({ value: s.id, label: s.name }));
+
+  const handleInputChange = (saleId: string, field: keyof Sale, value: any) => {
+    setSales(prev =>
+      prev.map(item => {
+        if (item.id === saleId) {
+          const updatedItem = { ...item, [field]: value };
+          if (field === 'studentId' && item.isNew) {
+            const selectedStudent = allStudents.find(s => s.id === value);
+            if (selectedStudent) {
+              updatedItem.studentName = selectedStudent.name;
+            }
+          }
+          return updatedItem;
+        }
+        return item;
+      })
+    );
+  };
+  
+  const handleSaveSale = (itemToSave: Sale) => {
+    if (!firestore) return;
+
+    if (!itemToSave.studentId || !itemToSave.item || !itemToSave.date) {
+        toast({
+            variant: "destructive",
+            title: "Campos Obrigatórios",
+            description: "Por favor, preencha Aluno, Item e Data antes de salvar."
+        });
+        return;
+    }
+
+    const { isNew, id, ...itemData } = itemToSave;
+    const finalId = isNew ? doc(collection(firestore, "sales")).id : id;
+
+    const docRef = doc(firestore, 'sales', finalId);
+    setDocumentNonBlocking(docRef, { ...itemData, id: finalId }, { merge: true });
+
+    toast({
+        title: "Venda Salva!",
+        description: `A venda do item ${itemData.item} foi salva com sucesso.`
+    });
+    
+    setSales(prev => prev.map(ex => ex.id === itemToSave.id ? { ...itemData, id: finalId, isNew: false } : ex));
+  };
+
+  const handleDeleteSale = (itemId: string, itemName: string) => {
+    if (!firestore) return;
+    
+    const isNewRow = itemId.startsWith('new_');
+    if (isNewRow) {
+        setSales(prev => prev.filter(ex => ex.id !== itemId));
+        return;
+    }
+
+    const docRef = doc(firestore, 'sales', itemId);
+    deleteDocumentNonBlocking(docRef);
+    toast({
+        title: "Venda Removida",
+        description: `A venda do item ${itemName} foi removida.`
+    })
+  };
+
   return (
-    <>
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Histórico de Vendas</CardTitle>
           <CardDescription>
-            Vendas de produtos como uniformes, equipamentos, etc.
+            Vendas de produtos como uniformes, equipamentos, etc. Edite diretamente na tabela.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Aluno</TableHead>
+                <TableHead className="w-[200px]">Aluno</TableHead>
                 <TableHead>Item</TableHead>
-                <TableHead className="hidden sm:table-cell">Data</TableHead>
+                <TableHead>Data</TableHead>
+                <TableHead>Valor</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="hidden md:table-cell">Forma Pgto.</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead>
-                  <span className="sr-only">Ações</span>
-                </TableHead>
+                <TableHead>Forma Pgto.</TableHead>
+                <TableHead className="text-right w-[100px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
                {isLoading && Array.from({length: 3}).map((_, index) => (
                  <TableRow key={index}>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-40" /></TableCell>
-                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                    <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-9 w-full" /></TableCell>
                  </TableRow>
               ))}
               {!isLoading && sales.map((sale: Sale) => (
-                <TableRow key={sale.id}>
-                  <TableCell className="font-medium">{sale.studentName}</TableCell>
-                  <TableCell>{sale.item}</TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {new Date(sale.date + "T00:00:00").toLocaleDateString('pt-BR')}
+                <TableRow key={sale.id} className={sale.isNew ? "bg-muted/50" : ""}>
+                  <TableCell className="font-medium">
+                     {sale.isNew ? (
+                        <Combobox
+                            options={studentOptions}
+                            value={sale.studentId}
+                            onChange={(value) => handleInputChange(sale.id, 'studentId', value)}
+                            placeholder="Selecione..."
+                            searchPlaceholder="Buscar aluno..."
+                            notFoundText="Nenhum aluno encontrado."
+                        />
+                     ) : (
+                        sale.studentName
+                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={sale.paymentStatus === 'Pago' ? 'outline' : 'destructive'}>
-                      {sale.paymentStatus}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                     {sale.paymentMethod}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {`R$ ${sale.value.toFixed(2)}`}
+                    <Input placeholder="Ex: Uniforme" value={sale.item} onChange={e => handleInputChange(sale.id, 'item', e.target.value)} />
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center justify-end">
-                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Abrir menu</span>
+                    <Input type="date" value={sale.date} onChange={e => handleInputChange(sale.id, 'date', e.target.value)} />
+                  </TableCell>
+                   <TableCell>
+                    <Input type="number" value={sale.value} onChange={e => handleInputChange(sale.id, 'value', parseFloat(e.target.value) || 0)} className="w-24" />
+                  </TableCell>
+                  <TableCell>
+                     <Select value={sale.paymentStatus} onValueChange={(value) => handleInputChange(sale.id, 'paymentStatus', value)}>
+                        <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Pago">Pago</SelectItem>
+                          <SelectItem value="Pendente">Pendente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                  </TableCell>
+                  <TableCell>
+                     <Select value={sale.paymentMethod} onValueChange={(value) => handleInputChange(sale.id, 'paymentMethod', value)}>
+                        <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Pendente">Pendente</SelectItem>
+                          <SelectItem value="Pix">Pix</SelectItem>
+                          <SelectItem value="Cartão">Cartão</SelectItem>
+                          <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-2">
+                        <Button variant="outline" size="icon" onClick={() => handleSaveSale(sale)}>
+                            <Save className="h-4 w-4" />
+                            <span className="sr-only">Salvar</span>
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => router.push(`/vendas/${sale.id}/editar`)}>
-                          Editar
-                        </DropdownMenuItem>
-                         <DropdownMenuItem className="text-destructive">
-                          Cancelar Venda
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                        <Button variant="destructive" size="icon" onClick={() => handleDeleteSale(sale.id, sale.item)}>
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Excluir</span>
+                        </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -118,7 +197,7 @@ export function SalesTable({ sales, isLoading }: SalesTableProps) {
               {!isLoading && sales.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-10">
-                    Nenhuma venda encontrada.
+                    Nenhuma venda encontrada. Clique em "Nova Venda" para adicionar uma.
                   </TableCell>
                 </TableRow>
               )}
@@ -126,6 +205,5 @@ export function SalesTable({ sales, isLoading }: SalesTableProps) {
           </Table>
         </CardContent>
       </Card>
-    </>
   )
 }

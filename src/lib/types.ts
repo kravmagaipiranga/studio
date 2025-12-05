@@ -106,4 +106,5 @@ export type Sale = {
   date: string;
   paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
   paymentStatus: 'Pago' | 'Pendente';
+  isNew?: boolean; // Flag for new rows in UI
 };
