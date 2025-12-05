@@ -75,13 +75,14 @@ export type Seminar = {
 
 export type PrivateClass = {
   id: string;
-  studentId: string;
+  studentId?: string; // Not linked to general students anymore, can be optional
   studentName: string;
-  studentBelt: string;
   classDate: string;
+  numberOfClasses: number;
+  pricePerClass: number;
+  paymentAmount: number; // This will be the calculated total
   paymentStatus: 'Pago' | 'Pendente';
   paymentDate?: string;
-  paymentAmount: number;
   paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
   isNew?: boolean; // Flag for new rows in UI
 };
@@ -108,4 +109,5 @@ export type Sale = {
   paymentStatus: 'Pago' | 'Pendente';
   isNew?: boolean; // Flag for new rows in UI
 };
+
 

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Download, PlusCircle, Search } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
-import { PrivateClass, Student } from "@/lib/types";
+import { PrivateClass } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
@@ -22,14 +22,8 @@ export default function AulasPage() {
         return collection(firestore, 'privateClasses');
     }, [firestore]);
 
-    const studentsCollection = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return collection(firestore, 'students');
-    }, [firestore]);
-
-    const { data: initialPrivateClasses, isLoading: isLoadingClasses } = useCollection<PrivateClass>(privateClassesCollection);
-    const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
-
+    const { data: initialPrivateClasses, isLoading } = useCollection<PrivateClass>(privateClassesCollection);
+    
     useEffect(() => {
         if (initialPrivateClasses) {
             setPrivateClasses(initialPrivateClasses);
@@ -41,11 +35,11 @@ export default function AulasPage() {
 
        const newClass: PrivateClass = {
          id: `new_${uuidv4()}`,
-         studentId: "",
          studentName: "",
-         studentBelt: "",
          classDate: new Date().toISOString().split('T')[0],
-         paymentAmount: 150,
+         numberOfClasses: 1,
+         pricePerClass: 150,
+         paymentAmount: 150, // Calculated from numberOfClasses * pricePerClass
          paymentStatus: "Pendente",
          paymentMethod: "Pendente",
          isNew: true,
@@ -56,8 +50,6 @@ export default function AulasPage() {
     const filteredClasses = (privateClasses || []).filter(pc =>
         pc.studentName.toLowerCase().includes(searchQuery.toLowerCase())
     );
-
-    const isLoading = isLoadingClasses || isLoadingStudents;
 
     return (
         <>
@@ -91,7 +83,6 @@ export default function AulasPage() {
                 <PrivateClassesTable 
                     privateClasses={filteredClasses}
                     setPrivateClasses={setPrivateClasses}
-                    allStudents={students || []}
                     isLoading={isLoading}
                 />
             </div>

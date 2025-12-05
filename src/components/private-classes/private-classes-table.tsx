@@ -16,43 +16,37 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Save, Trash2 } from "lucide-react"
-import { PrivateClass, Student } from "@/lib/types"
+import { PrivateClass } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
 import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Combobox } from "../ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 
 interface PrivateClassesTableProps {
   privateClasses: PrivateClass[];
   setPrivateClasses: React.Dispatch<React.SetStateAction<PrivateClass[]>>;
-  allStudents: Student[];
   isLoading: boolean;
 }
 
-export function PrivateClassesTable({ privateClasses, setPrivateClasses, allStudents, isLoading }: PrivateClassesTableProps) {
+export function PrivateClassesTable({ privateClasses, setPrivateClasses, isLoading }: PrivateClassesTableProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   
-  const studentOptions = allStudents.slice().sort((a,b) => a.name.localeCompare(b.name)).map(s => ({ value: s.id, label: s.name }));
-
   const handleInputChange = (classId: string, field: keyof PrivateClass, value: any) => {
     setPrivateClasses(prev =>
       prev.map(item => {
         if (item.id === classId) {
           const updatedItem = { ...item, [field]: value };
 
-          if (field === 'studentId' && item.isNew) {
-            const selectedStudent = allStudents.find(s => s.id === value);
-            if (selectedStudent) {
-              updatedItem.studentName = selectedStudent.name;
-              updatedItem.studentBelt = selectedStudent.belt;
-            }
+          // Recalculate total amount if number of classes or price per class changes
+          if (field === 'numberOfClasses' || field === 'pricePerClass') {
+              const numClasses = field === 'numberOfClasses' ? (Number(value) || 0) : item.numberOfClasses;
+              const price = field === 'pricePerClass' ? (Number(value) || 0) : item.pricePerClass;
+              updatedItem.paymentAmount = numClasses * price;
           }
           return updatedItem;
         }
@@ -64,11 +58,11 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, allStud
   const handleSaveClass = (itemToSave: PrivateClass) => {
     if (!firestore) return;
     
-    if (!itemToSave.studentId || !itemToSave.classDate) {
+    if (!itemToSave.studentName || !itemToSave.classDate) {
         toast({
             variant: "destructive",
             title: "Campos Obrigatórios",
-            description: "Por favor, preencha Aluno e Data da Aula antes de salvar."
+            description: "Por favor, preencha Nome do Aluno e Data da Aula antes de salvar."
         });
         return;
     }
@@ -118,9 +112,11 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, allStud
             <TableRow>
               <TableHead className="w-[200px]">Aluno</TableHead>
               <TableHead>Data da Aula</TableHead>
+              <TableHead>Qtd Aulas</TableHead>
+              <TableHead>Valor/Aula</TableHead>
+              <TableHead>Valor Total</TableHead>
               <TableHead>Pagamento</TableHead>
               <TableHead>Forma Pgto.</TableHead>
-              <TableHead>Valor</TableHead>
               <TableHead className="text-right w-[100px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -133,29 +129,30 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, allStud
                   <TableCell><Skeleton className="h-9 w-full" /></TableCell>
                   <TableCell><Skeleton className="h-9 w-full" /></TableCell>
                   <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                  <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                  <TableCell><Skeleton className="h-9 w-full" /></TableCell>
                </TableRow>
             ))}
             {!isLoading && privateClasses.map((pc: PrivateClass) => (
               <TableRow key={pc.id} className={pc.isNew ? "bg-muted/50" : ""}>
                 <TableCell className="font-medium">
-                  {pc.isNew ? (
-                    <Combobox
-                        options={studentOptions}
-                        value={pc.studentId}
-                        onChange={(value) => handleInputChange(pc.id, 'studentId', value)}
-                        placeholder="Selecione..."
-                        searchPlaceholder="Buscar aluno..."
-                        notFoundText="Nenhum aluno encontrado."
-                    />
-                  ) : (
-                    <div className="flex flex-col">
-                        <span>{pc.studentName}</span>
-                        <Badge variant="secondary" className="w-fit">{pc.studentBelt}</Badge>
-                    </div>
-                  )}
+                  <Input 
+                    placeholder="Nome do Aluno"
+                    value={pc.studentName} 
+                    onChange={e => handleInputChange(pc.id, 'studentName', e.target.value)} 
+                  />
                 </TableCell>
                 <TableCell>
                   <Input type="date" value={pc.classDate} onChange={e => handleInputChange(pc.id, 'classDate', e.target.value)} />
+                </TableCell>
+                 <TableCell>
+                  <Input type="number" value={pc.numberOfClasses} onChange={e => handleInputChange(pc.id, 'numberOfClasses', parseInt(e.target.value, 10))} className="w-20" />
+                </TableCell>
+                 <TableCell>
+                  <Input type="number" value={pc.pricePerClass} onChange={e => handleInputChange(pc.id, 'pricePerClass', parseFloat(e.target.value))} className="w-24" />
+                </TableCell>
+                <TableCell>
+                    <Input type="number" value={pc.paymentAmount} disabled className="w-24 font-bold" />
                 </TableCell>
                 <TableCell>
                   <Select value={pc.paymentStatus} onValueChange={(value) => handleInputChange(pc.id, 'paymentStatus', value)}>
@@ -178,9 +175,6 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, allStud
                   </Select>
                 </TableCell>
                 <TableCell>
-                    <Input type="number" value={pc.paymentAmount} onChange={e => handleInputChange(pc.id, 'paymentAmount', parseFloat(e.target.value) || 0)} className="w-24" />
-                </TableCell>
-                <TableCell>
                   <div className="flex items-center justify-end gap-2">
                     <Button variant="outline" size="icon" onClick={() => handleSaveClass(pc)}>
                         <Save className="h-4 w-4" />
@@ -196,7 +190,7 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, allStud
             ))}
              {!isLoading && privateClasses.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10">
+                <TableCell colSpan={8} className="text-center py-10">
                   Nenhuma aula particular agendada. Clique em "Agendar Aula" para adicionar uma.
                 </TableCell>
               </TableRow>
