@@ -2,13 +2,6 @@
 "use client"
 
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
   Table,
   TableBody,
   TableCell,
@@ -99,83 +92,78 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, isLoadi
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Aulas Agendadas</CardTitle>
-        <CardDescription>
-          Acompanhe as aulas particulares agendadas e seus pagamentos.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[200px]">Aluno</TableHead>
-              <TableHead>Data da Aula</TableHead>
-              <TableHead>Qtd Aulas</TableHead>
-              <TableHead>Valor/Aula</TableHead>
-              <TableHead>Valor Total</TableHead>
-              <TableHead>Pagamento</TableHead>
-              <TableHead>Forma Pgto.</TableHead>
-              <TableHead className="text-right w-[100px]">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && Array.from({length: 3}).map((_, index) => (
-               <TableRow key={index}>
-                  <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-               </TableRow>
-            ))}
-            {!isLoading && privateClasses.map((pc: PrivateClass) => (
-              <TableRow key={pc.id} className={pc.isNew ? "bg-muted/50" : ""}>
-                <TableCell className="font-medium">
-                  <Input 
-                    placeholder="Nome do Aluno"
-                    value={pc.studentName} 
-                    onChange={e => handleInputChange(pc.id, 'studentName', e.target.value)} 
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input type="date" value={pc.classDate} onChange={e => handleInputChange(pc.id, 'classDate', e.target.value)} />
-                </TableCell>
-                 <TableCell>
-                  <Input type="number" value={pc.numberOfClasses} onChange={e => handleInputChange(pc.id, 'numberOfClasses', parseInt(e.target.value, 10))} className="w-20" />
-                </TableCell>
-                 <TableCell>
-                  <Input type="number" value={pc.pricePerClass} onChange={e => handleInputChange(pc.id, 'pricePerClass', parseFloat(e.target.value))} className="w-24" />
-                </TableCell>
-                <TableCell>
-                    <Input type="number" value={pc.paymentAmount} disabled className="w-24 font-bold" />
-                </TableCell>
-                <TableCell>
-                  <Select value={pc.paymentStatus} onValueChange={(value) => handleInputChange(pc.id, 'paymentStatus', value)}>
-                    <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Pago">Pago</SelectItem>
-                      <SelectItem value="Pendente">Pendente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Select value={pc.paymentMethod} onValueChange={(value) => handleInputChange(pc.id, 'paymentMethod', value)}>
-                    <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Pendente">Pendente</SelectItem>
-                      <SelectItem value="Pix">Pix</SelectItem>
-                      <SelectItem value="Cartão">Cartão</SelectItem>
-                      <SelectItem value="Dinheiro">Dinheiro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center justify-end gap-2">
+    <div className="w-full border rounded-lg overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Detalhes da Aula</TableHead>
+            <TableHead className="text-right w-[100px]">Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading && Array.from({length: 3}).map((_, index) => (
+             <TableRow key={index}>
+                <TableCell colSpan={2}><Skeleton className="h-24 w-full" /></TableCell>
+             </TableRow>
+          ))}
+          {!isLoading && privateClasses.map((pc: PrivateClass) => (
+            <TableRow key={pc.id} className={pc.isNew ? "bg-muted/50" : ""}>
+              <TableCell className="p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                       <label className="text-xs font-semibold text-muted-foreground">Aluno</label>
+                       <Input 
+                          placeholder="Nome do Aluno"
+                          value={pc.studentName} 
+                          onChange={e => handleInputChange(pc.id, 'studentName', e.target.value)} 
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-muted-foreground">Data da Aula</label>
+                        <Input type="date" value={pc.classDate} onChange={e => handleInputChange(pc.id, 'classDate', e.target.value)} />
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-muted-foreground">Qtd Aulas</label>
+                        <Input type="number" value={pc.numberOfClasses} onChange={e => handleInputChange(pc.id, 'numberOfClasses', parseInt(e.target.value, 10))} />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-muted-foreground">Valor/Aula (R$)</label>
+                        <Input type="number" value={pc.pricePerClass} onChange={e => handleInputChange(pc.id, 'pricePerClass', parseFloat(e.target.value))} />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-muted-foreground">Valor Total (R$)</label>
+                        <Input type="number" value={pc.paymentAmount} disabled className="font-bold" />
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div className="space-y-2">
+                       <label className="text-xs font-semibold text-muted-foreground">Status do Pagamento</label>
+                       <Select value={pc.paymentStatus} onValueChange={(value) => handleInputChange(pc.id, 'paymentStatus', value)}>
+                          <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Pago">Pago</SelectItem>
+                            <SelectItem value="Pendente">Pendente</SelectItem>
+                          </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
+                       <label className="text-xs font-semibold text-muted-foreground">Forma de Pagamento</label>
+                       <Select value={pc.paymentMethod} onValueChange={(value) => handleInputChange(pc.id, 'paymentMethod', value)}>
+                          <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Pendente">Pendente</SelectItem>
+                            <SelectItem value="Pix">Pix</SelectItem>
+                            <SelectItem value="Cartão">Cartão</SelectItem>
+                            <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+              </TableCell>
+              <TableCell className="align-top text-right p-4">
+                 <div className="flex flex-col items-center justify-start gap-2">
                     <Button variant="outline" size="icon" onClick={() => handleSaveClass(pc)}>
                         <Save className="h-4 w-4" />
                         <span className="sr-only">Salvar</span>
@@ -185,19 +173,18 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, isLoadi
                         <span className="sr-only">Excluir</span>
                     </Button>
                   </div>
-                </TableCell>
-              </TableRow>
-            ))}
-             {!isLoading && privateClasses.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-10">
-                  Nenhuma aula particular agendada. Clique em "Agendar Aula" para adicionar uma.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+              </TableCell>
+            </TableRow>
+          ))}
+           {!isLoading && privateClasses.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={2} className="text-center py-10">
+                Nenhuma aula particular agendada. Clique em "Agendar Aula" para adicionar uma.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
   )
 }
