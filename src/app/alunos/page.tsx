@@ -254,11 +254,11 @@ export default function AlunosPage() {
                                 <Skeleton key={index} className="h-10 w-full" />
                             ))}
                             {!isLoading && filteredStudents.map((student) => (
-                                <button
+                                <div
                                     key={student.id}
                                     onClick={() => handleSelectStudent(student.id)}
                                     className={cn(
-                                        "w-full text-left flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                                        "w-full text-left flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors cursor-pointer",
                                         "hover:bg-muted"
                                     )}
                                 >
@@ -269,8 +269,10 @@ export default function AlunosPage() {
                                     {student.readyForReview && (
                                         <TooltipProvider>
                                             <Tooltip>
-                                                <TooltipTrigger>
-                                                     <Award className="h-4 w-4 text-yellow-500" />
+                                                <TooltipTrigger asChild>
+                                                     <div onClick={(e) => e.stopPropagation()}>
+                                                        <Award className="h-4 w-4 text-yellow-500" />
+                                                    </div>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
                                                     <p>Apto para revisão</p>
@@ -279,7 +281,7 @@ export default function AlunosPage() {
                                         </TooltipProvider>
                                     )}
                                     {student.timeInBelt && <Badge variant="secondary">{student.timeInBelt}</Badge>}
-                                </button>
+                                </div>
                             ))}
                              {!isLoading && filteredStudents.length === 0 && (
                                 <div className="text-center py-10 text-muted-foreground">
