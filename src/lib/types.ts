@@ -110,6 +110,3 @@ export type Sale = {
   paymentStatus: 'Pago' | 'Pendente';
   isNew?: boolean; // Flag for new rows in UI
 };
-
-
-

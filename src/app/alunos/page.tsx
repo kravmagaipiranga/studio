@@ -7,8 +7,7 @@ import { collection, query, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student, Exam } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck, Award } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck, Award, MoreHorizontal } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,8 +15,10 @@ import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { BulkImportDialog } from "@/components/students/bulk-import-dialog";
 import { Badge } from "@/components/ui/badge";
-import { differenceInMonths, differenceInYears } from "date-fns";
+import { differenceInMonths } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 type FilterType = 'Todos' | 'Ativo' | 'Inativo' | 'Vencido';
 
@@ -28,40 +29,38 @@ const filterDescriptions: Record<FilterType, string> = {
     'Vencido': "Alunos com pagamentos vencidos."
 };
 
-const beltEmojis: Record<string, string> = {
-    'Branca': '⚪',
-    'Amarela': '🟡',
-    'Laranja': '🟠',
-    'Verde': '🟢',
-    'Azul': '🔵',
-    'Marrom': '🟤',
-    'Preta': '⚫',
-};
-
-const statusEmojis: Record<string, string> = {
-    'Ativo': '✅',
-    'Inativo': '⛔',
-    'Pendente': '🚨'
-};
-
 function calculateTimeSince(dateString: string): string {
     if (!dateString) return "";
-    const startDate = new Date(dateString);
-    const now = new Date();
-    const totalMonths = differenceInMonths(now, startDate);
-    
-    if (totalMonths < 1) return "< 1 mês";
+    try {
+        const startDate = new Date(dateString);
+        const now = new Date();
+        const totalMonths = differenceInMonths(now, startDate);
+        
+        if (totalMonths < 0) return ""; // Date is in the future
+        if (totalMonths < 1) return "< 1 mês";
 
-    const years = Math.floor(totalMonths / 12);
-    const months = totalMonths % 12;
+        const years = Math.floor(totalMonths / 12);
+        const months = totalMonths % 12;
 
-    if (years > 0 && months > 0) {
-        return `${years}a ${months}m`;
-    } else if (years > 0) {
-        return `${years} ${years > 1 ? 'anos' : 'ano'}`;
-    } else {
-        return `${months} ${months > 1 ? 'meses' : 'mês'}`;
+        if (years > 0 && months > 0) {
+            return `${years}a ${months}m`;
+        } else if (years > 0) {
+            return `${years} ${years > 1 ? 'anos' : 'ano'}`;
+        } else {
+            return `${months} ${months > 1 ? 'meses' : 'mês'}`;
+        }
+    } catch {
+        return "";
     }
+}
+
+function getInitials(name: string) {
+    if (!name) return "?";
+    const names = name.split(' ');
+    if (names.length > 1) {
+        return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
 }
 
 
@@ -78,7 +77,8 @@ export default function AlunosPage() {
 
     const examsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'exams'), orderBy('examDate', 'desc'));
+        // Correctly querying a root collection 'exams'
+        return collection(firestore, 'exams');
     }, [firestore]);
 
     const { data: allStudents, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
@@ -104,16 +104,24 @@ export default function AlunosPage() {
             return acc;
         }, {} as Record<string, Exam[]>);
 
+        // Sort exams by date descending for each student
+        for (const studentId in examsByStudent) {
+            examsByStudent[studentId].sort((a, b) => new Date(b.examDate).getTime() - new Date(a.examDate).getTime());
+        }
+
         return allStudents.map(student => {
             let timeInBelt = "";
             const studentExams = examsByStudent[student.id];
+            let lastRelevantDate = student.startDate || student.registrationDate;
 
-            if (student.belt !== 'Branca' && studentExams && studentExams.length > 0) {
-                // The query is already sorted by date desc, so the first one is the latest
-                timeInBelt = calculateTimeSince(studentExams[0].examDate);
-            } else {
-                timeInBelt = calculateTimeSince(student.startDate || student.registrationDate);
+            if (student.belt !== 'Branca') {
+                const lastExamForCurrentBelt = studentExams?.find(e => e.targetBelt === student.belt);
+                if (lastExamForCurrentBelt) {
+                    lastRelevantDate = lastExamForCurrentBelt.examDate;
+                }
             }
+            
+            timeInBelt = calculateTimeSince(lastRelevantDate);
             return { ...student, timeInBelt };
         });
 
@@ -149,6 +157,12 @@ export default function AlunosPage() {
     };
 
     const cardTitleSuffix = activeFilter === 'Todos' ? activeFilter : `${activeFilter}s`;
+
+    const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+        'Ativo': 'default',
+        'Inativo': 'secondary',
+        'Pendente': 'destructive'
+    }
 
     return (
         <div className="h-full flex flex-col gap-4">
@@ -247,49 +261,78 @@ export default function AlunosPage() {
                             />
                         </div>
                     </div>
-
-                    <ScrollArea className="flex-grow">
-                        <div className="p-2 space-y-1">
-                            {isLoading && Array.from({ length: 10 }).map((_, index) => (
-                                <Skeleton key={index} className="h-10 w-full" />
-                            ))}
-                            {!isLoading && filteredStudents.map((student) => (
-                                <div
-                                    key={student.id}
-                                    onClick={() => handleSelectStudent(student.id)}
-                                    className={cn(
-                                        "w-full text-left flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors cursor-pointer",
-                                        "hover:bg-muted"
-                                    )}
-                                >
-                                    <User className="h-4 w-4" />
-                                    <span>{statusEmojis[student.status] || '❔'}</span>
-                                    <span>{beltEmojis[student.belt] || '❔'}</span>
-                                    <span className="flex-grow">{student.name}</span>
-                                    {student.readyForReview && (
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                     <div onClick={(e) => e.stopPropagation()}>
-                                                        <Award className="h-4 w-4 text-yellow-500" />
-                                                    </div>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Apto para revisão</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    )}
-                                    {student.timeInBelt && <Badge variant="secondary">{student.timeInBelt}</Badge>}
-                                </div>
-                            ))}
-                             {!isLoading && filteredStudents.length === 0 && (
-                                <div className="text-center py-10 text-muted-foreground">
-                                    Nenhum aluno encontrado para este filtro.
-                                </div>
-                             )}
-                        </div>
-                    </ScrollArea>
+                    <div className="flex-grow">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[300px]">Aluno</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Faixa</TableHead>
+                                    <TableHead>Tempo na Faixa</TableHead>
+                                    <TableHead><span className="sr-only">Ações</span></TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoading && Array.from({ length: 5 }).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-6 w-48"/></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-20"/></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-24"/></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-20"/></TableCell>
+                                        <TableCell><Skeleton className="h-8 w-8"/></TableCell>
+                                    </TableRow>
+                                ))}
+                                {!isLoading && filteredStudents.map((student) => (
+                                    <TableRow key={student.id} className="cursor-pointer" onClick={() => handleSelectStudent(student.id)}>
+                                        <TableCell className="font-medium">
+                                            <div className="flex items-center gap-3">
+                                                <Avatar>
+                                                    <AvatarFallback>{getInitials(student.name)}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <div>{student.name}</div>
+                                                    <div className="text-xs text-muted-foreground">{student.email}</div>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={statusVariant[student.status] || 'secondary'}>{student.status}</Badge>
+                                        </TableCell>
+                                        <TableCell>{student.belt}</TableCell>
+                                        <TableCell>
+                                            {student.timeInBelt && <Badge variant="secondary">{student.timeInBelt}</Badge>}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end">
+                                                {student.readyForReview && (
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <div onClick={(e) => e.stopPropagation()}>
+                                                                    <Award className="h-4 w-4 text-yellow-500 mr-2" />
+                                                                </div>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>Apto para revisão</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                )}
+                                                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleSelectStudent(student.id); }}>
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                         {!isLoading && filteredStudents.length === 0 && (
+                            <div className="text-center py-10 text-muted-foreground">
+                                Nenhum aluno encontrado para este filtro.
+                            </div>
+                         )}
+                    </div>
                 </CardContent>
             </Card>
         </div>
