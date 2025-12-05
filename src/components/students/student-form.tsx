@@ -56,7 +56,7 @@ const formSchema = z.object({
   tshirtSize: z.string().min(1, "Selecione um tamanho de camiseta."),
   pantsSize: z.string().min(1, "Selecione um tamanho de calça."),
 
-  planType: z.enum(["Mensal", "Trimestral", "Bolsa"]).optional(),
+  planType: z.enum(["Mensal", "Trimestral", "Bolsa", "Outros"]).optional(),
   planValue: z.preprocess(
     (a) => {
       if (typeof a === 'string' && a.trim() !== '') {
@@ -246,10 +246,10 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
         id: finalStudentId,
         registrationDate: student?.registrationDate || new Date().toISOString(),
         planValue: values.planValue,
-        lastPaymentDate: student?.lastPaymentDate || undefined,
-        planExpirationDate: student?.planExpirationDate || undefined,
         paymentStatus: student?.paymentStatus || 'Pendente', 
-        paymentCredits: student?.paymentCredits || undefined,
+        ...(student?.lastPaymentDate && { lastPaymentDate: student.lastPaymentDate }),
+        ...(student?.planExpirationDate && { planExpirationDate: student.planExpirationDate }),
+        ...(student?.paymentCredits && { paymentCredits: student.paymentCredits }),
     };
 
     const docRef = doc(firestore, 'students', finalStudentId);
@@ -496,6 +496,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                                     <SelectItem value="Mensal">Mensal</SelectItem>
                                     <SelectItem value="Trimestral">Trimestral</SelectItem>
                                     <SelectItem value="Bolsa">Bolsa</SelectItem>
+                                    <SelectItem value="Outros">Outros</SelectItem>
                                 </SelectContent>
                                 </Select>
                                 <FormMessage />

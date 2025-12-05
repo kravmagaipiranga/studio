@@ -34,8 +34,8 @@ export type Student = {
   planType?: 'Mensal' | 'Trimestral' | 'Bolsa' | 'Outros';
   planValue?: number;
   lastPaymentDate?: string;
-  planExpirationDate?: string | null;
-  paymentCredits?: string | null;
+  planExpirationDate?: string;
+  paymentCredits?: string;
 };
 
 export type RevenueData = {
@@ -108,3 +108,4 @@ export type Sale = {
   paymentStatus: 'Pago' | 'Pendente';
   isNew?: boolean; // Flag for new rows in UI
 };
+
