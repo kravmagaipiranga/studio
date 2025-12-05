@@ -246,7 +246,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
         id: finalStudentId,
         registrationDate: student?.registrationDate || new Date().toISOString(),
         planValue: values.planValue,
-        paymentStatus: student?.paymentStatus || 'Pendente', 
+        paymentStatus: student?.paymentStatus || 'Pendente',
         ...(student?.lastPaymentDate && { lastPaymentDate: student.lastPaymentDate }),
         ...(student?.planExpirationDate && { planExpirationDate: student.planExpirationDate }),
         ...(student?.paymentCredits && { paymentCredits: student.paymentCredits }),
@@ -393,24 +393,13 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                             render={({ field }) => (
                                 <FormItem>
                                 <FormLabel>Faixa</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl>
-                                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="Branca">Branca</SelectItem>
-                                        <SelectItem value="Amarela">Amarela</SelectItem>
-                                        <SelectItem value="Laranja">Laranja</SelectItem>
-                                        <SelectItem value="Verde">Verde</SelectItem>
-                                        <SelectItem value="Azul">Azul</SelectItem>
-                                        <SelectItem value="Marrom">Marrom</SelectItem>
-                                        <SelectItem value="Preta">Preta</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <FormControl>
+                                    <Input placeholder="Ex: Branca, Amarela, etc." {...field} />
+                                </FormControl>
                                 <FormMessage />
                                 </FormItem>
                             )}
-                            />
+                        />
                         <FormField
                             control={form.control}
                             name="status"
@@ -586,26 +575,9 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Tamanho da Camiseta</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
-                                    <SelectTrigger>
-                                    <SelectValue placeholder="Selecione..." />
-                                    </SelectTrigger>
+                                    <Input placeholder="Ex: M, G, 12, etc." {...field} />
                                 </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="8 anos">8 anos</SelectItem>
-                                    <SelectItem value="10 anos">10 anos</SelectItem>
-                                    <SelectItem value="12 anos">12 anos</SelectItem>
-                                    <SelectItem value="14 anos">14 anos</SelectItem>
-                                    <SelectItem value="PP">PP</SelectItem>
-                                    <SelectItem value="P">P</SelectItem>
-                                    <SelectItem value="M">M</SelectItem>
-                                    <SelectItem value="G">G</SelectItem>
-                                    <SelectItem value="GG">GG</SelectItem>
-                                    <SelectItem value="XGG">XGG</SelectItem>
-                                    <SelectItem value="XXGG">XXGG</SelectItem>
-                                </SelectContent>
-                                </Select>
                                 <FormMessage />
                             </FormItem>
                             )}
@@ -616,23 +588,9 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Tamanho da Calça</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
-                                    <SelectTrigger>
-                                    <SelectValue placeholder="Selecione..." />
-                                    </SelectTrigger>
+                                    <Input placeholder="Ex: 42, M, G, etc." {...field} />
                                 </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="10">10</SelectItem>
-                                    <SelectItem value="12">12</SelectItem>
-                                    <SelectItem value="PP">PP</SelectItem>
-                                    <SelectItem value="P">P</SelectItem>
-                                    <SelectItem value="M">M</SelectItem>
-                                    <SelectItem value="G">G</SelectItem>
-                                    <SelectItem value="GG">GG</SelectItem>
-                                    <SelectItem value="EGG">EGG</SelectItem>
-                                </SelectContent>
-                                </Select>
                                 <FormMessage />
                             </FormItem>
                             )}
