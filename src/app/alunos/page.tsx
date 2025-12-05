@@ -7,7 +7,7 @@ import { collection, query, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student, Exam } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck, Award, MoreHorizontal } from "lucide-react";
+import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck, MoreHorizontal } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -308,8 +308,8 @@ export default function AlunosPage() {
                                                     <TooltipProvider>
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
-                                                                <div onClick={(e) => e.stopPropagation()}>
-                                                                    <Award className="h-4 w-4 text-yellow-500 mr-2" />
+                                                                <div onClick={(e) => e.stopPropagation()} className="mr-2">
+                                                                    <span>🥋</span>
                                                                 </div>
                                                             </TooltipTrigger>
                                                             <TooltipContent>
