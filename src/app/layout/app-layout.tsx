@@ -14,7 +14,6 @@ import {
   ClipboardList,
   CalendarCheck,
   ShoppingCart,
-  FileText,
 } from "lucide-react";
 import {
   Sheet,
@@ -110,10 +109,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <ShoppingCart className="h-4 w-4" />
                 Vendas
               </NavItem>
-              <NavItem href="/relatorios-fikm">
-                <FileText className="h-4 w-4" />
-                Relatórios FIKM
-              </NavItem>
             </nav>
           </div>
         </div>
@@ -173,10 +168,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                  <NavItem href="/vendas" isMobile>
                   <ShoppingCart className="h-5 w-5" />
                   Vendas
-                </NavItem>
-                 <NavItem href="/relatorios-fikm" isMobile>
-                  <FileText className="h-5 w-5" />
-                  Relatórios FIKM
                 </NavItem>
               </nav>
             </SheetContent>

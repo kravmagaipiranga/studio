@@ -110,11 +110,3 @@ export type Sale = {
   paymentStatus: 'Pago' | 'Pendente';
   isNew?: boolean; // Flag for new rows in UI
 };
-
-export type FikmReport = {
-  id: string; // yyyy-MM format
-  enrollments: number;
-  visits: number;
-  trials: number;
-  churns: number;
-};
