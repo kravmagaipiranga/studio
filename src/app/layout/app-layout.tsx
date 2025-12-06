@@ -132,11 +132,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
-              <SheetHeader className="sr-only">
-                  <SheetTitle>Menu de Navegação</SheetTitle>
-                  <SheetDescription>
-                    Navegue pelas seções do painel de gestão.
-                  </SheetDescription>
+               <SheetHeader className="sr-only">
+                  <SheetTitle>Menu</SheetTitle>
+                  <SheetDescription>Navegue pelas seções do sistema.</SheetDescription>
               </SheetHeader>
               <nav className="grid gap-2 text-lg font-medium">
                 <Link
