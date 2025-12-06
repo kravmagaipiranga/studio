@@ -16,6 +16,7 @@ import {
   ShoppingCart,
   Upload,
   BarChart,
+  FileText,
 } from "lucide-react";
 import {
   Sheet,
@@ -134,9 +135,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
-              <SheetHeader className="sr-only">
-                  <SheetTitle>Menu de Navegação</SheetTitle>
-                  <SheetDescription>
+              <SheetHeader>
+                  <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
+                  <SheetDescription className="sr-only">
                     Navegue pelas seções do painel de gestão.
                   </SheetDescription>
               </SheetHeader>
