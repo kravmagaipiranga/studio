@@ -228,5 +228,3 @@ function NavItem({ href, children, isMobile = false }: { href: string; children:
     </Link>
   );
 }
-
-    
