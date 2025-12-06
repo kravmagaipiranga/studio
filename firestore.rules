@@ -64,21 +64,26 @@ service cloud.firestore {
       }
     }
     
-    // Admin-only collections
+    // Admin-only write collections
     match /appointments/{docId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
     match /privateClasses/{docId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
     match /seminars/{docId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
     match /sales/{docId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
     match /exams/{examId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
     
     match /plans/{planId} {
@@ -99,5 +104,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
