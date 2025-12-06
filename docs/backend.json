@@ -164,6 +164,41 @@
         "examDate",
         "result"
       ]
+    },
+    "FikmReport": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FikmReport",
+      "type": "object",
+      "description": "Represents a monthly FIKM report.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the report in 'yyyy-MM' format."
+        },
+        "enrollments": {
+          "type": "number",
+          "description": "Number of new enrollments in the month."
+        },
+        "visits": {
+          "type": "number",
+          "description": "Number of visits in the month."
+        },
+        "trials": {
+          "type": "number",
+          "description": "Number of trial classes in the month."
+        },
+        "churns": {
+          "type": "number",
+          "description": "Number of student churns in the month."
+        }
+      },
+      "required": [
+        "id",
+        "enrollments",
+        "visits",
+        "trials",
+        "churns"
+      ]
     }
   },
   "auth": {
@@ -258,6 +293,22 @@
             {
               "name": "userId",
               "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/fikm-reports/{reportId}",
+        "definition": {
+          "entityName": "FikmReport",
+          "schema": {
+            "$ref": "#/backend/entities/FikmReport"
+          },
+          "description": "Stores monthly FIKM reports. The document ID is in 'yyyy-MM' format.",
+          "params": [
+            {
+              "name": "reportId",
+              "description": "The unique identifier for the report, formatted as 'yyyy-MM'."
             }
           ]
         }

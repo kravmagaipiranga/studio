@@ -92,5 +92,10 @@ service cloud.firestore {
       // Only Admins can see or manage other admins.
       allow read, write: if isAdmin();
     }
+
+    match /fikm-reports/{reportId} {
+      // Only Admins can read or write FIKM reports.
+      allow read, write: if isAdmin();
+    }
   }
 }
