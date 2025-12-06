@@ -67,6 +67,9 @@ export default function AgendamentosPage() {
          classTime: "20:00",
          notes: "",
          isNew: true,
+         enrolled: false,
+         attended: false,
+         missed: false,
        };
        setAppointments(prev => [newAppointment, ...prev]);
     };

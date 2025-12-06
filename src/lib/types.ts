@@ -97,6 +97,9 @@ export type Appointment = {
   classTime: string;
   notes?: string;
   isNew?: boolean; // Flag for new rows in UI
+  enrolled?: boolean;
+  attended?: boolean;
+  missed?: boolean;
 };
 
 export type Sale = {
