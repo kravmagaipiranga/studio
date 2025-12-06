@@ -14,9 +14,7 @@ import {
   ClipboardList,
   CalendarPlus,
   ShoppingCart,
-  Upload,
   BarChart,
-  FileText,
 } from "lucide-react";
 import {
   Sheet,
@@ -231,4 +229,3 @@ function NavItem({ href, children, isMobile = false }: { href: string; children:
   );
 }
 
-    
