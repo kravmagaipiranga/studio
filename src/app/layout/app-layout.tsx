@@ -20,6 +20,9 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button";
@@ -131,6 +134,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
+              <SheetHeader className="sr-only">
+                  <SheetTitle>Menu de Navegação</SheetTitle>
+                  <SheetDescription>
+                    Navegue pelas seções do painel de gestão.
+                  </SheetDescription>
+              </SheetHeader>
               <nav className="grid gap-2 text-lg font-medium">
                 <Link
                   href="#"
@@ -220,5 +229,3 @@ function NavItem({ href, children, isMobile = false }: { href: string; children:
     </Link>
   );
 }
-
-    
