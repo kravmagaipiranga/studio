@@ -22,7 +22,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button";
-import { UserNav } from "@/components/user-nav";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/firebase";
 import { useEffect } from "react";
@@ -171,7 +170,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="w-full flex-1">
             {/* Futuro campo de busca global */}
           </div>
-          <UserNav />
+          <div className="flex items-center font-medium">
+            Admin
+          </div>
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
           {children}
