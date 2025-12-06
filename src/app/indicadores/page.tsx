@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { collection, query, where, doc } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
-import { MonthlyIndicator } from "@/lib/types";
+import { type MonthlyIndicator } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -289,5 +289,3 @@ export default function IndicadoresPage() {
     </div>
   );
 }
-
-    
