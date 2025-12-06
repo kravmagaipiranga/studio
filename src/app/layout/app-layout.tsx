@@ -12,14 +12,14 @@ import {
   Menu,
   BookCopy,
   ClipboardList,
-  CalendarCheck,
+  CalendarPlus,
   ShoppingCart,
+  Upload,
+  BarChart,
 } from "lucide-react";
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button";
@@ -82,7 +82,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 Painel
               </NavItem>
                <NavItem href="/agendamentos">
-                <CalendarCheck className="h-4 w-4" />
+                <CalendarPlus className="h-4 w-4" />
                 Agendamentos
               </NavItem>
               <NavItem href="/alunos">
@@ -109,6 +109,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <ShoppingCart className="h-4 w-4" />
                 Vendas
               </NavItem>
+              <NavItem href="/indicadores">
+                <BarChart className="h-4 w-4" />
+                Indicadores
+              </NavItem>
             </nav>
           </div>
         </div>
@@ -127,9 +131,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
-              <SheetHeader>
-                  <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
-              </SheetHeader>
               <nav className="grid gap-2 text-lg font-medium">
                 <Link
                   href="#"
@@ -142,7 +143,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   Painel
                 </NavItem>
                  <NavItem href="/agendamentos" isMobile>
-                  <CalendarCheck className="h-5 w-5" />
+                  <CalendarPlus className="h-5 w-5" />
                   Agendamentos
                 </NavItem>
                 <NavItem href="/alunos" isMobile>
@@ -168,6 +169,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                  <NavItem href="/vendas" isMobile>
                   <ShoppingCart className="h-5 w-5" />
                   Vendas
+                </NavItem>
+                <NavItem href="/indicadores" isMobile>
+                  <BarChart className="h-5 w-5" />
+                  Indicadores
                 </NavItem>
               </nav>
             </SheetContent>
@@ -215,3 +220,5 @@ function NavItem({ href, children, isMobile = false }: { href: string; children:
     </Link>
   );
 }
+
+    

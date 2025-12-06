@@ -164,6 +164,59 @@
         "examDate",
         "result"
       ]
+    },
+    "MonthlyIndicator": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MonthlyIndicator",
+      "type": "object",
+      "description": "Represents the key performance indicators for a specific month.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the monthly report, usually in 'YYYY-MM' format."
+        },
+        "year": {
+          "type": "number",
+          "description": "The year of the report."
+        },
+        "month": {
+          "type": "number",
+          "description": "The month of the report (1-12)."
+        },
+        "previousMonthTotal": {
+          "type": "number",
+          "description": "Total number of students at the end of the previous month."
+        },
+        "visits": {
+          "type": "number",
+          "description": "Number of visits during the month."
+        },
+        "trialClasses": {
+          "type": "number",
+          "description": "Number of experimental/trial classes held."
+        },
+        "newEnrollments": {
+          "type": "number",
+          "description": "Number of new student enrollments."
+        },
+        "reenrollments": {
+          "type": "number",
+          "description": "Number of student re-enrollments."
+        },
+        "exits": {
+          "type": "number",
+          "description": "Number of students who left."
+        },
+        "womensMonth": {
+          "type": "number",
+          "description": "Special indicator for 'Mês das Mulheres'."
+        }
+      },
+      "required": [
+        "id",
+        "year",
+        "month"
+      ]
     }
   },
   "auth": {
@@ -261,8 +314,26 @@
             }
           ]
         }
+      },
+      {
+        "path": "/indicators/{indicatorId}",
+        "definition": {
+          "entityName": "MonthlyIndicator",
+          "schema": {
+            "$ref": "#/backend/entities/MonthlyIndicator"
+          },
+          "description": "Stores monthly performance indicators. The document ID should be in 'YYYY-MM' format.",
+          "params": [
+            {
+              "name": "indicatorId",
+              "description": "The unique identifier for the monthly indicator report."
+            }
+          ]
+        }
       }
     ],
     "reasoning": "The Firestore data structure is designed to support the Krav Magá IPIRANGA Manager application, focusing on simplicity, security, and scalability. The structure emphasizes Authorization Independence to avoid complex security rules and ensure atomic operations. Path-based ownership is used where applicable for simplicity and security. \n\n**Authorization Independence:** Authorization independence is achieved by avoiding `get()` calls in security rules. Data required for authorization (such as user roles or group membership) is denormalized into the documents where it's needed. In the case of students that are associated with a payment plan, if authorization depends on plan attributes those attributes are copied into the student documents.\n\n**QAPs Support:**\n*   **Secure List Operations:** The segregation of data into collections with homogeneous security postures ensures that `list` operations can be secured effectively without complex filtering logic in rules.\n*   **Ownership and Collaboration:** Path-based ownership (`/users/{userId}/...`) simplifies security rules for private user data. Using membership maps, collaboration is supported. For example, an admin role could be checked by verifying the user's ID's existence in the `/roles_admin/{userId}` collection, enabling straightforward, secure access control without needing complex data lookups.\n\n**Structure Overview:**\n*   `/students/{studentId}`: Stores student information. This collection utilizes path-based ownership and denormalizes the `planId` to avoid document reads for authorization."
   }
 }
+
+    

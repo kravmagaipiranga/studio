@@ -92,5 +92,12 @@ service cloud.firestore {
       // Only Admins can see or manage other admins.
       allow read, write: if isAdmin();
     }
+
+    match /indicators/{indicatorId} {
+      // Only admins can read or write monthly indicators.
+      allow read, write: if isAdmin();
+    }
   }
 }
+
+    
