@@ -42,6 +42,8 @@ const indicatorLabels: Record<keyof Omit<MonthlyIndicator, 'id' | 'year' | 'mont
   womensMonth: "Mês das Mulheres",
 };
 
+type EditableIndicator = keyof typeof indicatorLabels;
+
 export default function IndicadoresPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -102,7 +104,7 @@ export default function IndicadoresPage() {
   }, [tableData]);
 
 
-  const handleInputChange = (month: number, field: keyof MonthlyIndicator, value: string) => {
+  const handleInputChange = (month: number, field: EditableIndicator, value: string) => {
     const numValue = value === '' ? null : Number(value);
     if (numValue !== null && isNaN(numValue)) return;
 
@@ -153,7 +155,7 @@ export default function IndicadoresPage() {
       });
   };
 
-  const renderCell = (row: keyof Omit<MonthlyIndicator, 'id' | 'year' | 'month'>, monthData: Partial<MonthlyIndicator>) => {
+  const renderCell = (row: keyof MonthlyIndicator, monthData: Partial<MonthlyIndicator>) => {
     const isCalculated = ['totalStudents', 'evolution', 'conversionRate'].includes(row);
     const isEditable = Object.keys(indicatorLabels).includes(row);
     
@@ -163,7 +165,7 @@ export default function IndicadoresPage() {
             type="number"
             className="w-20 text-center"
             value={monthData[row as keyof MonthlyIndicator] as number ?? ''}
-            onChange={(e) => handleInputChange(monthData.month!, row, e.target.value)}
+            onChange={(e) => handleInputChange(monthData.month!, row as EditableIndicator, e.target.value)}
             disabled={row === 'previousMonthTotal' && monthData.month !== 1}
         />
        );
@@ -289,3 +291,5 @@ export default function IndicadoresPage() {
     </div>
   );
 }
+
+    
