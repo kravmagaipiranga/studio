@@ -135,9 +135,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
-              <SheetHeader>
-                  <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
-                  <SheetDescription className="sr-only">
+              <SheetHeader className="sr-only">
+                  <SheetTitle>Menu de Navegação</SheetTitle>
+                  <SheetDescription>
                     Navegue pelas seções do painel de gestão.
                   </SheetDescription>
               </SheetHeader>
@@ -230,3 +230,5 @@ function NavItem({ href, children, isMobile = false }: { href: string; children:
     </Link>
   );
 }
+
+    
