@@ -4,7 +4,6 @@ export type Student = {
   id: string;
   name: string;
   email: string;
-  plan?: 'Básico' | 'Intermediário' | 'Avançado';
   registrationDate: string;
   status: 'Ativo' | 'Inativo' | 'Pendente';
   paymentStatus: 'Pago' | 'Vencido' | 'Pendente';
