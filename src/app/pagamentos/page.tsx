@@ -13,7 +13,7 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { parseISO, isAfter } from "date-fns";
+import { parseISO, isAfter, isBefore } from "date-fns";
 
 export default function PagamentosPage() {
     const firestore = useFirestore();
@@ -32,6 +32,7 @@ export default function PagamentosPage() {
         const today = new Date();
         const currentMonth = today.getMonth();
         const currentYear = today.getFullYear();
+        today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
 
         const paidInMonth = students.filter(student => {
             if (!student.lastPaymentDate) return false;
@@ -39,7 +40,16 @@ export default function PagamentosPage() {
             return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear && student.status === 'Ativo';
         }).length;
 
-        const overdue = students.filter(s => s.paymentStatus === 'Vencido').length;
+        const overdue = students.filter(s => {
+            if (s.status !== 'Ativo') return false;
+            if (!s.planExpirationDate) return true; // Consider overdue if no expiration date
+            try {
+                const expirationDate = parseISO(s.planExpirationDate);
+                return isBefore(expirationDate, today);
+            } catch {
+                return true; // Treat invalid dates as overdue
+            }
+        }).length;
 
         const activeQuarterly = students.filter(student => {
             return student.planType === 'Trimestral' && 
