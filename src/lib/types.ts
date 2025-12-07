@@ -30,7 +30,7 @@ export type Student = {
 
 
   // Dados Financeiros
-  planType?: 'Mensal' | 'Trimestral' | 'Bolsa' | 'Outros';
+  planType?: 'Mensal' | 'Trimestral' | 'Bolsa 50%' | 'Bolsa 100%' | 'Outros';
   planValue?: number;
   paymentPreference?: ('pix' | 'dinheiro' | 'boleto')[];
   lastPaymentDate?: string;

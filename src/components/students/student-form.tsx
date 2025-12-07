@@ -57,7 +57,7 @@ const formSchema = z.object({
   tshirtSize: z.string().min(1, "Selecione um tamanho de camiseta."),
   pantsSize: z.string().min(1, "Selecione um tamanho de calça."),
 
-  planType: z.enum(["Mensal", "Trimestral", "Bolsa", "Outros"]).optional(),
+  planType: z.enum(["Mensal", "Trimestral", "Bolsa 50%", "Bolsa 100%", "Outros"]).optional(),
   planValue: z.preprocess(
     (a) => {
       if (typeof a === 'string' && a.trim() !== '') {
@@ -488,7 +488,8 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                                 <SelectContent>
                                     <SelectItem value="Mensal">Mensal</SelectItem>
                                     <SelectItem value="Trimestral">Trimestral</SelectItem>
-                                    <SelectItem value="Bolsa">Bolsa</SelectItem>
+                                    <SelectItem value="Bolsa 50%">Bolsa 50%</SelectItem>
+                                    <SelectItem value="Bolsa 100%">Bolsa 100%</SelectItem>
                                     <SelectItem value="Outros">Outros</SelectItem>
                                 </SelectContent>
                                 </Select>

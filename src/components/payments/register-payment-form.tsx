@@ -36,13 +36,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 
 const formSchema = z.object({
   studentId: z.string({ required_error: "É necessário selecionar um aluno." }),
-  planType: z.enum(["Mensal", "Trimestral", "Bolsa", "Outros"]),
+  planType: z.enum(["Mensal", "Trimestral", "Bolsa 50%", "Bolsa 100%", "Outros"]),
   planValue: z.preprocess(
     (a) => {
         if (typeof a === 'string') return parseFloat(a.replace(',', '.'));
         return a;
     },
-    z.number().positive("O valor deve ser positivo.")
+    z.number().positive("O valor deve ser positivo.").or(z.literal(0))
   ),
   paymentDate: z.string().refine((val) => val, {
     message: "A data de pagamento é obrigatória.",
@@ -90,7 +90,10 @@ export function RegisterPaymentForm({
       case 'Trimestral':
         form.setValue('planValue', 898);
         break;
-      case 'Bolsa':
+      case 'Bolsa 50%':
+        form.setValue('planValue', 160);
+        break;
+      case 'Bolsa 100%':
       case 'Outros':
         form.setValue('planValue', 0);
         break;
@@ -99,20 +102,21 @@ export function RegisterPaymentForm({
 
   useEffect(() => {
     if (paymentDateWatcher && planTypeWatcher) {
-        if (planTypeWatcher === 'Bolsa') {
-            setCalculatedExpiryDate('Não se aplica');
-            return;
-        }
-
         try {
             const paymentDate = parseISO(paymentDateWatcher);
-            let monthsToAdd = 1;
-            if (planTypeWatcher === 'Trimestral') monthsToAdd = 3;
-            if (planTypeWatcher === 'Outros') monthsToAdd = 1;
+            let expiryDate: Date | null = null;
+            
+            if (planTypeWatcher === 'Bolsa 100%') {
+                const currentYear = paymentDate.getFullYear();
+                expiryDate = new Date(currentYear, 11, 31); // December 31st
+            } else {
+                let monthsToAdd = 1; // Default for Mensal, Outros, Bolsa 50%
+                if (planTypeWatcher === 'Trimestral') monthsToAdd = 3;
 
-
-            const futureMonth = addMonths(paymentDate, monthsToAdd);
-            const expiryDate = setDate(futureMonth, 5); // Set due date to the 5th
+                const futureMonth = addMonths(paymentDate, monthsToAdd);
+                expiryDate = setDate(futureMonth, 5); // Set due date to the 5th
+            }
+            
             setCalculatedExpiryDate(format(expiryDate, 'dd/MM/yyyy'));
         } catch (e) {
             setCalculatedExpiryDate('');
@@ -132,7 +136,7 @@ export function RegisterPaymentForm({
       form.reset({
           studentId: studentToLoad.id,
           planType: studentPlanType,
-          planValue: studentToLoad.planValue || (studentPlanType === 'Mensal' ? 315 : (studentPlanType === 'Trimestral' ? 898 : 0)),
+          planValue: studentToLoad.planValue ?? 315, // Fallback for existing data
           paymentDate: format(new Date(), 'yyyy-MM-dd'),
           paymentCredits: studentToLoad.paymentCredits || "",
       });
@@ -148,7 +152,7 @@ export function RegisterPaymentForm({
                 setSelectedStudent(foundStudent);
                 const studentPlanType = foundStudent.planType || 'Mensal';
                 form.setValue('planType', studentPlanType);
-                form.setValue('planValue', foundStudent.planValue || (studentPlanType === 'Mensal' ? 315 : (studentPlanType === 'Trimestral' ? 898 : 0)));
+                form.setValue('planValue', foundStudent.planValue ?? 315);
                 form.setValue('paymentCredits', foundStudent.paymentCredits || '');
             }
         }
@@ -172,7 +176,10 @@ export function RegisterPaymentForm({
     const paymentDate = parseISO(values.paymentDate);
     let expirationDate: Date | null = null;
     
-    if (values.planType === 'Mensal' || values.planType === 'Outros') {
+    if (values.planType === 'Bolsa 100%') {
+        const currentYear = paymentDate.getFullYear();
+        expirationDate = new Date(currentYear, 11, 31);
+    } else if (values.planType === 'Mensal' || values.planType === 'Outros' || values.planType === 'Bolsa 50%') {
         expirationDate = setDate(addMonths(paymentDate, 1), 5);
     } else if (values.planType === 'Trimestral') {
         expirationDate = setDate(addMonths(paymentDate, 3), 5);
@@ -243,7 +250,8 @@ export function RegisterPaymentForm({
                             <SelectContent>
                             <SelectItem value="Mensal">Mensal</SelectItem>
                             <SelectItem value="Trimestral">Trimestral</SelectItem>
-                            <SelectItem value="Bolsa">Bolsa</SelectItem>
+                            <SelectItem value="Bolsa 50%">Bolsa 50%</SelectItem>
+                            <SelectItem value="Bolsa 100%">Bolsa 100%</SelectItem>
                             <SelectItem value="Outros">Outros</SelectItem>
                             </SelectContent>
                         </Select>
