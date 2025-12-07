@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Legend } from "recharts"
@@ -40,37 +41,38 @@ export function MovementChart({ data }: MovementChartProps) {
     visits: { label: "Visitas", color: "#60a5fa" }, // blue-400
     trialClasses: { label: "Aulas Exp.", color: "#fbbf24" }, // amber-400
     newEnrollments: { label: "Matrículas", color: "#34d399" }, // emerald-400
-    reenrollments: { label: "Rematrículas", color: "#a78bfa" }, // violet-400
+    reenrollments: { label: "Rematr.", color: "#a78bfa" }, // violet-400
     exits: { label: "Saídas", color: "#f87171" }, // red-400
   }
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Movimentação Mensal</CardTitle>
-        <CardDescription>Comparativo de visitas, aulas, matrículas e saídas.</CardDescription>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Movimentação Mensal</CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
-           <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={chartData}>
+        <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
+           <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid vertical={false} />
                 <XAxis
                     dataKey="month"
                     tickLine={false}
                     axisLine={false}
                     tickMargin={8}
+                    fontSize={12}
                 />
                 <YAxis 
                     tickLine={false}
                     axisLine={false}
                     tickMargin={8}
+                    fontSize={12}
                 />
                 <ChartTooltip
                     cursor={false}
                     content={<ChartTooltipContent />}
                 />
-                <ChartLegend content={<ChartLegendContent />} />
+                <ChartLegend content={<ChartLegendContent />} verticalAlign="top" wrapperStyle={{paddingBottom: "10px"}}/>
                 <Bar dataKey="visits" fill="var(--color-visits)" radius={4} />
                 <Bar dataKey="trialClasses" fill="var(--color-trialClasses)" radius={4} />
                 <Bar dataKey="newEnrollments" fill="var(--color-newEnrollments)" radius={4} />

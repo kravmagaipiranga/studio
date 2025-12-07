@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts"
@@ -39,25 +40,26 @@ export function TotalStudentsChart({ data }: TotalStudentsChartProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Evolução do Total de Alunos</CardTitle>
-        <CardDescription>Variação do número de alunos mês a mês.</CardDescription>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Evolução do Total de Alunos</CardTitle>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData}>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
               <CartesianGrid vertical={false} />
               <XAxis
                 dataKey="month"
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
+                fontSize={12}
               />
               <YAxis 
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
+                fontSize={12}
                 domain={['dataMin - 5', 'dataMax + 5']}
               />
               <ChartTooltip

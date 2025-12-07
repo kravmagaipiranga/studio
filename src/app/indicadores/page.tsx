@@ -166,7 +166,7 @@ export default function IndicadoresPage() {
        return (
          <Input
             type="number"
-            className="w-20 text-center"
+            className="w-20 text-center h-8"
             value={monthData[row as keyof MonthlyIndicator] as number ?? ''}
             onChange={(e) => handleInputChange(monthData.month!, row as EditableIndicator, e.target.value)}
             disabled={row === 'previousMonthTotal' && monthData.month !== 1}
@@ -223,84 +223,92 @@ export default function IndicadoresPage() {
             </Button>
         </div>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Relatório de Desempenho - {selectedYear}</CardTitle>
-          <CardDescription>
-            Preencha os dados de cada mês para acompanhar a evolução. Os campos calculados são atualizados automaticamente.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[180px] sticky left-0 bg-card z-10">Indicador</TableHead>
-                  {monthNames.map(name => <TableHead key={name} className="text-center">{name}</TableHead>)}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading && (
-                    Object.keys(indicatorLabels).map(key => (
-                         <TableRow key={key}>
-                            <TableCell className="font-medium sticky left-0 bg-card z-10"><Skeleton className="h-6 w-3/4" /></TableCell>
-                            {[...Array(12)].map((_, i) => <TableCell key={i}><Skeleton className="h-8 w-16 mx-auto" /></TableCell>)}
-                        </TableRow>
-                    ))
-                )}
-                {!isLoading && (
-                    <>
-                        {Object.entries(indicatorLabels).map(([key, label]) => (
-                             <TableRow key={key}>
-                                <TableCell className="font-medium sticky left-0 bg-card z-10">{label}</TableCell>
-                                {calculatedData.map(monthData => (
-                                    <TableCell key={monthData.month} className="text-center">
-                                       {renderCell(key as keyof MonthlyIndicator, monthData)}
-                                    </TableCell>
-                                ))}
-                             </TableRow>
-                        ))}
-
-                        <TableRow className="bg-muted font-bold">
-                            <TableCell className="sticky left-0 bg-muted z-10">Total de Alunos</TableCell>
-                            {calculatedData.map(monthData => (
-                                <TableCell key={monthData.month} className="text-center">{monthData.totalStudents}</TableCell>
-                            ))}
-                        </TableRow>
-                        <TableRow>
-                            <TableCell className="sticky left-0 bg-card z-10">Evolução</TableCell>
-                            {calculatedData.map(monthData => (
-                                <TableCell key={monthData.month} className="text-center">
-                                    {renderCell('evolution', monthData)}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                        <TableRow>
-                            <TableCell className="sticky left-0 bg-card z-10">Taxa de Conversão</TableCell>
-                            {calculatedData.map(monthData => (
-                                <TableCell key={monthData.month} className="text-center">
-                                    {renderCell('conversionRate', monthData)}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    </>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
       
-      {!isLoading && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-            <TotalStudentsChart data={calculatedData} />
-            <ConversionChart data={calculatedData} />
-            <div className="lg:col-span-2">
-                <MovementChart data={calculatedData} />
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+        <Card className="xl:col-span-1">
+          <CardHeader>
+            <CardTitle>Relatório de Desempenho - {selectedYear}</CardTitle>
+            <CardDescription>
+              Preencha os dados de cada mês para acompanhar a evolução.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[150px] sticky left-0 bg-card z-10 text-sm">Indicador</TableHead>
+                    {monthNames.map(name => <TableHead key={name} className="text-center text-xs p-2">{name.substring(0,3)}</TableHead>)}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading && (
+                      Object.keys(indicatorLabels).map(key => (
+                          <TableRow key={key}>
+                              <TableCell className="font-medium sticky left-0 bg-card z-10 text-sm py-2"><Skeleton className="h-6 w-3/4" /></TableCell>
+                              {[...Array(12)].map((_, i) => <TableCell key={i} className="p-1"><Skeleton className="h-8 w-16 mx-auto" /></TableCell>)}
+                          </TableRow>
+                      ))
+                  )}
+                  {!isLoading && (
+                      <>
+                          {Object.entries(indicatorLabels).map(([key, label]) => (
+                              <TableRow key={key}>
+                                  <TableCell className="font-medium sticky left-0 bg-card z-10 text-sm py-2">{label}</TableCell>
+                                  {calculatedData.map(monthData => (
+                                      <TableCell key={monthData.month} className="text-center p-1">
+                                        {renderCell(key as keyof MonthlyIndicator, monthData)}
+                                      </TableCell>
+                                  ))}
+                              </TableRow>
+                          ))}
+
+                          <TableRow className="bg-muted font-bold">
+                              <TableCell className="sticky left-0 bg-muted z-10 text-sm py-2">Total de Alunos</TableCell>
+                              {calculatedData.map(monthData => (
+                                  <TableCell key={monthData.month} className="text-center p-1 py-2">{monthData.totalStudents}</TableCell>
+                              ))}
+                          </TableRow>
+                          <TableRow>
+                              <TableCell className="sticky left-0 bg-card z-10 text-sm py-2">Evolução</TableCell>
+                              {calculatedData.map(monthData => (
+                                  <TableCell key={monthData.month} className="text-center p-1 py-2">
+                                      {renderCell('evolution', monthData)}
+                                  </TableCell>
+                              ))}
+                          </TableRow>
+                          <TableRow>
+                              <TableCell className="sticky left-0 bg-card z-10 text-sm py-2">Taxa de Conversão</TableCell>
+                              {calculatedData.map(monthData => (
+                                  <TableCell key={monthData.month} className="text-center p-1 py-2">
+                                      {renderCell('conversionRate', monthData)}
+                                  </TableCell>
+                              ))}
+                          </TableRow>
+                      </>
+                  )}
+                </TableBody>
+              </Table>
             </div>
+          </CardContent>
+        </Card>
+        
+        <div className="flex flex-col gap-4">
+             {isLoading ? (
+                <>
+                    <Skeleton className="h-64 w-full" />
+                    <Skeleton className="h-64 w-full" />
+                    <Skeleton className="h-80 w-full" />
+                </>
+             ) : (
+                <>
+                    <TotalStudentsChart data={calculatedData} />
+                    <ConversionChart data={calculatedData} />
+                    <MovementChart data={calculatedData} />
+                </>
+             )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
