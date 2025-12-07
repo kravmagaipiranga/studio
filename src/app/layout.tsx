@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PT_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
-import { AppLayout } from "@/components/layout/app-layout";
+import { AppLayout } from "./layout/app-layout"; // Adjusted path
 import { FirebaseClientProvider } from "@/firebase";
 
 const ptSans = PT_Sans({
