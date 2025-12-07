@@ -56,7 +56,10 @@ export default function PagamentosPage() {
         if (!students) return [];
 
         return (students || [])
-            .filter(student => student.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            .filter(student => 
+                student.status === 'Ativo' && 
+                student.name.toLowerCase().includes(searchQuery.toLowerCase())
+            )
             .sort((a, b) => {
                 const dateA = a.lastPaymentDate ? parseISO(a.lastPaymentDate).getTime() : 0;
                 const dateB = b.lastPaymentDate ? parseISO(b.lastPaymentDate).getTime() : 0;
