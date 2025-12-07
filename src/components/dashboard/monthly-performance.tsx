@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { collection, query, where, doc, getDocs } from "firebase/firestore";
-import { useFirestore, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
+import { useFirestore, useMemoFirebase, setDocumentNonBlocking, useDoc } from "@/firebase";
 import { MonthlyIndicator } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
@@ -28,47 +28,57 @@ export function MonthlyPerformance() {
   const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [indicator, setIndicator] = useState<Partial<MonthlyIndicator>>({});
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [previousMonthTotal, setPreviousMonthTotal] = useState(0);
 
   const selectedYear = currentDate.getFullYear();
   const selectedMonth = currentDate.getMonth() + 1;
   const documentId = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
-
+  
   const indicatorRef = useMemoFirebase(() => {
     if (!firestore) return null;
     return doc(firestore, 'indicators', documentId);
   }, [firestore, documentId]);
 
+  const { data: liveIndicator, isLoading } = useDoc<MonthlyIndicator>(indicatorRef);
+
   useEffect(() => {
-    const fetchIndicator = async () => {
-      if (!indicatorRef) return;
-      setIsLoading(true);
-      try {
-        const docSnap = await getDocs(query(collection(firestore, 'indicators'), where('id', '==', documentId)));
-        if (!docSnap.empty) {
-            const data = docSnap.docs[0].data() as MonthlyIndicator;
-            setIndicator(data);
-        } else {
-            // If no data, fetch previous month's total
-            const prevMonthId = format(subMonths(currentDate, 1), 'yyyy-MM');
+    const fetchPreviousMonthTotal = async () => {
+        if (!firestore) return;
+        
+        const prevMonthDate = subMonths(currentDate, 1);
+        const prevMonthId = format(prevMonthDate, 'yyyy-MM');
+        
+        try {
             const prevMonthSnap = await getDocs(query(collection(firestore, 'indicators'), where('id', '==', prevMonthId)));
-            let previousMonthTotal = 0;
             if (!prevMonthSnap.empty) {
                 const prevData = prevMonthSnap.docs[0].data() as MonthlyIndicator;
-                previousMonthTotal = prevData.totalStudents || 0;
+                setPreviousMonthTotal(prevData.totalStudents || 0);
+            } else {
+                setPreviousMonthTotal(0);
             }
-          setIndicator({ year: selectedYear, month: selectedMonth, previousMonthTotal });
+        } catch (error) {
+            console.error("Error fetching previous month's total:", error);
+            setPreviousMonthTotal(0);
         }
-      } catch (error) {
-        console.error("Error fetching indicator:", error);
-        setIndicator({ year: selectedYear, month: selectedMonth });
-      } finally {
-        setIsLoading(false);
-      }
     };
-    fetchIndicator();
-  }, [indicatorRef, currentDate, firestore, documentId, selectedMonth, selectedYear]);
+
+    fetchPreviousMonthTotal();
+  }, [currentDate, firestore]);
+  
+  useEffect(() => {
+    if (liveIndicator) {
+      setIndicator(liveIndicator);
+    } else {
+      // If no data exists for the month, initialize with previous month's total
+      setIndicator({ 
+          year: selectedYear, 
+          month: selectedMonth, 
+          previousMonthTotal: previousMonthTotal 
+      });
+    }
+  }, [liveIndicator, selectedYear, selectedMonth, previousMonthTotal]);
+
 
   const calculatedData = useMemo(() => {
     const data = { ...indicator };
@@ -92,7 +102,7 @@ export function MonthlyPerformance() {
   };
 
   const handleSave = async () => {
-    if (!firestore) return;
+    if (!firestore || !indicatorRef) return;
     setIsSaving(true);
     try {
       const dataToSave = { ...calculatedData, id: documentId };
@@ -170,8 +180,8 @@ export function MonthlyPerformance() {
             </div>
             <div className="p-4 rounded-lg bg-muted/50">
                 <div className="text-sm font-medium text-muted-foreground">Evolução</div>
-                <div className={`text-2xl font-bold ${!isLoading && (calculatedData.evolution ?? 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {isLoading ? <Skeleton className="h-8 w-1/2" /> : `${calculatedData.evolution ?? 0 > 0 ? '+' : ''}${calculatedData.evolution ?? 0}`}
+                <div className={`text-2xl font-bold ${!isLoading && (calculatedData.evolution ?? 0) > 0 ? 'text-green-600' : (calculatedData.evolution ?? 0) < 0 ? 'text-red-600' : ''}`}>
+                    {isLoading ? <Skeleton className="h-8 w-1/2" /> : `${(calculatedData.evolution ?? 0) > 0 ? '+' : ''}${calculatedData.evolution ?? 0}`}
                 </div>
             </div>
              <div className="p-4 rounded-lg bg-muted/50">
