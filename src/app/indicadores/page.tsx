@@ -26,6 +26,9 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TotalStudentsChart } from "@/components/indicators/total-students-chart";
+import { MovementChart } from "@/components/indicators/movement-chart";
+import { ConversionChart } from "@/components/indicators/conversion-chart";
 
 const monthNames = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -288,8 +291,16 @@ export default function IndicadoresPage() {
           </div>
         </CardContent>
       </Card>
+      
+      {!isLoading && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+            <TotalStudentsChart data={calculatedData} />
+            <ConversionChart data={calculatedData} />
+            <div className="lg:col-span-2">
+                <MovementChart data={calculatedData} />
+            </div>
+        </div>
+      )}
     </div>
   );
 }
-
-    
