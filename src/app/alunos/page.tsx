@@ -75,16 +75,9 @@ export default function AlunosPage() {
         return query(collection(firestore, 'students'), orderBy('name', 'asc'));
     }, [firestore]);
 
-    const examsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        // Correctly querying a root collection 'exams'
-        return collection(firestore, 'exams');
-    }, [firestore]);
-
     const { data: allStudents, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
-    const { data: allExams, isLoading: isLoadingExams } = useCollection<Exam>(examsQuery);
-
-    const isLoading = isLoadingStudents || isLoadingExams;
+    
+    const isLoading = isLoadingStudents;
 
     const { activeStudentsCount, overdueStudentsCount } = useMemo(() => {
         if (!allStudents) return { activeStudentsCount: 0, overdueStudentsCount: 0 };
@@ -94,38 +87,18 @@ export default function AlunosPage() {
     }, [allStudents]);
 
     const studentsWithTimeInBelt = useMemo(() => {
-        if (!allStudents || !allExams) return [];
-
-        const examsByStudent = allExams.reduce((acc, exam) => {
-            if (!acc[exam.studentId]) {
-                acc[exam.studentId] = [];
-            }
-            acc[exam.studentId].push(exam);
-            return acc;
-        }, {} as Record<string, Exam[]>);
-
-        // Sort exams by date descending for each student
-        for (const studentId in examsByStudent) {
-            examsByStudent[studentId].sort((a, b) => new Date(b.examDate).getTime() - new Date(a.examDate).getTime());
-        }
+        if (!allStudents) return [];
 
         return allStudents.map(student => {
-            let timeInBelt = "";
-            const studentExams = examsByStudent[student.id];
-            let lastRelevantDate = student.startDate || student.registrationDate;
-
-            if (student.belt !== 'Branca') {
-                const lastExamForCurrentBelt = studentExams?.find(e => e.targetBelt === student.belt);
-                if (lastExamForCurrentBelt) {
-                    lastRelevantDate = lastExamForCurrentBelt.examDate;
-                }
-            }
+            // Prioritize lastExamDate for the calculation.
+            // Use startDate as the first fallback, and registrationDate as the final fallback.
+            const dateToCalculateFrom = student.lastExamDate || student.startDate || student.registrationDate;
+            const timeInBelt = calculateTimeSince(dateToCalculateFrom);
             
-            timeInBelt = calculateTimeSince(lastRelevantDate);
             return { ...student, timeInBelt };
         });
 
-    }, [allStudents, allExams]);
+    }, [allStudents]);
 
     const filteredStudents = useMemo(() => {
         if (!studentsWithTimeInBelt) return [];
