@@ -99,7 +99,7 @@ export function RegisterPaymentForm({
 
   useEffect(() => {
     if (paymentDateWatcher && planTypeWatcher) {
-        if (planTypeWatcher === 'Bolsa' || planTypeWatcher === 'Outros') {
+        if (planTypeWatcher === 'Bolsa') {
             setCalculatedExpiryDate('Não se aplica');
             return;
         }
@@ -108,6 +108,8 @@ export function RegisterPaymentForm({
             const paymentDate = parseISO(paymentDateWatcher);
             let monthsToAdd = 1;
             if (planTypeWatcher === 'Trimestral') monthsToAdd = 3;
+            if (planTypeWatcher === 'Outros') monthsToAdd = 1;
+
 
             const futureMonth = addMonths(paymentDate, monthsToAdd);
             const expiryDate = setDate(futureMonth, 5); // Set due date to the 5th
@@ -170,7 +172,7 @@ export function RegisterPaymentForm({
     const paymentDate = parseISO(values.paymentDate);
     let expirationDate: Date | null = null;
     
-    if (values.planType === 'Mensal') {
+    if (values.planType === 'Mensal' || values.planType === 'Outros') {
         expirationDate = setDate(addMonths(paymentDate, 1), 5);
     } else if (values.planType === 'Trimestral') {
         expirationDate = setDate(addMonths(paymentDate, 3), 5);
@@ -319,5 +321,3 @@ export function RegisterPaymentForm({
     </Card>
   )
 }
-
-    
