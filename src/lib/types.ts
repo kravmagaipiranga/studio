@@ -117,17 +117,16 @@ export type MonthlyIndicator = {
   id: string; // YYYY-MM
   year: number;
   month: number;
-  previousMonthTotal: number;
-  visits: number;
-  trialClasses: number;
-  newEnrollments: number;
-  reenrollments: number;
-  exits: number;
-  womensMonth: number;
+  previousMonthTotal?: number;
+  visits?: number;
+  trialClasses?: number;
+  newEnrollments?: number;
+  reenrollments?: number;
+  exits?: number;
+  womensMonth?: number;
   // Calculated fields (stored for convenience or calculated on the fly)
   totalStudents?: number;
   evolution?: number;
   conversionRate?: number;
 };
-
     
