@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { collection, query, where, doc, getDocs } from "firebase/firestore";
+import { collection, query, where, doc, getDoc } from "firebase/firestore";
 import { useFirestore, useMemoFirebase, setDocumentNonBlocking, useDoc } from "@/firebase";
 import { MonthlyIndicator } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -29,8 +29,7 @@ export function MonthlyPerformance() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [indicator, setIndicator] = useState<Partial<MonthlyIndicator>>({});
   const [isSaving, setIsSaving] = useState(false);
-  const [previousMonthTotal, setPreviousMonthTotal] = useState(0);
-
+  
   const selectedYear = currentDate.getFullYear();
   const selectedMonth = currentDate.getMonth() + 1;
   const documentId = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
@@ -50,35 +49,39 @@ export function MonthlyPerformance() {
         const prevMonthId = format(prevMonthDate, 'yyyy-MM');
         
         try {
-            const prevMonthSnap = await getDocs(query(collection(firestore, 'indicators'), where('id', '==', prevMonthId)));
-            if (!prevMonthSnap.empty) {
-                const prevData = prevMonthSnap.docs[0].data() as MonthlyIndicator;
-                setPreviousMonthTotal(prevData.totalStudents || 0);
-            } else {
-                setPreviousMonthTotal(0);
+            const prevMonthDocRef = doc(firestore, 'indicators', prevMonthId);
+            const prevMonthSnap = await getDoc(prevMonthDocRef);
+
+            let initialTotal = 0;
+            if (prevMonthSnap.exists()) {
+                const prevData = prevMonthSnap.data() as MonthlyIndicator;
+                initialTotal = prevData.totalStudents || 0;
             }
+
+            setIndicator(currentIndicator => {
+                // If liveIndicator is not loaded yet, or doesn't exist, use the fetched previous total
+                if (!liveIndicator) {
+                    return { 
+                        ...currentIndicator,
+                        year: selectedYear, 
+                        month: selectedMonth, 
+                        previousMonthTotal: initialTotal 
+                    };
+                }
+                // If liveIndicator exists, it's the source of truth, but ensure previousMonthTotal is there.
+                return { ...liveIndicator, previousMonthTotal: liveIndicator.previousMonthTotal ?? initialTotal };
+            });
+
         } catch (error) {
             console.error("Error fetching previous month's total:", error);
-            setPreviousMonthTotal(0);
+            // In case of error, just use what we have.
+             setIndicator(currentIndicator => ({ ...currentIndicator, previousMonthTotal: 0 }));
         }
     };
 
     fetchPreviousMonthTotal();
-  }, [currentDate, firestore]);
+  }, [currentDate, firestore, liveIndicator, selectedYear, selectedMonth]);
   
-  useEffect(() => {
-    if (liveIndicator) {
-      setIndicator(liveIndicator);
-    } else {
-      // If no data exists for the month, initialize with previous month's total
-      setIndicator({ 
-          year: selectedYear, 
-          month: selectedMonth, 
-          previousMonthTotal: previousMonthTotal 
-      });
-    }
-  }, [liveIndicator, selectedYear, selectedMonth, previousMonthTotal]);
-
 
   const calculatedData = useMemo(() => {
     const data = { ...indicator };
@@ -123,6 +126,7 @@ export function MonthlyPerformance() {
   };
 
   const changeMonth = (direction: 'prev' | 'next') => {
+    setIndicator({}); // Clear old data while new data loads
     setCurrentDate(current => direction === 'prev' ? subMonths(current, 1) : addMonths(current, 1));
   };
 
@@ -154,7 +158,7 @@ export function MonthlyPerformance() {
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
+        {isLoading && !indicator.month ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
              {Object.keys(indicatorLabels).map(key => <Skeleton key={key} className="h-20 w-full" />)}
           </div>
@@ -176,23 +180,23 @@ export function MonthlyPerformance() {
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 border-t pt-4">
             <div className="p-4 rounded-lg bg-muted/50">
                 <div className="text-sm font-medium text-muted-foreground">Total Alunos (Fim do Mês)</div>
-                <div className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-1/2" /> : calculatedData.totalStudents ?? 0}</div>
+                <div className="text-2xl font-bold">{isLoading && !indicator.month ? <Skeleton className="h-8 w-1/2" /> : calculatedData.totalStudents ?? 0}</div>
             </div>
             <div className="p-4 rounded-lg bg-muted/50">
                 <div className="text-sm font-medium text-muted-foreground">Evolução</div>
                 <div className={`text-2xl font-bold ${!isLoading && (calculatedData.evolution ?? 0) > 0 ? 'text-green-600' : (calculatedData.evolution ?? 0) < 0 ? 'text-red-600' : ''}`}>
-                    {isLoading ? <Skeleton className="h-8 w-1/2" /> : `${(calculatedData.evolution ?? 0) > 0 ? '+' : ''}${calculatedData.evolution ?? 0}`}
+                    {isLoading && !indicator.month ? <Skeleton className="h-8 w-1/2" /> : `${(calculatedData.evolution ?? 0) > 0 ? '+' : ''}${calculatedData.evolution ?? 0}`}
                 </div>
             </div>
              <div className="p-4 rounded-lg bg-muted/50">
                 <div className="text-sm font-medium text-muted-foreground">Taxa de Conversão</div>
                 <div className="text-2xl font-bold">
-                    {isLoading ? <Skeleton className="h-8 w-1/2" /> : `${Math.round(calculatedData.conversionRate ?? 0)}%`}
+                    {isLoading && !indicator.month ? <Skeleton className="h-8 w-1/2" /> : `${Math.round(calculatedData.conversionRate ?? 0)}%`}
                 </div>
             </div>
              <div className="p-4 rounded-lg bg-muted/50">
                 <div className="text-sm font-medium text-muted-foreground">Total Alunos (Início)</div>
-                <div className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-1/2" /> : indicator.previousMonthTotal ?? 0}</div>
+                <div className="text-2xl font-bold">{isLoading && !indicator.month ? <Skeleton className="h-8 w-1/2" /> : calculatedData.previousMonthTotal ?? 0}</div>
             </div>
         </div>
       </CardContent>
