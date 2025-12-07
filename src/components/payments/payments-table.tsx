@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/tooltip"
 import { Skeleton } from "../ui/skeleton"
 import { useRouter } from "next/navigation"
+import { isBefore, parseISO } from "date-fns"
 
 interface PaymentsTableProps {
   students: Student[];
@@ -49,6 +50,25 @@ export function PaymentsTable({ students, isLoading }: PaymentsTableProps) {
     const message = encodeURIComponent(`Olá ${studentName}, este é um lembrete amigável sobre seu pagamento pendente para o Krav Magá IPIRANGA.`);
     window.open(`https://wa.me/?text=${message}`, '_blank');
   };
+
+  const getPaymentStatus = (student: Student): 'Pago' | 'Vencido' => {
+      if (!student.planExpirationDate) {
+          // If there's no expiration date, consider it Vencido as a fallback.
+          return 'Vencido';
+      }
+      try {
+          const expirationDate = parseISO(student.planExpirationDate);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
+
+          // If expiration date is before today, it's overdue.
+          return isBefore(expirationDate, today) ? 'Vencido' : 'Pago';
+
+      } catch (error) {
+          console.error("Invalid planExpirationDate for student:", student.id);
+          return 'Vencido'; // Treat invalid dates as overdue
+      }
+  }
 
   const generateMailToLink = (student: Student) => {
     const subject = encodeURIComponent("Lembrete de Pagamento - Krav Magá IPIRANGA");
@@ -125,101 +145,104 @@ A premiação coloca o Centro de Treinamento de Krav Magá Ipiranga entre as pri
                   <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                 </TableRow>
               ))}
-              {!isLoading && students.map((student: Student) => (
-                <TableRow key={student.id}>
-                  <TableCell>
-                    <div className="font-medium">{student.name}</div>
-                    <div className="text-sm text-muted-foreground">{student.email}</div>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    <Badge variant="outline">{student.planType || 'N/A'}</Badge>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {student.planValue ? `R$ ${student.planValue.toFixed(2)}` : 'N/A'}
-                  </TableCell>
-                   <TableCell className="hidden md:table-cell">
-                      {student.lastPaymentDate ? new Date(student.lastPaymentDate + "T00:00:00").toLocaleDateString('pt-BR') : 'N/A'}
-                  </TableCell>
-                   <TableCell className="hidden md:table-cell">
-                      {student.planExpirationDate ? new Date(student.planExpirationDate + "T00:00:00").toLocaleDateString('pt-BR') : 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={student.paymentStatus === 'Pago' ? 'outline' : 'destructive'}>
-                      {student.paymentStatus}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                     <div className="flex items-center justify-center gap-1">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <a href={generateMailToLink(student)} target="_blank">
-                                  <Button variant="ghost" size="icon">
-                                    <Mail className="h-4 w-4" />
-                                    <span className="sr-only">Enviar Cobrança por Email</span>
-                                  </Button>
-                                </a>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Enviar Cobrança por Email</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          
-                          {student.paymentStatus === 'Vencido' && (
+              {!isLoading && students.map((student: Student) => {
+                const currentStatus = getPaymentStatus(student);
+                return (
+                  <TableRow key={student.id}>
+                    <TableCell>
+                      <div className="font-medium">{student.name}</div>
+                      <div className="text-sm text-muted-foreground">{student.email}</div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      <Badge variant="outline">{student.planType || 'N/A'}</Badge>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {student.planValue ? `R$ ${student.planValue.toFixed(2)}` : 'N/A'}
+                    </TableCell>
+                     <TableCell className="hidden md:table-cell">
+                        {student.lastPaymentDate ? new Date(student.lastPaymentDate + "T00:00:00").toLocaleDateString('pt-BR') : 'N/A'}
+                    </TableCell>
+                     <TableCell className="hidden md:table-cell">
+                        {student.planExpirationDate ? new Date(student.planExpirationDate + "T00:00:00").toLocaleDateString('pt-BR') : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={currentStatus === 'Pago' ? 'outline' : 'destructive'}>
+                        {currentStatus}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                       <div className="flex items-center justify-center gap-1">
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button variant="ghost" size="icon" onClick={() => openWhatsApp(student.name)}>
-                                    <MessageCircle className="h-4 w-4" />
-                                    <span className="sr-only">Cobrar via WhatsApp</span>
-                                  </Button>
+                                  <a href={generateMailToLink(student)} target="_blank">
+                                    <Button variant="ghost" size="icon">
+                                      <Mail className="h-4 w-4" />
+                                      <span className="sr-only">Enviar Cobrança por Email</span>
+                                    </Button>
+                                  </a>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>Cobrar via WhatsApp</p>
+                                  <p>Enviar Cobrança por Email</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
-                          )}
-                        </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-2">
-                       {student.paymentCredits && (
-                        <TooltipProvider>
-                           <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="text-blue-500 hover:text-blue-700">
-                                <Info className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Créditos: {student.paymentCredits}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
-                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Abrir menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem onSelect={() => router.push(`/pagamentos/novo/editar?aluno=${student.id}`)}>
-                          Registrar Pagamento
-                        </DropdownMenuItem>
-                         <DropdownMenuItem onSelect={() => router.push(`/alunos/${student.id}/editar`)}>
-                          Ver Cadastro Completo
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                            
+                            {currentStatus === 'Vencido' && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" onClick={() => openWhatsApp(student.name)}>
+                                      <MessageCircle className="h-4 w-4" />
+                                      <span className="sr-only">Cobrar via WhatsApp</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Cobrar via WhatsApp</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-2">
+                         {student.paymentCredits && (
+                          <TooltipProvider>
+                             <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-blue-500 hover:text-blue-700">
+                                  <Info className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Créditos: {student.paymentCredits}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                       <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Abrir menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                          <DropdownMenuItem onSelect={() => router.push(`/pagamentos/novo/editar?aluno=${student.id}`)}>
+                            Registrar Pagamento
+                          </DropdownMenuItem>
+                           <DropdownMenuItem onSelect={() => router.push(`/alunos/${student.id}/editar`)}>
+                            Ver Cadastro Completo
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
            {!isLoading && students.length === 0 && (
