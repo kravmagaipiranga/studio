@@ -37,6 +37,7 @@ import { ScrollArea } from "../ui/scroll-area"
 import { Skeleton } from "../ui/skeleton"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion"
 import { Lightbulb } from "lucide-react"
+import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group"
 
 const formSchema = z.object({
   name: z.string().min(2, "O nome completo deve ter pelo menos 2 caracteres."),
@@ -68,6 +69,7 @@ const formSchema = z.object({
     },
     z.number({ invalid_type_error: "O valor deve ser um número." }).optional()
   ),
+  paymentPreference: z.array(z.enum(["pix", "dinheiro", "boleto"])).optional(),
   
   fikmAnnuityPaid: z.boolean().optional(),
   fikmAnnuityPaymentDate: z.string().optional(),
@@ -149,6 +151,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
       medicalHistory: "",
       planType: 'Mensal' as const,
       planValue: 315,
+      paymentPreference: [],
       fikmAnnuityPaid: false,
       fikmAnnuityPaymentDate: "",
       fikmAnnuityPaymentMethod: 'Pendente' as const,
@@ -191,6 +194,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
         medicalHistory: student.medicalHistory || "",
         planType: student.planType || 'Mensal',
         planValue: student.planValue ?? 315,
+        paymentPreference: student.paymentPreference || [],
         fikmAnnuityPaid: student.fikmAnnuityPaid || false,
         fikmAnnuityPaymentDate: student.fikmAnnuityPaymentDate ? student.fikmAnnuityPaymentDate.split('T')[0] : '',
         fikmAnnuityPaymentMethod: student.fikmAnnuityPaymentMethod || 'Pendente',
@@ -513,6 +517,31 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                             )}
                         />
                     </div>
+
+                    <FormField
+                        control={form.control}
+                        name="paymentPreference"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Preferência de Pagamento</FormLabel>
+                                <FormControl>
+                                    <ToggleGroup 
+                                        type="multiple" 
+                                        variant="outline" 
+                                        className="justify-start"
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                    >
+                                        <ToggleGroupItem value="pix">Pix</ToggleGroupItem>
+                                        <ToggleGroupItem value="dinheiro">Dinheiro</ToggleGroupItem>
+                                        <ToggleGroupItem value="boleto">Boleto</ToggleGroupItem>
+                                    </ToggleGroup>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
 
                     <h3 className="text-lg font-medium border-b pb-2 pt-4">Anuidade FIKM</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
