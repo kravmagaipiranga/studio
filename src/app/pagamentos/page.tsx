@@ -104,16 +104,21 @@ export default function PagamentosPage() {
     const filteredPayments = useMemo(() => {
         if (!payments) return [];
         let filtered = payments;
+        const today = new Date();
+        today.setHours(0,0,0,0);
 
         if (activeFilter === 'vencidos') {
-            // This needs to show payments of students who are currently overdue
-            // It might be better to show a list of overdue STUDENTS, not payments.
-            // For now, we'll filter payments to only show those belonging to overdue students.
-            const uniqueStudentIds = new Set(payments.map(p => p.studentId));
-            const relevantOverdueIds = Array.from(overdueStudentIds).filter(id => uniqueStudentIds.has(id));
-            filtered = payments.filter(p => relevantOverdueIds.includes(p.studentId));
+            filtered = payments.filter(p => {
+                if (!p.expirationDate || p.planType === 'Matrícula') return false;
+                try {
+                    const expirationDate = parseISO(p.expirationDate);
+                    return isBefore(expirationDate, today);
+                } catch {
+                    return false;
+                }
+            });
         } else if (activeFilter === 'trimestrais') {
-            filtered = filtered.filter(p => activeQuarterlyStudentIds.has(p.studentId));
+            filtered = payments.filter(p => p.planType === 'Trimestral' && p.expirationDate && isAfter(parseISO(p.expirationDate), today));
         }
         
         if(searchQuery) {
@@ -122,7 +127,7 @@ export default function PagamentosPage() {
             );
         }
         return filtered;
-    }, [payments, searchQuery, activeFilter, overdueStudentIds, activeQuarterlyStudentIds]);
+    }, [payments, searchQuery, activeFilter]);
 
 
     return (
