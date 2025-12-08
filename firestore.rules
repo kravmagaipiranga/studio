@@ -53,15 +53,14 @@ service cloud.firestore {
       allow get, list: if isSignedIn();
       // Allow only admins to create, update, or delete students.
       allow create, update, delete: if isAdmin();
-
-      // Subcollection access rules
-      match /payments/{paymentId} {
-        // Owner and Admins can access payment subcollections.
-        allow get, list: if isOwner(studentId) || isAdmin();
-        allow create: if isAdmin() && newDocStudentIdMatchesPath(studentId);
-        allow update: if isAdmin() && studentIdIsImmutable();
-        allow delete: if isAdmin();
-      }
+    }
+    
+    // New top-level payments collection
+    match /payments/{paymentId} {
+      // Any signed-in user can see payment history (for admin panel).
+      allow get, list: if isSignedIn();
+      // Only admins can create, update, or delete payment records.
+      allow create, update, delete: if isAdmin();
     }
     
     // Admin-only write collections

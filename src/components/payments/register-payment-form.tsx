@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { addMonths, format, parseISO, setDate } from 'date-fns';
 import { useEffect, useState } from "react";
-import { doc } from "firebase/firestore";
+import { collection, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button"
@@ -29,15 +29,15 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Student } from "@/lib/types"
+import { Student, Payment } from "@/lib/types"
 import { Combobox } from "@/components/ui/combobox";
-import { useFirestore, setDocumentNonBlocking } from "@/firebase";
+import { useFirestore, addDocumentNonBlocking } from "@/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 
 const formSchema = z.object({
   studentId: z.string({ required_error: "É necessário selecionar um aluno." }),
-  planType: z.enum(["Mensal", "Trimestral", "Bolsa 50%", "Bolsa 100%", "Outros"]),
-  planValue: z.preprocess(
+  planType: z.enum(["Matrícula", "Mensal", "Trimestral", "Bolsa 50%", "Bolsa 100%", "Outros"]),
+  amount: z.preprocess(
     (a) => {
         if (typeof a === 'string') return parseFloat(a.replace(',', '.'));
         return a;
@@ -47,7 +47,8 @@ const formSchema = z.object({
   paymentDate: z.string().refine((val) => val, {
     message: "A data de pagamento é obrigatória.",
   }),
-  paymentCredits: z.string().optional(),
+  paymentMethod: z.enum(["Pix", "Cartão", "Dinheiro", "Pendente"]),
+  notes: z.string().optional(),
 })
 
 interface RegisterPaymentFormProps {
@@ -73,9 +74,10 @@ export function RegisterPaymentForm({
     defaultValues: {
         studentId: '',
         planType: "Mensal",
-        planValue: 315,
+        amount: 315,
         paymentDate: format(new Date(), 'yyyy-MM-dd'),
-        paymentCredits: "",
+        paymentMethod: "Pix",
+        notes: "",
     },
   });
 
@@ -84,18 +86,21 @@ export function RegisterPaymentForm({
 
   useEffect(() => {
     switch (planTypeWatcher) {
+      case 'Matrícula':
+        form.setValue('amount', 160);
+        break;
       case 'Mensal':
-        form.setValue('planValue', 315);
+        form.setValue('amount', 315);
         break;
       case 'Trimestral':
-        form.setValue('planValue', 898);
+        form.setValue('amount', 898);
         break;
       case 'Bolsa 50%':
-        form.setValue('planValue', 160);
+        form.setValue('amount', 160);
         break;
       case 'Bolsa 100%':
       case 'Outros':
-        form.setValue('planValue', 0);
+        form.setValue('amount', 0);
         break;
     }
   }, [planTypeWatcher, form]);
@@ -103,6 +108,11 @@ export function RegisterPaymentForm({
   useEffect(() => {
     if (paymentDateWatcher && planTypeWatcher) {
         try {
+            if (planTypeWatcher === 'Matrícula') {
+                setCalculatedExpiryDate('Não se aplica');
+                return;
+            }
+
             const paymentDate = parseISO(paymentDateWatcher);
             let expiryDate: Date | null = null;
             
@@ -135,10 +145,11 @@ export function RegisterPaymentForm({
       const studentPlanType = studentToLoad.planType || 'Mensal';
       form.reset({
           studentId: studentToLoad.id,
-          planType: studentPlanType,
-          planValue: studentToLoad.planValue ?? 315, // Fallback for existing data
+          planType: studentPlanType as any,
+          amount: studentToLoad.planValue ?? 315, // Fallback for existing data
           paymentDate: format(new Date(), 'yyyy-MM-dd'),
-          paymentCredits: studentToLoad.paymentCredits || "",
+          paymentMethod: "Pix",
+          notes: "",
       });
     }
   }, [studentIdFromUrl, allStudents, form]);
@@ -151,9 +162,8 @@ export function RegisterPaymentForm({
             if (foundStudent && foundStudent.id !== selectedStudent?.id) {
                 setSelectedStudent(foundStudent);
                 const studentPlanType = foundStudent.planType || 'Mensal';
-                form.setValue('planType', studentPlanType);
-                form.setValue('planValue', foundStudent.planValue ?? 315);
-                form.setValue('paymentCredits', foundStudent.paymentCredits || '');
+                form.setValue('planType', studentPlanType as any);
+                form.setValue('amount', foundStudent.planValue ?? 315);
             }
         }
     });
@@ -173,34 +183,38 @@ export function RegisterPaymentForm({
         return;
     }
     
-    const paymentDate = parseISO(values.paymentDate);
-    let expirationDate: Date | null = null;
-    
-    if (values.planType === 'Bolsa 100%') {
-        const currentYear = paymentDate.getFullYear();
-        expirationDate = new Date(currentYear, 11, 31);
-    } else if (values.planType === 'Mensal' || values.planType === 'Outros' || values.planType === 'Bolsa 50%') {
-        expirationDate = setDate(addMonths(paymentDate, 1), 5);
-    } else if (values.planType === 'Trimestral') {
-        expirationDate = setDate(addMonths(paymentDate, 3), 5);
-    }
+    let expirationDateISO: string | undefined = undefined;
 
-    const updatedStudentData: Partial<Student> = {
+    if (values.planType !== 'Matrícula') {
+        const paymentDate = parseISO(values.paymentDate);
+        let expirationDate: Date | null = null;
+        if (values.planType === 'Bolsa 100%') {
+            expirationDate = new Date(paymentDate.getFullYear(), 11, 31);
+        } else {
+            const monthsToAdd = values.planType === 'Trimestral' ? 3 : 1;
+            expirationDate = setDate(addMonths(paymentDate, monthsToAdd), 5);
+        }
+        expirationDateISO = expirationDate.toISOString().split('T')[0];
+    }
+    
+
+    const paymentData: Omit<Payment, 'id'> = {
+        studentId: values.studentId,
+        studentName: targetStudent.name,
+        paymentDate: values.paymentDate,
         planType: values.planType,
-        planValue: values.planValue,
-        lastPaymentDate: values.paymentDate,
-        planExpirationDate: expirationDate ? expirationDate.toISOString().split('T')[0] : undefined,
-        paymentStatus: 'Pago',
-        paymentCredits: values.paymentCredits,
+        amount: values.amount,
+        expirationDate: expirationDateISO,
+        paymentMethod: values.paymentMethod,
+        notes: values.notes,
     };
 
-    const studentDocRef = doc(firestore, "students", targetStudent.id);
-    
-    setDocumentNonBlocking(studentDocRef, updatedStudentData, { merge: true });
+    const paymentsCollectionRef = collection(firestore, "payments");
+    addDocumentNonBlocking(paymentsCollectionRef, paymentData);
     
     toast({
       title: "Pagamento Registrado!",
-      description: `O pagamento para ${targetStudent.name} foi atualizado com sucesso.`,
+      description: `O pagamento para ${targetStudent.name} foi adicionado com sucesso.`,
     })
     router.push('/pagamentos');
   }
@@ -240,7 +254,7 @@ export function RegisterPaymentForm({
                     name="planType"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Tipo de Plano</FormLabel>
+                        <FormLabel>Tipo de Pagamento</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                             <SelectTrigger>
@@ -248,6 +262,7 @@ export function RegisterPaymentForm({
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
+                            <SelectItem value="Matrícula">Matrícula</SelectItem>
                             <SelectItem value="Mensal">Mensal</SelectItem>
                             <SelectItem value="Trimestral">Trimestral</SelectItem>
                             <SelectItem value="Bolsa 50%">Bolsa 50%</SelectItem>
@@ -261,7 +276,7 @@ export function RegisterPaymentForm({
                     />
                     <FormField
                     control={form.control}
-                    name="planValue"
+                    name="amount"
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Valor (R$)</FormLabel>
@@ -300,20 +315,43 @@ export function RegisterPaymentForm({
                                 type="text"
                                 value={calculatedExpiryDate}
                                 disabled
-                                placeholder="Calculada automaticamente..."
+                                placeholder={planTypeWatcher === 'Matrícula' ? 'Não se aplica' : 'Calculada...'}
                                 className="disabled:opacity-100 disabled:cursor-default"
                             />
                         </FormControl>
                     </FormItem>
                 </div>
+                 <FormField
+                    control={form.control}
+                    name="paymentMethod"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Forma de Pagamento</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione..." />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="Pendente">Pendente</SelectItem>
+                                <SelectItem value="Pix">Pix</SelectItem>
+                                <SelectItem value="Cartão">Cartão</SelectItem>
+                                <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
                 <FormField
                 control={form.control}
-                name="paymentCredits"
+                name="notes"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Créditos / Observações</FormLabel>
+                    <FormLabel>Observações</FormLabel>
                     <FormControl>
-                        <Textarea placeholder="Ex: R$ 50 de crédito ref. aula extra" {...field} value={field.value ?? ''} />
+                        <Textarea placeholder="Ex: Pagamento referente à..." {...field} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>

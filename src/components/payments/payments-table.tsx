@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import {
@@ -18,7 +19,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, MessageCircle, Info, Mail } from "lucide-react"
+import { MoreHorizontal, Trash2 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,89 +27,54 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Student } from "@/lib/types"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { Payment } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
 import { useRouter } from "next/navigation"
-import { isBefore, parseISO } from "date-fns"
+import { useFirestore, deleteDocumentNonBlocking } from "@/firebase"
+import { doc } from "firebase/firestore"
+import { useToast } from "@/hooks/use-toast"
 
 interface PaymentsTableProps {
-  students: Student[];
+  payments: Payment[];
   isLoading: boolean;
-  allStudents: Student[];
 }
 
-export function PaymentsTable({ students, isLoading }: PaymentsTableProps) {
+export function PaymentsTable({ payments, isLoading }: PaymentsTableProps) {
   const router = useRouter();
+  const firestore = useFirestore();
+  const { toast } = useToast();
 
-  const openWhatsApp = (studentName: string) => {
-    const message = encodeURIComponent(`Olá ${studentName}, este é um lembrete amigável sobre seu pagamento pendente para o Krav Magá IPIRANGA.`);
-    window.open(`https://wa.me/?text=${message}`, '_blank');
-  };
-
-  const getPaymentStatus = (student: Student): 'Pago' | 'Vencido' => {
-      if (!student.planExpirationDate) {
-          // If there's no expiration date, consider it Vencido as a fallback.
-          return 'Vencido';
-      }
-      try {
-          const expirationDate = parseISO(student.planExpirationDate);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
-
-          // If expiration date is before today, it's overdue.
-          return isBefore(expirationDate, today) ? 'Vencido' : 'Pago';
-
-      } catch (error) {
-          console.error("Invalid planExpirationDate for student:", student.id);
-          return 'Vencido'; // Treat invalid dates as overdue
-      }
+  const handleDelete = (payment: Payment) => {
+    if (!firestore) return;
+    const docRef = doc(firestore, 'payments', payment.id);
+    deleteDocumentNonBlocking(docRef);
+    toast({
+      title: "Pagamento Excluído",
+      description: `O registro de pagamento para ${payment.studentName} foi removido.`
+    })
   }
 
-  const generateMailToLink = (student: Student) => {
-    const subject = encodeURIComponent("Lembrete de Pagamento - Krav Magá IPIRANGA");
-    const body = encodeURIComponent(
-`Olá ${student.name},
-
-Este é um lembrete automático de vencimento do seu plano de mensalidade do Centro de Treinamento de Krav Magá Ipiranga.
-
-Plano: ${student.planType || 'Não especificado'}
-Valor: R$ ${student.planValue ? student.planValue.toFixed(2) : 'N/A'}
-Vencimento: ${student.planExpirationDate ? new Date(student.planExpirationDate + "T00:00:00").toLocaleDateString('pt-BR') : 'N/A'}
-
-Para regularizar seu pagamento, você pode realizar um PIX para a chave: thiago@kravmaga.org.br ou utilize o CNPJ 31116136000195
-
-Após realizar o pagamento, por favor, envie o comprovante para este e-mail ou via WhatsApp.Caso já tenha realizado o pagamento, desconsidere essa mensagem.
-
-Agradecemos a sua atenção.
-Kida!
-
-Self Defence School of the Year 2025 – South East Brazil | GHP Active Lifestyle Awards 2025 
-O Centro de Treinamento Krav Magá Ipiranga foi oficialmente premiado com o título "Self Defence School of the Year 2025 – South East Brazil", no GHP Active Lifestyle Awards 2025.
-
-O prêmio reconhece instituições que se destacam na promoção de saúde, bem-estar, estilo de vida ativo e segurança pessoal, avaliando critérios como impacto social, qualidade dos serviços, compromisso com os alunos, profissionalismo e contribuição para o desenvolvimento da comunidade.
-
-O primeiro, maior e mais equipado Centro de Treinamento de Krav Magá da região, atua na formação de alunos de todas as idades, desenvolvendo habilidades físicas, mentais, controle emocional, e habilidades de tomada de decisão sob pressão, além de elevar a autoestima e a autoconfiança de seus alunos.
-
-“Receber esse reconhecimento internacional como Self Defence School of the Year 2025 – South East Brazil é a confirmação de que nosso trabalho vai além do tatame. Formamos pessoas mais fortes, seguras e preparadas para a vida real”, destaca a direção do centro.
-
-A premiação coloca o Centro de Treinamento de Krav Magá Ipiranga entre as principais escolas de defesa pessoal reconhecidas mundialmente no setor de lifestyle ativo.`
-    );
-    return `mailto:${student.email}?subject=${subject}&body=${body}`;
-  };
+  const getStatus = (payment: Payment): { text: 'Válido' | 'Expirado' | 'N/A', variant: 'outline' | 'destructive' | 'secondary' } => {
+    if (!payment.expirationDate) {
+      return { text: 'N/A', variant: 'secondary' };
+    }
+    try {
+        const expiration = new Date(payment.expirationDate + 'T00:00:00');
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        return expiration < today ? { text: 'Expirado', variant: 'destructive' } : { text: 'Válido', variant: 'outline' };
+    } catch {
+        return { text: 'Expirado', variant: 'destructive' };
+    }
+  }
   
   return (
     <>
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>Histórico de Pagamentos</CardTitle>
+          <CardTitle>Histórico de Transações</CardTitle>
           <CardDescription>
-            Detalhes financeiros e status de pagamento dos alunos.
+            Todos os pagamentos registrados, ordenados por data.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -116,111 +82,53 @@ A premiação coloca o Centro de Treinamento de Krav Magá Ipiranga entre as pri
             <TableHeader>
               <TableRow>
                 <TableHead>Aluno</TableHead>
-                <TableHead className="hidden sm:table-cell">Plano</TableHead>
-                <TableHead className="hidden sm:table-cell">Valor</TableHead>
-                <TableHead className="hidden md:table-cell">Último Pgto.</TableHead>
-                <TableHead className="hidden md:table-cell">Validade</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Data Pgto.</TableHead>
+                <TableHead>Validade</TableHead>
+                <TableHead>Valor</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-center">Cobrar Aluno</TableHead>
                 <TableHead>
                   <span className="sr-only">Ações</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-            {isLoading && Array.from({ length: 3 }).map((_, index) => (
+            {isLoading && Array.from({ length: 5 }).map((_, index) => (
                 <TableRow key={index}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="h-9 w-9 rounded-full" />
-                      <Skeleton className="h-5 w-32" />
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
-                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-16" /></TableCell>
-                  <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                  <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-20" /></TableCell>
                   <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                 </TableRow>
               ))}
-              {!isLoading && students.map((student: Student) => {
-                const currentStatus = getPaymentStatus(student);
+              {!isLoading && payments.map((payment: Payment) => {
+                const status = getStatus(payment);
                 return (
-                  <TableRow key={student.id}>
+                  <TableRow key={payment.id}>
                     <TableCell>
-                      <div className="font-medium">{student.name}</div>
-                      <div className="text-sm text-muted-foreground">{student.email}</div>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <Badge variant="outline">{student.planType || 'N/A'}</Badge>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      {student.planValue ? `R$ ${student.planValue.toFixed(2)}` : 'N/A'}
-                    </TableCell>
-                     <TableCell className="hidden md:table-cell">
-                        {student.lastPaymentDate ? new Date(student.lastPaymentDate + "T00:00:00").toLocaleDateString('pt-BR') : 'N/A'}
-                    </TableCell>
-                     <TableCell className="hidden md:table-cell">
-                        {student.planExpirationDate ? new Date(student.planExpirationDate + "T00:00:00").toLocaleDateString('pt-BR') : 'N/A'}
+                      <div className="font-medium">{payment.studentName}</div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={currentStatus === 'Pago' ? 'outline' : 'destructive'}>
-                        {currentStatus}
+                      <Badge variant="secondary">{payment.planType}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(payment.paymentDate + "T00:00:00").toLocaleDateString('pt-BR')}
+                    </TableCell>
+                    <TableCell>
+                       {payment.expirationDate ? new Date(payment.expirationDate + "T00:00:00").toLocaleDateString('pt-BR') : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      {`R$ ${payment.amount.toFixed(2)}`}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={status.variant}>
+                        {status.text}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                       <div className="flex items-center justify-center gap-1">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <a href={generateMailToLink(student)} target="_blank">
-                                    <Button variant="ghost" size="icon">
-                                      <Mail className="h-4 w-4" />
-                                      <span className="sr-only">Enviar Cobrança por Email</span>
-                                    </Button>
-                                  </a>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Enviar Cobrança por Email</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                            
-                            {currentStatus === 'Vencido' && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" onClick={() => openWhatsApp(student.name)}>
-                                      <MessageCircle className="h-4 w-4" />
-                                      <span className="sr-only">Cobrar via WhatsApp</span>
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Cobrar via WhatsApp</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-2">
-                         {student.paymentCredits && (
-                          <TooltipProvider>
-                             <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-blue-500 hover:text-blue-700">
-                                  <Info className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Créditos: {student.paymentCredits}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
+                    <TableCell className="text-right">
                        <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -230,26 +138,28 @@ A premiação coloca o Centro de Treinamento de Krav Magá Ipiranga entre as pri
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                          <DropdownMenuItem onSelect={() => router.push(`/pagamentos/novo/editar?aluno=${student.id}`)}>
-                            Registrar Pagamento
+                           <DropdownMenuItem onSelect={() => router.push(`/alunos/${payment.studentId}/editar`)}>
+                            Ver Aluno
                           </DropdownMenuItem>
-                           <DropdownMenuItem onSelect={() => router.push(`/alunos/${student.id}/editar`)}>
-                            Ver Cadastro Completo
+                          <DropdownMenuItem onSelect={() => handleDelete(payment)} className="text-red-600">
+                             <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir Registro
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      </div>
                     </TableCell>
                   </TableRow>
                 )
               })}
+              {!isLoading && payments.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center">
+                    Nenhum pagamento registrado encontrado.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
-           {!isLoading && students.length === 0 && (
-            <div className="text-center py-10 text-muted-foreground">
-                Nenhum aluno para exibir.
-            </div>
-           )}
         </CardContent>
       </Card>
     </>

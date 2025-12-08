@@ -30,12 +30,24 @@ export type Student = {
 
 
   // Dados Financeiros
-  planType?: 'Mensal' | 'Trimestral' | 'Bolsa 50%' | 'Bolsa 100%' | 'Outros';
+  planType?: 'Mensal' | 'Trimestral' | 'Bolsa 50%' | 'Bolsa 100%' | 'Outros' | 'Matrícula';
   planValue?: number;
   paymentPreference?: ('pix' | 'dinheiro' | 'boleto')[];
   lastPaymentDate?: string;
   planExpirationDate?: string;
   paymentCredits?: string;
+};
+
+export type Payment = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  paymentDate: string;
+  planType: 'Mensal' | 'Trimestral' | 'Bolsa 50%' | 'Bolsa 100%' | 'Outros' | 'Matrícula';
+  amount: number;
+  expirationDate?: string;
+  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+  notes?: string;
 };
 
 export type RevenueData = {

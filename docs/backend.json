@@ -1,4 +1,5 @@
 
+
 {
   "entities": {
     "Student": {
@@ -104,6 +105,10 @@
           "type": "string",
           "description": "Reference to Student. (Relationship: Student 1:N Payment)"
         },
+        "studentName": {
+          "type": "string",
+          "description": "Denormalized student name for easy display."
+        },
         "paymentDate": {
           "type": "string",
           "description": "The date the payment was made.",
@@ -113,21 +118,34 @@
           "type": "number",
           "description": "The amount paid."
         },
-        "method": {
+        "planType": {
           "type": "string",
-          "description": "The method of payment (e.g., cash, credit card)."
+          "description": "The type of plan or payment (e.g., Mensal, Matrícula).",
+          "enum": ["Matrícula", "Mensal", "Trimestral", "Bolsa 50%", "Bolsa 100%", "Outros"]
         },
-        "isOverdue": {
-          "type": "boolean",
-          "description": "If the payment is overdue"
+        "expirationDate": {
+          "type": "string",
+          "description": "The date the plan paid for by this payment expires.",
+          "format": "date-time"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "The method of payment (e.g., cash, credit card).",
+          "enum": ["Pix", "Cartão", "Dinheiro", "Pendente"]
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes about the payment."
         }
       },
       "required": [
         "id",
         "studentId",
+        "studentName",
         "paymentDate",
         "amount",
-        "method"
+        "planType",
+        "paymentMethod"
       ]
     },
     "Exam": {
@@ -260,18 +278,14 @@
         }
       },
       {
-        "path": "/students/{studentId}/payments/{paymentId}",
+        "path": "/payments/{paymentId}",
         "definition": {
           "entityName": "Payment",
           "schema": {
             "$ref": "#/backend/entities/Payment"
           },
-          "description": "Stores payment information for each student.",
+          "description": "Stores every individual payment transaction.",
           "params": [
-            {
-              "name": "studentId",
-              "description": "The unique identifier for the student."
-            },
             {
               "name": "paymentId",
               "description": "The unique identifier for the payment."
@@ -335,5 +349,3 @@
     "reasoning": "The Firestore data structure is designed to support the Krav Magá IPIRANGA Manager application, focusing on simplicity, security, and scalability. The structure emphasizes Authorization Independence to avoid complex security rules and ensure atomic operations. Path-based ownership is used where applicable for simplicity and security. \n\n**Authorization Independence:** Authorization independence is achieved by avoiding `get()` calls in security rules. Data required for authorization (such as user roles or group membership) is denormalized into the documents where it's needed. In the case of students that are associated with a payment plan, if authorization depends on plan attributes those attributes are copied into the student documents.\n\n**QAPs Support:**\n*   **Secure List Operations:** The segregation of data into collections with homogeneous security postures ensures that `list` operations can be secured effectively without complex filtering logic in rules.\n*   **Ownership and Collaboration:** Path-based ownership (`/users/{userId}/...`) simplifies security rules for private user data. Using membership maps, collaboration is supported. For example, an admin role could be checked by verifying the user's ID's existence in the `/roles_admin/{userId}` collection, enabling straightforward, secure access control without needing complex data lookups.\n\n**Structure Overview:**\n*   `/students/{studentId}`: Stores student information. This collection utilizes path-based ownership and denormalizes the `planId` to avoid document reads for authorization."
   }
 }
-
-    
