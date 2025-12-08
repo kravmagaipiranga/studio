@@ -1,16 +1,19 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { SalesTable } from "@/components/sales/sales-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search } from "lucide-react";
+import { Download, PlusCircle, Search, DollarSign, ShoppingCart, AlertCircle } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { Sale, Student } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 
 export default function VendasPage() {
     const firestore = useFirestore();
@@ -36,6 +39,41 @@ export default function VendasPage() {
         }
     }, [initialSales]);
 
+    const { salesRevenueThisMonth, salesCountThisMonth, pendingRevenue } = useMemo(() => {
+        if (!sales) return { salesRevenueThisMonth: 0, salesCountThisMonth: 0, pendingRevenue: 0 };
+    
+        const today = new Date();
+        const monthStart = startOfMonth(today);
+        const monthEnd = endOfMonth(today);
+
+        let revenue = 0;
+        let count = 0;
+        let pending = 0;
+
+        sales.forEach(sale => {
+            try {
+                if (isWithinInterval(parseISO(sale.date), { start: monthStart, end: monthEnd })) {
+                    if (sale.paymentStatus === 'Pago') {
+                        revenue += sale.value || 0;
+                    }
+                    count++;
+                }
+                if (sale.paymentStatus === 'Pendente') {
+                    pending += sale.value || 0;
+                }
+            } catch (error) {
+                // Ignore invalid dates
+            }
+        });
+        
+        return { 
+            salesRevenueThisMonth: revenue,
+            salesCountThisMonth: count,
+            pendingRevenue: pending,
+        };
+    }, [sales]);
+
+
     const handleAddNewSale = () => {
         const newSale: Sale = {
             id: `new_${uuidv4()}`,
@@ -60,6 +98,45 @@ export default function VendasPage() {
 
     return (
         <>
+            <div className="grid gap-4 md:grid-cols-3 mb-4">
+                <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                            Total de Vendas (Mês)
+                        </CardTitle>
+                        <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
+                            {isLoading ? <Skeleton className="h-8 w-24"/> : `R$ ${salesRevenueThisMonth.toFixed(2)}`}
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Itens Vendidos (Mês)</CardTitle>
+                        <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">
+                            {isLoading ? <Skeleton className="h-8 w-12"/> : salesCountThisMonth}
+                        </div>
+                    </CardContent>
+                </Card>
+                 <Card className="bg-rose-50 border-rose-200 dark:bg-rose-950 dark:border-rose-800">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-rose-800 dark:text-rose-200">
+                            Vendas Pendentes de Pgto.
+                        </CardTitle>
+                        <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-rose-900 dark:text-rose-100">
+                             {isLoading ? <Skeleton className="h-8 w-24"/> : `R$ ${pendingRevenue.toFixed(2)}`}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
             <div className="flex items-center justify-between gap-4">
                 <h1 className="text-lg font-semibold md:text-2xl">Vendas Gerais</h1>
                 <div className="flex items-center gap-2">

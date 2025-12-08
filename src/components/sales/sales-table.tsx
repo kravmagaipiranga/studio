@@ -108,7 +108,7 @@ export function SalesTable({ sales, setSales, allStudents, isLoading }: SalesTab
             <TableBody>
                {isLoading && Array.from({length: 3}).map((_, index) => (
                  <TableRow key={index}>
-                    <TableCell colSpan={2}><Skeleton className="h-24 w-full" /></TableCell>
+                    <TableCell colSpan={2}><Skeleton className="h-40 w-full" /></TableCell>
                  </TableRow>
               ))}
               {!isLoading && sales.map((sale: Sale) => (
