@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { BulkImportDialog } from "@/components/students/bulk-import-dialog";
 import { Badge } from "@/components/ui/badge";
-import { differenceInMonths } from "date-fns";
+import { differenceInMonths, isBefore, parseISO } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -81,8 +81,23 @@ export default function AlunosPage() {
 
     const { activeStudentsCount, overdueStudentsCount } = useMemo(() => {
         if (!allStudents) return { activeStudentsCount: 0, overdueStudentsCount: 0 };
+    
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
+    
         const active = allStudents.filter(s => s.status === 'Ativo').length;
-        const overdue = allStudents.filter(s => s.paymentStatus === 'Vencido').length;
+        
+        const overdue = allStudents.filter(s => {
+            if (s.status !== 'Ativo') return false;
+            if (!s.planExpirationDate) return true; // No expiration date is considered overdue for active students
+            try {
+                const expirationDate = parseISO(s.planExpirationDate);
+                return isBefore(expirationDate, today);
+            } catch {
+                return true; // Treat invalid dates as overdue
+            }
+        }).length;
+    
         return { activeStudentsCount: active, overdueStudentsCount: overdue };
     }, [allStudents]);
 
@@ -106,7 +121,15 @@ export default function AlunosPage() {
         let students = studentsWithTimeInBelt;
 
         if (activeFilter === 'Vencido') {
-            students = students.filter(student => student.paymentStatus === 'Vencido');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            students = students.filter(student => {
+                if (student.status !== 'Ativo') return false;
+                if (!student.planExpirationDate) return true;
+                try {
+                    return isBefore(parseISO(student.planExpirationDate), today);
+                } catch { return true; }
+            });
         } else if (activeFilter !== 'Todos') {
             students = students.filter(student => student.status === activeFilter);
         }
