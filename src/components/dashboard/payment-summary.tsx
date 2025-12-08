@@ -5,7 +5,7 @@ import { useMemo } from "react"
 import { collection, query, where } from "firebase/firestore"
 import { startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns"
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
-import { Payment } from "@/lib/types"
+import { Payment, Student } from "@/lib/types"
 import {
   Card,
   CardContent,
@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Skeleton } from "../ui/skeleton"
-import { DollarSign, UserPlus, FileText } from "lucide-react"
+import { DollarSign, UserPlus, FileText, Clock } from "lucide-react"
 
 export function PaymentSummary() {
   const firestore = useFirestore();
@@ -21,47 +21,63 @@ export function PaymentSummary() {
   const monthStart = startOfMonth(today);
   const monthEnd = endOfMonth(today);
 
-  // Firestore doesn't support querying by month directly from a timestamp efficiently.
-  // It's better to fetch recent payments and filter on the client.
-  // For larger datasets, one might create a 'year_month' field in the document.
   const paymentsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'payments'));
   }, [firestore]);
 
-  const { data: payments, isLoading } = useCollection<Payment>(paymentsQuery);
+  const studentsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'students'), where('status', '==', 'Ativo'));
+  }, [firestore]);
+
+  const { data: payments, isLoading: isLoadingPayments } = useCollection<Payment>(paymentsQuery);
+  const { data: activeStudents, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
+
+  const isLoading = isLoadingPayments || isLoadingStudents;
 
   const summary = useMemo(() => {
     const initialSummary = {
       monthly: { count: 0, total: 0 },
       quarterly: { count: 0, total: 0 },
       enrollment: { count: 0, total: 0 },
+      pending: { count: 0, total: 0 },
     };
 
-    if (!payments) return initialSummary;
+    if (!payments || !activeStudents) return initialSummary;
 
-    return payments.reduce((acc, payment) => {
+    const paymentsThisMonth = payments.filter(payment => {
         try {
             const paymentDate = parseISO(payment.paymentDate);
-            if (isWithinInterval(paymentDate, { start: monthStart, end: monthEnd })) {
-                if (payment.planType === 'Mensal') {
-                    acc.monthly.count++;
-                    acc.monthly.total += payment.amount;
-                } else if (payment.planType === 'Trimestral') {
-                    acc.quarterly.count++;
-                    acc.quarterly.total += payment.amount;
-                } else if (payment.planType === 'Matrícula') {
-                    acc.enrollment.count++;
-                    acc.enrollment.total += payment.amount;
-                }
-            }
-        } catch(e) {
-            // Ignore invalid payment dates
+            return isWithinInterval(paymentDate, { start: monthStart, end: monthEnd });
+        } catch(e) { return false; }
+    });
+
+    const paidStudentIds = new Set(paymentsThisMonth.map(p => p.studentId));
+
+    const pendingStudents = activeStudents.filter(student => 
+        !paidStudentIds.has(student.id) && 
+        student.planType !== 'Bolsa 100%' // Exclude 100% scholarship from pending
+    );
+
+    initialSummary.pending.count = pendingStudents.length;
+    initialSummary.pending.total = pendingStudents.reduce((acc, student) => acc + (student.planValue || 0), 0);
+
+    return paymentsThisMonth.reduce((acc, payment) => {
+        if (payment.planType === 'Mensal') {
+            acc.monthly.count++;
+            acc.monthly.total += payment.amount;
+        } else if (payment.planType === 'Trimestral') {
+            acc.quarterly.count++;
+            acc.quarterly.total += payment.amount;
+        } else if (payment.planType === 'Matrícula') {
+            acc.enrollment.count++;
+            acc.enrollment.total += payment.amount;
         }
         return acc;
     }, initialSummary);
 
-  }, [payments, monthStart, monthEnd]);
+  }, [payments, activeStudents, monthStart, monthEnd]);
 
   const formatCurrency = (value: number) => {
      return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -75,6 +91,7 @@ export function PaymentSummary() {
       <CardContent className="space-y-4">
         {isLoading ? (
             <>
+                <Skeleton className="h-20 w-full" />
                 <Skeleton className="h-20 w-full" />
                 <Skeleton className="h-20 w-full" />
                 <Skeleton className="h-20 w-full" />
@@ -117,9 +134,23 @@ export function PaymentSummary() {
                     </div>
                     <p className="text-lg font-bold text-emerald-800 dark:text-emerald-200">{formatCurrency(summary.enrollment.total)}</p>
                 </div>
+                <div className="flex items-center justify-between rounded-lg border p-4 bg-amber-50 dark:bg-amber-950">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 rounded-full bg-amber-100 dark:bg-amber-800">
+                            <Clock className="h-6 w-6 text-amber-600 dark:text-amber-300" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-muted-foreground">Previsão de Recebimentos</p>
+                            <p className="text-sm text-foreground">{summary.pending.count} alunos pendentes</p>
+                        </div>
+                    </div>
+                    <p className="text-lg font-bold text-amber-800 dark:text-amber-200">{formatCurrency(summary.pending.total)}</p>
+                </div>
             </>
         )}
       </CardContent>
     </Card>
   )
 }
+
+    
