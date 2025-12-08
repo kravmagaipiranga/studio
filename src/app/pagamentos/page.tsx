@@ -129,10 +129,48 @@ export default function PagamentosPage() {
         return filtered;
     }, [payments, searchQuery, activeFilter]);
 
+    const handleExportData = () => {
+        if (!payments) {
+            alert("Os dados de pagamentos ainda não foram carregados.");
+            return;
+        }
+
+        const headers = [
+            "ID Pagamento", "ID Aluno", "Nome do Aluno", "Data Pagamento", 
+            "Tipo de Plano", "Valor", "Data de Expiração", "Método de Pagamento", "Observações"
+        ];
+        
+        const escapeCSV = (str: any) => {
+            if (str === null || str === undefined) return '';
+            const toStr = String(str);
+            if (toStr.includes(',') || toStr.includes('"') || toStr.includes('\n')) {
+                return `"${toStr.replace(/"/g, '""')}"`;
+            }
+            return toStr;
+        };
+
+        const paymentRows = payments.map(p => [
+            p.id, p.studentId, p.studentName, p.paymentDate,
+            p.planType, p.amount, p.expirationDate, p.paymentMethod, p.notes
+        ].map(escapeCSV).join(','));
+
+        const csvContent = [headers.join(','), ...paymentRows].join('\n');
+        
+        const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'export_pagamentos.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
 
     return (
         <>
-            <div className="grid gap-4 md:grid-cols-3 mb-4">
+            <div className="grid gap-4 md:grid-cols-2 mb-4">
                 <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
@@ -145,27 +183,6 @@ export default function PagamentosPage() {
                             {isLoading ? <Skeleton className="h-8 w-12"/> : paidInMonthCount}
                         </div>
                         <p className="text-xs text-muted-foreground">Alunos com planos pagos no mês corrente.</p>
-                    </CardContent>
-                </Card>
-                 <Card 
-                    onClick={() => setActiveFilter('vencidos')}
-                    className={cn(
-                        "cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1",
-                        activeFilter === 'vencidos' ? "ring-2 ring-rose-500" : "",
-                        "bg-rose-50 border-rose-200 dark:bg-rose-950 dark:border-rose-800"
-                    )}
-                >
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-rose-800 dark:text-rose-200">
-                            Planos Vencidos
-                        </CardTitle>
-                        <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
-                    </CardHeader>
-                    <CardContent>
-                         <div className="text-2xl font-bold text-rose-900 dark:text-rose-100">
-                             {isLoading ? <Skeleton className="h-8 w-12"/> : overdueCount}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Total de alunos ativos com planos expirados.</p>
                     </CardContent>
                 </Card>
                  <Card 
@@ -200,9 +217,9 @@ export default function PagamentosPage() {
                             Adicionar Pagamento
                         </Button>
                     </Link>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={handleExportData}>
                         <Download className="h-4 w-4 mr-2" />
-                        Gerar Relatório
+                        Exportar Dados
                     </Button>
                 </div>
             </div>
