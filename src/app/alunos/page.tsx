@@ -29,6 +29,17 @@ const filterDescriptions: Record<FilterType, string> = {
     'Vencido': "Alunos com pagamentos vencidos."
 };
 
+const beltStyles: Record<string, string> = {
+  'branca': 'bg-white text-black border border-gray-300',
+  'amarela': 'bg-yellow-400 text-black',
+  'laranja': 'bg-orange-500 text-white',
+  'verde': 'bg-green-500 text-white',
+  'azul': 'bg-blue-500 text-white',
+  'marrom': 'bg-amber-800 text-white',
+  'preta': 'bg-black text-white',
+};
+
+
 function calculateTimeSince(dateString: string): string {
     if (!dateString) return "";
     try {
@@ -294,7 +305,11 @@ export default function AlunosPage() {
                                         <TableCell>
                                             <Badge variant={statusVariant[student.status] || 'secondary'}>{student.status}</Badge>
                                         </TableCell>
-                                        <TableCell>{student.belt}</TableCell>
+                                        <TableCell>
+                                             <Badge className={cn('capitalize', beltStyles[student.belt?.toLowerCase()] || 'bg-gray-400')}>
+                                                {student.belt}
+                                            </Badge>
+                                        </TableCell>
                                         <TableCell>
                                             {student.timeInBelt && <Badge variant="secondary">{student.timeInBelt}</Badge>}
                                         </TableCell>
