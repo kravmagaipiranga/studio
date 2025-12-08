@@ -15,10 +15,15 @@ import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { cn } from "@/lib/utils";
+
+type FilterType = 'todos' | 'vencidos' | 'trimestrais';
 
 export default function PagamentosPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
+    const [activeFilter, setActiveFilter] = useState<FilterType>('todos');
+
 
     const paymentsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -36,8 +41,14 @@ export default function PagamentosPage() {
 
     const isLoading = isLoadingPayments || isLoadingStudents;
 
-    const { paidInMonthCount, overdueCount, activeQuarterlyPlansCount } = useMemo(() => {
-        if (!students) return { paidInMonthCount: 0, overdueCount: 0, activeQuarterlyPlansCount: 0 };
+    const { 
+        paidInMonthCount, 
+        overdueCount, 
+        activeQuarterlyPlansCount,
+        overdueStudentIds,
+        activeQuarterlyStudentIds 
+    } = useMemo(() => {
+        if (!students || !payments) return { paidInMonthCount: 0, overdueCount: 0, activeQuarterlyPlansCount: 0, overdueStudentIds: new Set(), activeQuarterlyStudentIds: new Set() };
         
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
@@ -54,7 +65,7 @@ export default function PagamentosPage() {
             .map(p => p.studentId)
         );
 
-        const overdue = students.filter(s => {
+        const overdueStudents = students.filter(s => {
             if (s.status !== 'Ativo') return false;
             if (!s.planExpirationDate) return true; // Consider overdue if no expiration date
             try {
@@ -63,25 +74,42 @@ export default function PagamentosPage() {
             } catch {
                 return true; // Treat invalid dates as overdue
             }
-        }).length;
+        });
 
-        const activeQuarterly = students.filter(student => {
+        const activeQuarterlyStudents = students.filter(student => {
             return student.planType === 'Trimestral' && 
                    student.status === 'Ativo' && 
                    student.planExpirationDate && 
                    isAfter(parseISO(student.planExpirationDate), today);
-        }).length;
+        });
         
-        return { paidInMonthCount: paidThisMonthIds.size, overdueCount: overdue, activeQuarterlyPlansCount: activeQuarterly };
+        return { 
+            paidInMonthCount: paidThisMonthIds.size, 
+            overdueCount: overdueStudents.length, 
+            activeQuarterlyPlansCount: activeQuarterlyStudents.length,
+            overdueStudentIds: new Set(overdueStudents.map(s => s.id)),
+            activeQuarterlyStudentIds: new Set(activeQuarterlyStudents.map(s => s.id))
+        };
 
     }, [students, payments]);
 
     const filteredPayments = useMemo(() => {
         if (!payments) return [];
-        return (payments || []).filter(payment => 
-            payment.studentName.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }, [payments, searchQuery]);
+        let filtered = payments;
+
+        if (activeFilter === 'vencidos') {
+            filtered = filtered.filter(p => overdueStudentIds.has(p.studentId));
+        } else if (activeFilter === 'trimestrais') {
+            filtered = filtered.filter(p => activeQuarterlyStudentIds.has(p.studentId));
+        }
+        
+        if(searchQuery) {
+            return filtered.filter(payment => 
+                payment.studentName.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+        }
+        return filtered;
+    }, [payments, searchQuery, activeFilter, overdueStudentIds, activeQuarterlyStudentIds]);
 
 
     return (
@@ -101,7 +129,14 @@ export default function PagamentosPage() {
                         <p className="text-xs text-muted-foreground">Alunos com planos pagos no mês corrente.</p>
                     </CardContent>
                 </Card>
-                 <Card className="bg-rose-50 border-rose-200 dark:bg-rose-950 dark:border-rose-800">
+                 <Card 
+                    onClick={() => setActiveFilter('vencidos')}
+                    className={cn(
+                        "cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1",
+                        activeFilter === 'vencidos' ? "ring-2 ring-rose-500" : "",
+                        "bg-rose-50 border-rose-200 dark:bg-rose-950 dark:border-rose-800"
+                    )}
+                >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-rose-800 dark:text-rose-200">
                             Planos Vencidos
@@ -115,7 +150,14 @@ export default function PagamentosPage() {
                         <p className="text-xs text-muted-foreground">Total de alunos ativos com planos expirados.</p>
                     </CardContent>
                 </Card>
-                 <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+                 <Card 
+                     onClick={() => setActiveFilter('trimestrais')}
+                     className={cn(
+                         "cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1",
+                         activeFilter === 'trimestrais' ? "ring-2 ring-blue-500" : "",
+                         "bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800"
+                     )}
+                 >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
                             Planos Trimestrais Vigentes
@@ -147,15 +189,23 @@ export default function PagamentosPage() {
                 </div>
             </div>
             <div className="mt-4 flex items-center justify-between gap-4">
-                <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        type="search"
-                        placeholder="Buscar por nome do aluno..."
-                        className="pl-8"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+                <div className="flex items-center gap-2">
+                     <div className="relative w-full max-w-sm">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="search"
+                            placeholder="Buscar por nome do aluno..."
+                            className="pl-8"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                     <Button 
+                        variant={activeFilter === 'todos' ? 'default' : 'outline'}
+                        onClick={() => setActiveFilter('todos')}
+                     >
+                        Listar Todos
+                     </Button>
                 </div>
                 <DatePickerWithRange />
             </div>
