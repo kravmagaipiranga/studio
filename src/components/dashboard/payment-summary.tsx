@@ -3,7 +3,7 @@
 
 import { useMemo } from "react"
 import { collection, query, where } from "firebase/firestore"
-import { startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns"
+import { startOfMonth, endOfMonth, isWithinInterval, parseISO, isAfter } from "date-fns"
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
 import { Payment, Student } from "@/lib/types"
 import {
@@ -18,6 +18,7 @@ import { DollarSign, UserPlus, FileText, Clock } from "lucide-react"
 export function PaymentSummary() {
   const firestore = useFirestore();
   const today = new Date();
+  today.setHours(0,0,0,0);
   const monthStart = startOfMonth(today);
   const monthEnd = endOfMonth(today);
 
@@ -55,10 +56,17 @@ export function PaymentSummary() {
 
     const paidStudentIds = new Set(paymentsThisMonth.map(p => p.studentId));
 
-    const pendingStudents = activeStudents.filter(student => 
-        !paidStudentIds.has(student.id) && 
-        student.planType !== 'Bolsa 100%' // Exclude 100% scholarship from pending
-    );
+    const pendingStudents = activeStudents.filter(student => {
+        const hasPaid = paidStudentIds.has(student.id);
+        const isFullScholarship = student.planType === 'Bolsa 100%';
+        
+        const isQuarterlyActive = 
+            student.planType === 'Trimestral' &&
+            student.planExpirationDate &&
+            isAfter(parseISO(student.planExpirationDate), today);
+
+        return !hasPaid && !isFullScholarship && !isQuarterlyActive;
+    });
 
     initialSummary.pending.count = pendingStudents.length;
     initialSummary.pending.total = pendingStudents.reduce((acc, student) => acc + (student.planValue || 0), 0);
@@ -77,7 +85,7 @@ export function PaymentSummary() {
         return acc;
     }, initialSummary);
 
-  }, [payments, activeStudents, monthStart, monthEnd]);
+  }, [payments, activeStudents, monthStart, monthEnd, today]);
 
   const formatCurrency = (value: number) => {
      return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
