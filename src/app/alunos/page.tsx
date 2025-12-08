@@ -5,9 +5,9 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { collection, query, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { Student, Exam } from "@/lib/types";
+import { Student, Payment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck, MoreHorizontal } from "lucide-react";
+import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck, MoreHorizontal, UserPlus } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { BulkImportDialog } from "@/components/students/bulk-import-dialog";
 import { Badge } from "@/components/ui/badge";
-import { differenceInMonths, isBefore, parseISO } from "date-fns";
+import { differenceInMonths, isBefore, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -85,32 +85,38 @@ export default function AlunosPage() {
         if (!firestore) return null;
         return query(collection(firestore, 'students'), orderBy('name', 'asc'));
     }, [firestore]);
+    
+    const paymentsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'payments');
+    }, [firestore]);
 
     const { data: allStudents, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
+    const { data: allPayments, isLoading: isLoadingPayments } = useCollection<Payment>(paymentsQuery);
     
-    const isLoading = isLoadingStudents;
+    const isLoading = isLoadingStudents || isLoadingPayments;
 
-    const { activeStudentsCount, overdueStudentsCount } = useMemo(() => {
-        if (!allStudents) return { activeStudentsCount: 0, overdueStudentsCount: 0 };
+    const { activeStudentsCount, newEnrollmentsCount } = useMemo(() => {
+        if (!allStudents || !allPayments) return { activeStudentsCount: 0, newEnrollmentsCount: 0 };
     
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
+        const monthStart = startOfMonth(today);
+        const monthEnd = endOfMonth(today);
     
         const active = allStudents.filter(s => s.status === 'Ativo').length;
         
-        const overdue = allStudents.filter(s => {
-            if (s.status !== 'Ativo') return false;
-            if (!s.planExpirationDate) return true; // No expiration date is considered overdue for active students
+        const newEnrollments = allPayments.filter(p => {
+            if (p.planType !== 'Matrícula') return false;
             try {
-                const expirationDate = parseISO(s.planExpirationDate);
-                return isBefore(expirationDate, today);
+                const paymentDate = parseISO(p.paymentDate);
+                return isWithinInterval(paymentDate, { start: monthStart, end: monthEnd });
             } catch {
-                return true; // Treat invalid dates as overdue
+                return false;
             }
         }).length;
     
-        return { activeStudentsCount: active, overdueStudentsCount: overdue };
-    }, [allStudents]);
+        return { activeStudentsCount: active, newEnrollmentsCount: newEnrollments };
+    }, [allStudents, allPayments]);
 
     const studentsWithTimeInBelt = useMemo(() => {
         if (!allStudents) return [];
@@ -187,16 +193,16 @@ export default function AlunosPage() {
                         </div>
                     </CardContent>
                 </Card>
-                 <Card className="bg-rose-50 border-rose-200 dark:bg-rose-950 dark:border-rose-800">
+                 <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-rose-800 dark:text-rose-200">
-                            Planos Vencidos
+                        <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                            Novos Alunos (Mês)
                         </CardTitle>
-                        <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                        <UserPlus className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     </CardHeader>
                     <CardContent>
-                         <div className="text-2xl font-bold text-rose-900 dark:text-rose-100">
-                             {isLoading ? <Skeleton className="h-8 w-12"/> : overdueStudentsCount}
+                         <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                             {isLoading ? <Skeleton className="h-8 w-12"/> : newEnrollmentsCount}
                         </div>
                     </CardContent>
                 </Card>
@@ -348,4 +354,5 @@ export default function AlunosPage() {
             </Card>
         </div>
     );
-}
+
+    
