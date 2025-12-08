@@ -2,21 +2,13 @@
 "use client"
 
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
-import { Save, Trash2 } from "lucide-react"
+import { Save, Trash2, Copy } from "lucide-react"
 import { PrivateClass } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
 import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
@@ -27,6 +19,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "../ui/textarea";
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
+import { v4 as uuidv4 } from "uuid";
+
 
 interface PrivateClassesTableProps {
   privateClasses: PrivateClass[];
@@ -81,6 +75,26 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, isLoadi
     });
     
     setPrivateClasses(prev => prev.map(ex => ex.id === itemToSave.id ? { ...itemData, id: finalId, isNew: false } : ex));
+  };
+
+  const handleDuplicateClass = (e: React.MouseEvent, classToDuplicate: PrivateClass) => {
+    e.stopPropagation();
+    
+    const newClass: PrivateClass = {
+        ...classToDuplicate,
+        id: `new_${uuidv4()}`,
+        isNew: true,
+        paymentStatus: 'Pendente',
+        paymentDate: undefined,
+        classDate: new Date().toISOString().split('T')[0],
+    };
+
+    setPrivateClasses(prev => [newClass, ...prev]);
+
+    toast({
+        title: "Aula Duplicada!",
+        description: "Uma nova aula foi criada com base na anterior. Ajuste a data e salve.",
+    });
   };
 
   const handleDeleteClass = (e: React.MouseEvent, itemId: string, studentName: string) => {
@@ -193,6 +207,10 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, isLoadi
                             />
                         </div>
                         <div className="flex justify-end gap-2 mt-6">
+                            <Button variant="outline" size="sm" onClick={(e) => handleDuplicateClass(e, pc)}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                Duplicar
+                            </Button>
                             <Button variant="destructive" onClick={(e) => handleDeleteClass(e, pc.id, pc.studentName)}>
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Excluir
