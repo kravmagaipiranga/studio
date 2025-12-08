@@ -14,7 +14,7 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth } from "date-fns";
+import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 
 export default function PagamentosPage() {
     const firestore = useFirestore();
