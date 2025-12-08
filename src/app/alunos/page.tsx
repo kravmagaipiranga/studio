@@ -354,5 +354,6 @@ export default function AlunosPage() {
             </Card>
         </div>
     );
+}
 
     
