@@ -59,8 +59,12 @@ export default function PagamentosPage() {
           payments
             ?.filter(p => {
               if (p.planType === 'Matrícula') return false; // Don't count enrollment as a plan payment
-              const paymentDate = parseISO(p.paymentDate);
-              return isWithinInterval(paymentDate, { start: currentMonthStart, end: currentMonthEnd });
+              try {
+                const paymentDate = parseISO(p.paymentDate);
+                return isWithinInterval(paymentDate, { start: currentMonthStart, end: currentMonthEnd });
+              } catch {
+                return false;
+              }
             })
             .map(p => p.studentId)
         );
@@ -77,10 +81,14 @@ export default function PagamentosPage() {
         });
 
         const activeQuarterlyStudents = students.filter(student => {
-            return student.planType === 'Trimestral' && 
-                   student.status === 'Ativo' && 
-                   student.planExpirationDate && 
-                   isAfter(parseISO(student.planExpirationDate), today);
+            if (student.planType !== 'Trimestral' || student.status !== 'Ativo' || !student.planExpirationDate) {
+                return false;
+            }
+            try {
+                return isAfter(parseISO(student.planExpirationDate), today);
+            } catch {
+                return false;
+            }
         });
         
         return { 
@@ -98,7 +106,12 @@ export default function PagamentosPage() {
         let filtered = payments;
 
         if (activeFilter === 'vencidos') {
-            filtered = filtered.filter(p => overdueStudentIds.has(p.studentId));
+            // This needs to show payments of students who are currently overdue
+            // It might be better to show a list of overdue STUDENTS, not payments.
+            // For now, we'll filter payments to only show those belonging to overdue students.
+            const uniqueStudentIds = new Set(payments.map(p => p.studentId));
+            const relevantOverdueIds = Array.from(overdueStudentIds).filter(id => uniqueStudentIds.has(id));
+            filtered = payments.filter(p => relevantOverdueIds.includes(p.studentId));
         } else if (activeFilter === 'trimestrais') {
             filtered = filtered.filter(p => activeQuarterlyStudentIds.has(p.studentId));
         }
