@@ -3,10 +3,10 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { collection, query, where, doc, getDoc } from "firebase/firestore";
-import { useFirestore, useMemoFirebase, setDocumentNonBlocking, useDoc } from "@/firebase";
-import { MonthlyIndicator } from "@/lib/types";
+import { useFirestore, useMemoFirebase, setDocumentNonBlocking, useDoc, useCollection } from "@/firebase";
+import { MonthlyIndicator, Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Save, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Save, Loader2, ChevronLeft, ChevronRight, Users } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -39,48 +39,30 @@ export function MonthlyPerformance() {
     return doc(firestore, 'indicators', documentId);
   }, [firestore, documentId]);
 
-  const { data: liveIndicator, isLoading } = useDoc<MonthlyIndicator>(indicatorRef);
+  const { data: liveIndicator, isLoading: isLoadingIndicator } = useDoc<MonthlyIndicator>(indicatorRef);
+
+  const studentsCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'students');
+  }, [firestore]);
+
+  const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsCollection);
+
+  const activeStudentsCount = useMemo(() => {
+    if (!students) return 0;
+    return students.filter(s => s.status === 'Ativo').length;
+  }, [students]);
 
   useEffect(() => {
-    const fetchPreviousMonthTotal = async () => {
-        if (!firestore) return;
-        
-        const prevMonthDate = subMonths(currentDate, 1);
-        const prevMonthId = format(prevMonthDate, 'yyyy-MM');
-        
-        try {
-            const prevMonthDocRef = doc(firestore, 'indicators', prevMonthId);
-            const prevMonthSnap = await getDoc(prevMonthDocRef);
-
-            let initialTotal = 0;
-            if (prevMonthSnap.exists()) {
-                const prevData = prevMonthSnap.data() as MonthlyIndicator;
-                initialTotal = prevData.totalStudents || 0;
-            }
-
-            setIndicator(currentIndicator => {
-                // If liveIndicator is not loaded yet, or doesn't exist, use the fetched previous total
-                if (!liveIndicator) {
-                    return { 
-                        ...currentIndicator,
-                        year: selectedYear, 
-                        month: selectedMonth, 
-                        previousMonthTotal: initialTotal 
-                    };
-                }
-                // If liveIndicator exists, it's the source of truth, but ensure previousMonthTotal is there.
-                return { ...liveIndicator, previousMonthTotal: liveIndicator.previousMonthTotal ?? initialTotal };
-            });
-
-        } catch (error) {
-            console.error("Error fetching previous month's total:", error);
-            // In case of error, just use what we have.
-             setIndicator(currentIndicator => ({ ...currentIndicator, previousMonthTotal: 0 }));
-        }
-    };
-
-    fetchPreviousMonthTotal();
-  }, [currentDate, firestore, liveIndicator, selectedYear, selectedMonth]);
+    if (liveIndicator) {
+        setIndicator(liveIndicator);
+    } else {
+        setIndicator({
+            year: selectedYear,
+            month: selectedMonth,
+        });
+    }
+  }, [liveIndicator, selectedYear, selectedMonth]);
   
 
   const calculatedData = useMemo(() => {
@@ -90,8 +72,8 @@ export function MonthlyPerformance() {
     const reenrollments = data.reenrollments || 0;
     const exits = data.exits || 0;
     
-    data.totalStudents = prevTotal + enrollments + reenrollments - exits;
-    data.evolution = data.totalStudents - prevTotal;
+    // This calculation is for the indicators page, not the new total.
+    data.evolution = enrollments + reenrollments - exits;
 
     const conversionDivisor = (data.trialClasses || 0) + (data.visits || 0);
     data.conversionRate = conversionDivisor > 0 ? (enrollments / conversionDivisor) * 100 : 0;
@@ -108,7 +90,12 @@ export function MonthlyPerformance() {
     if (!firestore || !indicatorRef) return;
     setIsSaving(true);
     try {
-      const dataToSave = { ...calculatedData, id: documentId };
+      const dataToSave: Partial<MonthlyIndicator> = { 
+        ...indicator, 
+        id: documentId,
+        year: selectedYear,
+        month: selectedMonth,
+      };
       await setDocumentNonBlocking(indicatorRef, dataToSave, { merge: true });
       toast({
         title: "Indicadores Salvos",
@@ -129,6 +116,8 @@ export function MonthlyPerformance() {
     setIndicator({}); // Clear old data while new data loads
     setCurrentDate(current => direction === 'prev' ? subMonths(current, 1) : addMonths(current, 1));
   };
+
+  const isLoading = isLoadingIndicator || isLoadingStudents;
 
   return (
     <Card>
@@ -158,7 +147,7 @@ export function MonthlyPerformance() {
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading && !indicator.month ? (
+        {isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
              {Object.keys(indicatorLabels).map(key => <Skeleton key={key} className="h-20 w-full" />)}
           </div>
@@ -177,26 +166,25 @@ export function MonthlyPerformance() {
             ))}
           </div>
         )}
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 border-t pt-4">
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4 border-t pt-4">
             <div className="p-4 rounded-lg bg-muted/50">
-                <div className="text-sm font-medium text-muted-foreground">Total Alunos (Fim do Mês)</div>
-                <div className="text-2xl font-bold">{isLoading && !indicator.month ? <Skeleton className="h-8 w-1/2" /> : calculatedData.totalStudents ?? 0}</div>
+                <div className="text-sm font-medium text-muted-foreground flex items-center">
+                    <Users className="h-4 w-4 mr-2" />
+                    Total de Alunos Ativos
+                </div>
+                <div className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-1/2" /> : activeStudentsCount}</div>
             </div>
             <div className="p-4 rounded-lg bg-muted/50">
-                <div className="text-sm font-medium text-muted-foreground">Evolução</div>
+                <div className="text-sm font-medium text-muted-foreground">Evolução no Mês</div>
                 <div className={`text-2xl font-bold ${!isLoading && (calculatedData.evolution ?? 0) > 0 ? 'text-green-600' : (calculatedData.evolution ?? 0) < 0 ? 'text-red-600' : ''}`}>
-                    {isLoading && !indicator.month ? <Skeleton className="h-8 w-1/2" /> : `${(calculatedData.evolution ?? 0) > 0 ? '+' : ''}${calculatedData.evolution ?? 0}`}
+                    {isLoading ? <Skeleton className="h-8 w-1/2" /> : `${(calculatedData.evolution ?? 0) > 0 ? '+' : ''}${calculatedData.evolution ?? 0}`}
                 </div>
             </div>
              <div className="p-4 rounded-lg bg-muted/50">
                 <div className="text-sm font-medium text-muted-foreground">Taxa de Conversão</div>
                 <div className="text-2xl font-bold">
-                    {isLoading && !indicator.month ? <Skeleton className="h-8 w-1/2" /> : `${Math.round(calculatedData.conversionRate ?? 0)}%`}
+                    {isLoading ? <Skeleton className="h-8 w-1/2" /> : `${Math.round(calculatedData.conversionRate ?? 0)}%`}
                 </div>
-            </div>
-             <div className="p-4 rounded-lg bg-muted/50">
-                <div className="text-sm font-medium text-muted-foreground">Total Alunos (Início)</div>
-                <div className="text-2xl font-bold">{isLoading && !indicator.month ? <Skeleton className="h-8 w-1/2" /> : calculatedData.previousMonthTotal ?? 0}</div>
             </div>
         </div>
       </CardContent>
