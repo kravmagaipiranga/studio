@@ -165,8 +165,52 @@ export default function AlunosPage() {
         router.push(`/alunos/${studentId}/editar`);
     };
 
-    const handleGenerateReport = () => {
-        alert("A funcionalidade de gerar relatório será implementada em breve.");
+    const handleExportData = () => {
+        if (!allStudents) {
+            alert("Os dados dos alunos ainda não foram carregados.");
+            return;
+        }
+
+        const headers = [
+            "ID", "Nome", "Email", "Data de Cadastro", "Status", 
+            "Status Pagamento", "Data de Vencimento", "Data de Nascimento", "CPF",
+            "Tam. Camiseta", "Tam. Calça", "Telefone", "Contatos de Emergência",
+            "Data de Início", "Último Exame", "Faixa", "Apto para Revisão", 
+            "Histórico Médico", "Anotações Gerais", "Anuidade FIKM Paga", 
+            "Data Pgto. Anuidade", "Método Pgto. Anuidade", "Tipo de Plano",
+            "Valor do Plano", "Último Pagamento", "Validade do Plano"
+        ];
+        
+        const escapeCSV = (str: any) => {
+            if (str === null || str === undefined) return '';
+            const toStr = String(str);
+            if (toStr.includes(',') || toStr.includes('"') || toStr.includes('\n')) {
+                return `"${toStr.replace(/"/g, '""')}"`;
+            }
+            return toStr;
+        };
+
+        const studentRows = allStudents.map(s => [
+            s.id, s.name, s.email, s.registrationDate, s.status,
+            s.paymentStatus, s.dueDate, s.dob, s.cpf,
+            s.tshirtSize, s.pantsSize, s.phone, s.emergencyContacts,
+            s.startDate, s.lastExamDate, s.belt, s.readyForReview,
+            s.medicalHistory, s.generalNotes, s.fikmAnnuityPaid,
+            s.fikmAnnuityPaymentDate, s.fikmAnnuityPaymentMethod, s.planType,
+            s.planValue, s.lastPaymentDate, s.planExpirationDate
+        ].map(escapeCSV).join(','));
+
+        const csvContent = [headers.join(','), ...studentRows].join('\n');
+        
+        const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'export_alunos.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const cardTitleSuffix = activeFilter === 'Todos' ? activeFilter : `${activeFilter}s`;
@@ -228,9 +272,9 @@ export default function AlunosPage() {
                                     Novo Aluno
                                 </Button>
                             </Link>
-                             <Button variant="outline" size="sm" onClick={handleGenerateReport}>
+                             <Button variant="outline" size="sm" onClick={handleExportData}>
                                 <Download className="mr-2 h-4 w-4" />
-                                Gerar Relatório
+                                Exportar Dados
                             </Button>
                         </div>
                     </div>
@@ -355,5 +399,7 @@ export default function AlunosPage() {
         </div>
     );
 }
+
+    
 
     
