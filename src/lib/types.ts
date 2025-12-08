@@ -25,7 +25,7 @@ export type Student = {
   generalNotes?: string;
   fikmAnnuityPaid?: boolean;
   fikmAnnuityPaymentDate?: string;
-  fikmAnnuityPaymentMethod?: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+  fikmAnnuityPaymentMethod?: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
   readyForReview?: boolean;
 
 
@@ -46,7 +46,7 @@ export type Payment = {
   planType: 'Mensal' | 'Trimestral' | 'Bolsa 50%' | 'Bolsa 100%' | 'Outros' | 'Matrícula';
   amount: number;
   expirationDate?: string;
-  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+  paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
   notes?: string;
 };
 
@@ -66,7 +66,7 @@ export type Exam = {
   paymentStatus: 'Pago' | 'Pendente';
   paymentDate?: string;
   paymentAmount: number;
-  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+  paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
   isNew?: boolean; // Flag for new rows in UI
 };
 
@@ -81,7 +81,7 @@ export type Seminar = {
   paymentStatus: 'Pago' | 'Pendente';
   paymentDate?: string;
   paymentAmount: number;
-  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+  paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
   isNew?: boolean; // Flag for new rows in UI
 };
 
@@ -95,7 +95,7 @@ export type PrivateClass = {
   paymentAmount: number; // This will be the calculated total
   paymentStatus: 'Pago' | 'Pendente';
   paymentDate?: string;
-  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+  paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
   notes?: string;
   isNew?: boolean; // Flag for new rows in UI
 };
@@ -121,7 +121,7 @@ export type Sale = {
   item: string;
   value: number;
   date: string;
-  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+  paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
   paymentStatus: 'Pago' | 'Pendente';
   isNew?: boolean; // Flag for new rows in UI
 };

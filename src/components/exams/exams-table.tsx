@@ -219,7 +219,7 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
                     <SelectContent>
                       <SelectItem value="Pendente">Pendente</SelectItem>
                       <SelectItem value="Pix">Pix</SelectItem>
-                      <SelectItem value="Cartão">Cartão</SelectItem>
+                      <SelectItem value="Boleto">Boleto</SelectItem>
                       <SelectItem value="Dinheiro">Dinheiro</SelectItem>
                     </SelectContent>
                   </Select>

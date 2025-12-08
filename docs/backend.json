@@ -131,7 +131,7 @@
         "paymentMethod": {
           "type": "string",
           "description": "The method of payment (e.g., cash, credit card).",
-          "enum": ["Pix", "Cartão", "Dinheiro", "Pendente"]
+          "enum": ["Pix", "Boleto", "Dinheiro", "Pendente"]
         },
         "notes": {
           "type": "string",

@@ -73,7 +73,7 @@ const formSchema = z.object({
   
   fikmAnnuityPaid: z.boolean().optional(),
   fikmAnnuityPaymentDate: z.string().optional(),
-  fikmAnnuityPaymentMethod: z.enum(["Pix", "Cartão", "Dinheiro", "Pendente"]).optional(),
+  fikmAnnuityPaymentMethod: z.enum(["Pix", "Boleto", "Dinheiro", "Pendente"]).optional(),
 
   emergencyContacts: z.string().optional(),
   medicalHistory: z.string().optional(),
@@ -587,7 +587,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                                     <SelectContent>
                                         <SelectItem value="Pendente">Pendente</SelectItem>
                                         <SelectItem value="Pix">Pix</SelectItem>
-                                        <SelectItem value="Cartão">Cartão</SelectItem>
+                                        <SelectItem value="Boleto">Boleto</SelectItem>
                                         <SelectItem value="Dinheiro">Dinheiro</SelectItem>
                                     </SelectContent>
                                 </Select>
