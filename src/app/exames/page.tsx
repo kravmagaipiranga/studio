@@ -14,6 +14,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 const beltOrder: Record<string, number> = {
     'Amarela': 1,
@@ -25,12 +26,12 @@ const beltOrder: Record<string, number> = {
 };
 
 const beltInfo: Record<string, { emoji: string; colorClass: string }> = {
-    'Amarela': { emoji: '🟡', colorClass: 'bg-yellow-400 text-black' },
-    'Laranja': { emoji: '🟠', colorClass: 'bg-orange-500 text-white' },
-    'Verde':   { emoji: '🟢', colorClass: 'bg-green-500 text-white' },
-    'Azul':    { emoji: '🔵', colorClass: 'bg-blue-500 text-white' },
-    'Marrom':  { emoji: '🟤', colorClass: 'bg-amber-800 text-white' },
-    'Preta':   { emoji: '⚫', colorClass: 'bg-gray-800 text-white' },
+    'Amarela': { emoji: '🟡', colorClass: 'bg-yellow-400 hover:bg-yellow-400 text-black' },
+    'Laranja': { emoji: '🟠', colorClass: 'bg-orange-500 hover:bg-orange-500 text-white' },
+    'Verde':   { emoji: '🟢', colorClass: 'bg-green-500 hover:bg-green-500 text-white' },
+    'Azul':    { emoji: '🔵', colorClass: 'bg-blue-500 hover:bg-blue-500 text-white' },
+    'Marrom':  { emoji: '🟤', colorClass: 'bg-amber-800 hover:bg-amber-800 text-white' },
+    'Preta':   { emoji: '⚫', colorClass: 'bg-gray-800 hover:bg-gray-800 text-white' },
 };
 
 
@@ -119,16 +120,14 @@ export default function ExamesPage() {
     return (
         <>
             <div className="mb-4">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Próximos Exames</h3>
-                <div className="flex">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">Inscritos por Faixa</h3>
+                <div className="flex flex-wrap gap-2">
                     {Object.entries(beltInfo).map(([belt, { emoji, colorClass }]) => (
-                        <Card key={belt} className={cn("flex flex-col justify-center items-center w-10 h-10 rounded-none first:rounded-l-md last:rounded-r-md", colorClass)}>
-                            <CardContent className="p-0 flex items-center justify-center">
-                                <div className="text-lg font-bold">
-                                    {isLoading ? <Skeleton className="h-6 w-6 bg-white/30"/> : examCountsByBelt[belt] ?? 0}
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <Badge key={belt} className={cn("text-base", colorClass)}>
+                            {isLoading ? <Skeleton className="h-5 w-5 bg-white/30 rounded-full" /> : 
+                            <span className="font-bold mr-2">{examCountsByBelt[belt] ?? 0}</span>}
+                             {belt}
+                        </Badge>
                     ))}
                 </div>
             </div>
