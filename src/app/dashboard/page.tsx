@@ -3,8 +3,8 @@
 
 import { Overview } from "@/components/dashboard/overview";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
-import { DuePayments } from "@/components/dashboard/due-payments";
 import { MonthlyPerformance } from "@/components/dashboard/monthly-performance";
+import { PaymentSummary } from "@/components/dashboard/payment-summary";
 
 export default function DashboardPage() {
   return (
@@ -18,7 +18,7 @@ export default function DashboardPage() {
                 <MonthlyPerformance />
                 <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
                     <RevenueChart />
-                    <DuePayments />
+                    <PaymentSummary />
                 </div>
             </div>
         </div>
