@@ -2,13 +2,11 @@
 "use client"
 
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import { Save, Trash2, UserCheck, UserX, CheckSquare } from "lucide-react"
 import { Appointment } from "@/lib/types"
@@ -20,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "../ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { Badge } from "../ui/badge";
+import { cn } from "@/lib/utils"
 
 interface AppointmentsTableProps {
   appointments: Appointment[];
@@ -95,7 +94,8 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
     setAppointments(prev => prev.map(ex => ex.id === itemToSave.id ? { ...itemData, id: finalId, isNew: false } : ex));
   };
 
-  const handleDeleteAppointment = (itemId: string, itemName: string) => {
+  const handleDeleteAppointment = (e: React.MouseEvent, itemId: string, itemName: string) => {
+    e.stopPropagation();
     if (!firestore) return;
     
     const isNewRow = itemId.startsWith('new_');
@@ -112,24 +112,34 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
     })
   };
 
+  if (isLoading) {
+      return (
+          <div className="space-y-2 w-full">
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+          </div>
+      )
+  }
+
   return (
     <div className="w-full border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Detalhes do Agendamento</TableHead>
-              <TableHead className="text-right w-[100px]">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && Array.from({length: 3}).map((_, index) => (
-               <TableRow key={index}>
-                <TableCell colSpan={2}><Skeleton className="h-48 w-full" /></TableCell>
-              </TableRow>
-            ))}
-            {!isLoading && appointments.map((appointment: Appointment) => (
-              <TableRow key={appointment.id} className={appointment.isNew ? "bg-muted/50" : ""}>
-                <TableCell className="p-4">
+        {appointments.length > 0 ? (
+          <Accordion type="single" collapsible className="w-full">
+            {appointments.map((appointment: Appointment) => (
+              <AccordionItem value={appointment.id} key={appointment.id} className={cn("px-4", appointment.isNew && "bg-muted/50")}>
+                <AccordionTrigger className="hover:no-underline">
+                   <div className="flex items-center justify-between w-full">
+                        <div className="flex-1 text-left font-medium">{appointment.name || "Novo Agendamento"}</div>
+                        <div className="flex-1 text-left text-muted-foreground">
+                            {new Date(appointment.classDate + 'T00:00:00').toLocaleDateString('pt-BR')} às {appointment.classTime}
+                        </div>
+                        <div className="flex-1 text-left">
+                            <Badge variant={getStatusVariant(appointment)}>{getStatus(appointment)}</Badge>
+                        </div>
+                    </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-4 pb-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div className="space-y-2">
                             <label className="text-xs font-semibold text-muted-foreground">Nome</label>
@@ -174,12 +184,6 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
                                 onChange={e => handleInputChange(appointment.id, 'classTime', e.target.value)} 
                             />
                         </div>
-                        <div className="space-y-2">
-                           <label className="text-xs font-semibold text-muted-foreground">Status</label>
-                           <div className="flex items-center h-10">
-                                <Badge variant={getStatusVariant(appointment)}>{getStatus(appointment)}</Badge>
-                           </div>
-                        </div>
                     </div>
 
                     <div className="space-y-2 mt-4">
@@ -190,8 +194,8 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
                             onChange={e => handleInputChange(appointment.id, 'notes', e.target.value)} 
                         />
                     </div>
-                    <div className="mt-4">
-                        <ToggleGroup type="single" size="sm" onValueChange={(value) => { if(value) handleStatusChange(appointment.id, value as any)}}>
+                    <div className="flex justify-between items-center mt-4">
+                        <ToggleGroup type="single" size="sm" value={getStatus(appointment)} onValueChange={(value) => { if(value) handleStatusChange(appointment.id, value as any)}}>
                             <ToggleGroupItem value="attended" aria-label="Marcar como compareceu">
                                 <UserCheck className="h-4 w-4 mr-2"/>
                                 Compareceu
@@ -205,32 +209,27 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
                                 Fez Matrícula
                             </ToggleGroupItem>
                         </ToggleGroup>
+                         <div className="flex items-center gap-2">
+                            <Button variant="destructive" onClick={(e) => handleDeleteAppointment(e, appointment.id, appointment.name)}>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Excluir
+                            </Button>
+                            <Button onClick={() => handleSaveAppointment(appointment)}>
+                                <Save className="h-4 w-4 mr-2" />
+                                Salvar Agendamento
+                            </Button>
+                         </div>
                     </div>
 
-                </TableCell>
-                <TableCell className="align-top text-right p-4">
-                  <div className="flex flex-col items-center justify-start gap-2">
-                    <Button variant="outline" size="icon" onClick={() => handleSaveAppointment(appointment)}>
-                        <Save className="h-4 w-4" />
-                        <span className="sr-only">Salvar</span>
-                    </Button>
-                    <Button variant="destructive" size="icon" onClick={() => handleDeleteAppointment(appointment.id, appointment.name)}>
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Excluir</span>
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
+                </AccordionContent>
+              </AccordionItem>
             ))}
-            {!isLoading && appointments.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={2} className="text-center py-10">
-                  Nenhum agendamento encontrado. Clique em "Novo Agendamento" para adicionar um.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+          </Accordion>
+        ) : (
+            <div className="text-center py-10 text-muted-foreground">
+              Nenhum agendamento encontrado. Clique em "Novo Agendamento" para adicionar um.
+            </div>
+        )}
     </div>
   )
 }

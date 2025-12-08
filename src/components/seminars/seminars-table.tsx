@@ -2,13 +2,11 @@
 "use client"
 
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Save, Trash2 } from "lucide-react"
@@ -22,6 +20,7 @@ import { Combobox } from "../ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { differenceInYears } from "date-fns"
 import { Textarea } from "../ui/textarea"
+import { cn } from "@/lib/utils"
 
 interface SeminarsTableProps {
   seminars: Seminar[];
@@ -84,7 +83,8 @@ export function SeminarsTable({ seminars, setSeminars, allStudents, isLoading }:
     setSeminars(prev => prev.map(ex => ex.id === itemToSave.id ? { ...itemData, id: finalId, isNew: false } : ex));
   };
 
-  const handleDeleteSeminar = (itemId: string, studentName: string) => {
+  const handleDeleteSeminar = (e: React.MouseEvent, itemId: string, studentName: string) => {
+    e.stopPropagation();
     if (!firestore) return;
     
     const isNewRow = itemId.startsWith('new_');
@@ -100,25 +100,38 @@ export function SeminarsTable({ seminars, setSeminars, allStudents, isLoading }:
         description: `A inscrição de ${studentName} foi removida.`
     })
   };
+  
+    const getStatusVariant = (status: 'Pago' | 'Pendente'): 'default' | 'destructive' => {
+      return status === 'Pago' ? 'default' : 'destructive';
+  }
+
+  if (isLoading) {
+      return (
+          <div className="space-y-2 w-full">
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+          </div>
+      )
+  }
 
   return (
       <div className="w-full border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Detalhes da Inscrição</TableHead>
-                <TableHead className="text-right w-[100px]">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && Array.from({length: 3}).map((_, index) => (
-                 <TableRow key={index}>
-                    <TableCell colSpan={2}><Skeleton className="h-24 w-full" /></TableCell>
-                 </TableRow>
-              ))}
-              {!isLoading && seminars.map((seminar: Seminar) => (
-                <TableRow key={seminar.id} className={seminar.isNew ? "bg-muted/50" : ""}>
-                    <TableCell className="p-4">
+         {seminars.length > 0 ? (
+          <Accordion type="single" collapsible className="w-full">
+            {seminars.map((seminar: Seminar) => (
+                <AccordionItem value={seminar.id} key={seminar.id} className={cn("px-4", seminar.isNew && "bg-muted/50")}>
+                    <AccordionTrigger className="hover:no-underline">
+                       <div className="flex items-center justify-between w-full">
+                            <div className="flex-1 text-left font-medium">{seminar.studentName || "Novo Registro"}</div>
+                            <div className="flex-1 text-left text-muted-foreground truncate pr-4">{seminar.topic || "Seminário..."}</div>
+                            <div className="flex-1 text-left font-semibold">R$ {seminar.paymentAmount.toFixed(2)}</div>
+                            <div className="flex-1 text-left">
+                                <Badge variant={getStatusVariant(seminar.paymentStatus)}>{seminar.paymentStatus}</Badge>
+                            </div>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4 pb-6">
                         <div className="space-y-2 mb-4">
                            <label className="text-xs font-semibold text-muted-foreground">Tema do Seminário / Curso</label>
                            <Textarea placeholder="Ex: Defesa contra Ameaças com Faca" value={seminar.topic} onChange={e => handleInputChange(seminar.id, 'topic', e.target.value)} />
@@ -169,30 +182,25 @@ export function SeminarsTable({ seminars, setSeminars, allStudents, isLoading }:
                                 </Select>
                             </div>
                         </div>
-                    </TableCell>
-                  <TableCell className="align-top text-right p-4">
-                    <div className="flex flex-col items-center justify-start gap-2">
-                        <Button variant="outline" size="icon" onClick={() => handleSaveSeminar(seminar)}>
-                            <Save className="h-4 w-4" />
-                            <span className="sr-only">Salvar</span>
-                        </Button>
-                        <Button variant="destructive" size="icon" onClick={() => handleDeleteSeminar(seminar.id, seminar.studentName)}>
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Excluir</span>
-                        </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-               {!isLoading && seminars.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={2} className="text-center py-10">
-                    Nenhuma inscrição em seminário encontrada.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                        <div className="flex justify-end gap-2 mt-6">
+                            <Button variant="destructive" onClick={(e) => handleDeleteSeminar(e, seminar.id, seminar.studentName)}>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Excluir
+                            </Button>
+                            <Button onClick={() => handleSaveSeminar(seminar)}>
+                                <Save className="h-4 w-4 mr-2" />
+                                Salvar Inscrição
+                            </Button>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            ))}
+          </Accordion>
+         ) : (
+              <div className="text-center py-10 text-muted-foreground">
+                Nenhuma inscrição em seminário encontrada.
+              </div>
+         )}
       </div>
   )
 }
