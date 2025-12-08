@@ -41,13 +41,24 @@ export function Overview() {
     }, 0);
 
     const active = students.filter(s => s.status === 'Ativo').length;
-    const overdue = students.filter(s => s.paymentStatus === 'Vencido').length;
+    const overdue = students.filter(s => {
+        if (s.status !== 'Ativo') return false;
+        if (!s.planExpirationDate) return true; // Considera vencido se não houver data de expiração
+        try {
+            const expirationDate = new Date(s.planExpirationDate);
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            return expirationDate < today;
+        } catch {
+            return true; // Trata datas inválidas como vencidas
+        }
+    }).length;
 
     return { totalRevenue: revenue, activeStudents: active, overduePayments: overdue };
   }, [students]);
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
@@ -75,18 +86,6 @@ export function Overview() {
           <div className="text-2xl font-bold">+{activeStudents}</div>
            <p className="text-xs text-muted-foreground">
             {isLoading ? 'Carregando...' : 'Total de alunos com status ativo'}
-          </p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Pagamentos Vencidos</CardTitle>
-          <CreditCard className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">+{overduePayments}</div>
-           <p className="text-xs text-muted-foreground">
-            {isLoading ? 'Carregando...' : 'Total de mensalidades em atraso'}
           </p>
         </CardContent>
       </Card>

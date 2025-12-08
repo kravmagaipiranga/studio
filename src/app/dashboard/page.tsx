@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Overview } from "@/components/dashboard/overview";
