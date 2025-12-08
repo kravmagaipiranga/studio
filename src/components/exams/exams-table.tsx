@@ -1,22 +1,12 @@
 
 "use client"
 
-import { useState, useEffect } from "react";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import { Save, Trash2 } from "lucide-react"
 import { Exam, Student } from "@/lib/types"
@@ -28,6 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Combobox } from "../ui/combobox";
 import { differenceInYears } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
 
 interface ExamsTableProps {
   exams: Exam[];
@@ -101,7 +93,8 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
     setExams(prev => prev.map(ex => ex.id === examToSave.id ? { ...examData, id: finalId, isNew: false } : ex));
   };
 
-  const handleDeleteExam = (examId: string, studentName: string) => {
+  const handleDeleteExam = (e: React.MouseEvent, examId: string, studentName: string) => {
+    e.stopPropagation();
     if (!firestore) return;
     
     const isNewRow = examId.startsWith('new_');
@@ -118,136 +111,142 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
     })
   };
 
+  const getStatusVariant = (status: 'Pago' | 'Pendente'): 'default' | 'destructive' => {
+      return status === 'Pago' ? 'default' : 'destructive';
+  }
+
+  if (isLoading) {
+      return (
+          <div className="space-y-2 w-full">
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+          </div>
+      )
+  }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Inscrições de Exame</CardTitle>
-        <CardDescription>
-          Acompanhe e edite as inscrições para os próximos exames de faixa. As linhas são ordenadas por faixa.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[200px]">Aluno</TableHead>
-              <TableHead>Data Exame</TableHead>
-              <TableHead>Faixa</TableHead>
-              <TableHead>Valor</TableHead>
-              <TableHead>Pgto.</TableHead>
-              <TableHead>Data Pgto.</TableHead>
-              <TableHead>Método</TableHead>
-              <TableHead className="text-right w-[100px]">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && Array.from({length: 3}).map((_, index) => (
-              <TableRow key={index}>
-                <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-                <TableCell><Skeleton className="h-9 w-full" /></TableCell>
-              </TableRow>
-            ))}
-            {!isLoading && exams.map((exam) => (
-              <TableRow key={exam.id} className={exam.isNew ? "bg-muted/50" : ""}>
-                <TableCell className="font-medium">
-                  {exam.isNew ? (
-                    <Combobox
-                        options={studentOptions}
-                        value={exam.studentId}
-                        onChange={(value) => handleInputChange(exam.id, 'studentId', value)}
-                        placeholder="Selecione..."
-                        searchPlaceholder="Buscar aluno..."
-                        notFoundText="Nenhum aluno encontrado."
-                    />
-                  ) : (
-                    exam.studentName
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Input type="date" value={exam.examDate} onChange={e => handleInputChange(exam.id, 'examDate', e.target.value)} />
-                </TableCell>
-                <TableCell>
-                   <Select value={exam.targetBelt} onValueChange={(value) => handleInputChange(exam.id, 'targetBelt', value)}>
-                      <SelectTrigger>
-                        <SelectValue>
-                           <div className="flex items-center gap-2">
+    <div className="w-full border rounded-lg overflow-hidden">
+        {exams.length > 0 ? (
+          <Accordion type="single" collapsible className="w-full">
+            {exams.map((exam: Exam) => (
+                <AccordionItem value={exam.id} key={exam.id} className={cn("px-4", exam.isNew && "bg-muted/50")}>
+                    <AccordionTrigger className="hover:no-underline">
+                        <div className="flex items-center justify-between w-full">
+                            <div className="flex-1 text-left font-medium">{exam.studentName || "Novo Registro"}</div>
+                            <div className="flex-1 text-left text-muted-foreground flex items-center gap-2">
                                 {beltEmojis[exam.targetBelt] && <span>{beltEmojis[exam.targetBelt]}</span>}
                                 {exam.targetBelt || "Faixa..."}
-                           </div>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Amarela">🟡 Amarela</SelectItem>
-                        <SelectItem value="Laranja">🟠 Laranja</SelectItem>
-                        <SelectItem value="Verde">🟢 Verde</SelectItem>
-                        <SelectItem value="Azul">🔵 Azul</SelectItem>
-                        <SelectItem value="Marrom">🟤 Marrom</SelectItem>
-                        <SelectItem value="Preta">⚫ Preta</SelectItem>
-                      </SelectContent>
-                   </Select>
-                </TableCell>
-                <TableCell>
-                    <Input type="number" value={exam.paymentAmount} onChange={e => handleInputChange(exam.id, 'paymentAmount', parseFloat(e.target.value) || 0)} className="w-24" />
-                </TableCell>
-                <TableCell>
-                  <Select value={exam.paymentStatus} onValueChange={(value) => handleInputChange(exam.id, 'paymentStatus', value)}>
-                    <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Pago">Pago</SelectItem>
-                      <SelectItem value="Pendente">Pendente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                 <TableCell>
-                    <Input 
-                        type="date" 
-                        value={exam.paymentDate || ''} 
-                        onChange={e => handleInputChange(exam.id, 'paymentDate', e.target.value)} 
-                        disabled={exam.paymentStatus !== 'Pago'}
-                    />
-                </TableCell>
-                <TableCell>
-                  <Select value={exam.paymentMethod} onValueChange={(value) => handleInputChange(exam.id, 'paymentMethod', value)}>
-                    <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Pendente">Pendente</SelectItem>
-                      <SelectItem value="Pix">Pix</SelectItem>
-                      <SelectItem value="Boleto">Boleto</SelectItem>
-                      <SelectItem value="Dinheiro">Dinheiro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <Button variant="outline" size="icon" onClick={() => handleSaveExam(exam)}>
-                        <Save className="h-4 w-4" />
-                        <span className="sr-only">Salvar</span>
-                    </Button>
-                    <Button variant="destructive" size="icon" onClick={() => handleDeleteExam(exam.id, exam.studentName)}>
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Excluir</span>
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
+                            </div>
+                            <div className="flex-1 text-left font-semibold">R$ {exam.paymentAmount.toFixed(2)}</div>
+                            <div className="flex-1 text-left">
+                                <Badge variant={getStatusVariant(exam.paymentStatus)}>{exam.paymentStatus}</Badge>
+                            </div>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4 pb-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           <div className="space-y-2">
+                                <label className="text-xs font-semibold text-muted-foreground">Aluno</label>
+                                {exam.isNew ? (
+                                <Combobox
+                                    options={studentOptions}
+                                    value={exam.studentId}
+                                    onChange={(value) => handleInputChange(exam.id, 'studentId', value)}
+                                    placeholder="Selecione..."
+                                    searchPlaceholder="Buscar aluno..."
+                                    notFoundText="Nenhum aluno encontrado."
+                                />
+                                ) : (
+                                <Input disabled value={exam.studentName} />
+                                )}
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-semibold text-muted-foreground">Data do Exame</label>
+                                <Input type="date" value={exam.examDate} onChange={e => handleInputChange(exam.id, 'examDate', e.target.value)} />
+                            </div>
+                        </div>
+
+                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-xs font-semibold text-muted-foreground">Faixa Alvo</label>
+                                <Select value={exam.targetBelt} onValueChange={(value) => handleInputChange(exam.id, 'targetBelt', value)}>
+                                  <SelectTrigger>
+                                    <SelectValue>
+                                       <div className="flex items-center gap-2">
+                                            {beltEmojis[exam.targetBelt] && <span>{beltEmojis[exam.targetBelt]}</span>}
+                                            {exam.targetBelt || "Faixa..."}
+                                       </div>
+                                    </SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Amarela">🟡 Amarela</SelectItem>
+                                    <SelectItem value="Laranja">🟠 Laranja</SelectItem>
+                                    <SelectItem value="Verde">🟢 Verde</SelectItem>
+                                    <SelectItem value="Azul">🔵 Azul</SelectItem>
+                                    <SelectItem value="Marrom">🟤 Marrom</SelectItem>
+                                    <SelectItem value="Preta">⚫ Preta</SelectItem>
+                                  </SelectContent>
+                               </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-semibold text-muted-foreground">Valor (R$)</label>
+                                <Input type="number" value={exam.paymentAmount} onChange={e => handleInputChange(exam.id, 'paymentAmount', parseFloat(e.target.value) || 0)} />
+                            </div>
+                             <div className="space-y-2">
+                                <label className="text-xs font-semibold text-muted-foreground">Status do Pagamento</label>
+                                <Select value={exam.paymentStatus} onValueChange={(value) => handleInputChange(exam.id, 'paymentStatus', value)}>
+                                    <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
+                                    <SelectContent>
+                                    <SelectItem value="Pago">Pago</SelectItem>
+                                    <SelectItem value="Pendente">Pendente</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div className="space-y-2">
+                               <label className="text-xs font-semibold text-muted-foreground">Data do Pagamento</label>
+                               <Input 
+                                    type="date" 
+                                    value={exam.paymentDate || ''} 
+                                    onChange={e => handleInputChange(exam.id, 'paymentDate', e.target.value)} 
+                                    disabled={exam.paymentStatus !== 'Pago'}
+                                />
+                            </div>
+                             <div className="space-y-2">
+                                <label className="text-xs font-semibold text-muted-foreground">Forma de Pagamento</label>
+                                <Select value={exam.paymentMethod} onValueChange={(value) => handleInputChange(exam.id, 'paymentMethod', value)}>
+                                    <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
+                                    <SelectContent>
+                                    <SelectItem value="Pendente">Pendente</SelectItem>
+                                    <SelectItem value="Pix">Pix</SelectItem>
+                                    <SelectItem value="Boleto">Boleto</SelectItem>
+                                    <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2 mt-6">
+                            <Button variant="destructive" onClick={(e) => handleDeleteExam(e, exam.id, exam.studentName)}>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Excluir
+                            </Button>
+                            <Button onClick={() => handleSaveExam(exam)}>
+                                <Save className="h-4 w-4 mr-2" />
+                                Salvar Inscrição
+                            </Button>
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
             ))}
-             {!isLoading && exams.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-10">
-                  Nenhuma inscrição de exame encontrada. Clique em "Agendar Exame" para adicionar uma.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+          </Accordion>
+        ) : (
+            <div className="text-center py-10 text-muted-foreground">
+              Nenhuma inscrição de exame encontrada. Clique em "Agendar Exame" para adicionar uma.
+            </div>
+        )}
+    </div>
   );
 }
