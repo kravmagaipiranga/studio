@@ -15,6 +15,7 @@ import {
   CalendarPlus,
   ShoppingCart,
   BarChart,
+  Cake,
 } from "lucide-react";
 import {
   Sheet,
@@ -24,16 +25,53 @@ import {
   SheetDescription,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useUser } from "@/firebase";
-import { useEffect } from "react";
+import { useUser, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useEffect, useMemo } from "react";
 import { FirebaseErrorListener } from "@/components/FirebaseErrorListener";
+import { collection } from "firebase/firestore";
+import type { Student } from "@/lib/types";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+
+  const studentsCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'students');
+  }, [firestore]);
+
+  const { data: students } = useCollection<Student>(studentsCollection);
+
+  const birthdayStudents = useMemo(() => {
+    if (!students) return [];
+    const today = new Date();
+    const todayMonth = today.getMonth() + 1; // getMonth() is 0-indexed
+    const todayDay = today.getDate();
+
+    return students.filter(student => {
+      if (!student.dob) return false;
+      try {
+        const dob = new Date(student.dob + "T00:00:00");
+        const dobMonth = dob.getMonth() + 1;
+        const dobDay = dob.getDate();
+        return dobMonth === todayMonth && dobDay === todayDay;
+      } catch {
+        return false;
+      }
+    });
+  }, [students]);
 
   useEffect(() => {
     // If auth is still loading, do nothing to prevent flickering.
@@ -71,10 +109,31 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Link href="/" className="flex items-center gap-2 font-semibold">
               <span className="">Krav Magá IPIRANGA</span>
             </Link>
-            <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">Alternar notificações</span>
-            </Button>
+             <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="ml-auto h-8 w-8 relative">
+                  <Bell className="h-4 w-4" />
+                  {birthdayStudents.length > 0 && (
+                    <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500" />
+                  )}
+                  <span className="sr-only">Alternar notificações</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Aniversariantes de Hoje</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {birthdayStudents.length > 0 ? (
+                    birthdayStudents.map(student => (
+                      <DropdownMenuItem key={student.id}>
+                        <Cake className="mr-2 h-4 w-4" />
+                        <span>Parabéns, {student.name}!</span>
+                      </DropdownMenuItem>
+                    ))
+                ) : (
+                  <DropdownMenuItem disabled>Nenhuma notificação hoje.</DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
