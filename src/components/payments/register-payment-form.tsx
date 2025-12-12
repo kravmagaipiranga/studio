@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { addMonths, format, parseISO, setDate } from 'date-fns';
 import { useEffect, useState } from "react";
-import { collection, doc } from "firebase/firestore";
+import { collection, doc, updateDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button"
@@ -31,7 +31,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Student, Payment } from "@/lib/types"
 import { Combobox } from "@/components/ui/combobox";
-import { useFirestore, addDocumentNonBlocking } from "@/firebase";
+import { useFirestore, addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 
 const formSchema = z.object({
@@ -171,7 +171,7 @@ export function RegisterPaymentForm({
   }, [form, allStudents, selectedStudent]);
 
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!firestore) {
         toast({ title: "Erro", description: "Banco de dados não disponível.", variant: "destructive" });
         return;
@@ -183,11 +183,12 @@ export function RegisterPaymentForm({
         return;
     }
     
-    let expirationDateISO: string | undefined = undefined;
+    let expirationDateISO: string | null = null;
+    let studentUpdate: Partial<Student> = {};
 
     if (values.planType !== 'Matrícula') {
         const paymentDate = parseISO(values.paymentDate);
-        let expirationDate: Date | null = null;
+        let expirationDate: Date;
         if (values.planType === 'Bolsa 100%') {
             expirationDate = new Date(paymentDate.getFullYear(), 11, 31);
         } else {
@@ -195,8 +196,18 @@ export function RegisterPaymentForm({
             expirationDate = setDate(addMonths(paymentDate, monthsToAdd), 5);
         }
         expirationDateISO = expirationDate.toISOString().split('T')[0];
+
+        studentUpdate = {
+            lastPaymentDate: values.paymentDate,
+            planExpirationDate: expirationDateISO,
+            paymentStatus: 'Pago',
+        };
     }
-    
+     // Only if it's an enrollment payment, update student status to 'Ativo'
+    if (values.planType === 'Matrícula' && targetStudent.status !== 'Ativo') {
+        studentUpdate.status = 'Ativo';
+    }
+
 
     const paymentData: Omit<Payment, 'id'> = {
         studentId: values.studentId,
@@ -204,19 +215,30 @@ export function RegisterPaymentForm({
         paymentDate: values.paymentDate,
         planType: values.planType,
         amount: values.amount,
-        expirationDate: expirationDateISO,
+        expirationDate: expirationDateISO ?? undefined,
         paymentMethod: values.paymentMethod,
         notes: values.notes,
     };
-
-    const paymentsCollectionRef = collection(firestore, "payments");
-    addDocumentNonBlocking(paymentsCollectionRef, paymentData);
     
-    toast({
-      title: "Pagamento Registrado!",
-      description: `O pagamento para ${targetStudent.name} foi adicionado com sucesso.`,
-    })
-    router.push('/pagamentos');
+    const paymentsCollectionRef = collection(firestore, "payments");
+    const studentDocRef = doc(firestore, "students", targetStudent.id);
+
+    try {
+        await addDocumentNonBlocking(paymentsCollectionRef, paymentData);
+
+        if(Object.keys(studentUpdate).length > 0) {
+            await updateDoc(studentDocRef, studentUpdate);
+        }
+
+        toast({
+          title: "Pagamento Registrado!",
+          description: `O pagamento para ${targetStudent.name} foi adicionado com sucesso.`,
+        })
+        router.push('/pagamentos');
+
+    } catch (error) {
+        toast({ title: "Erro ao Salvar", description: "Não foi possível registrar o pagamento.", variant: "destructive" });
+    }
   }
 
   return (
