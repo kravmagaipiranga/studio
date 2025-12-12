@@ -85,7 +85,8 @@ export default function PagamentosPage() {
                 return false;
             }
             try {
-                return isAfter(parseISO(student.planExpirationDate), today);
+                const expirationDate = parseISO(student.planExpirationDate);
+                return isAfter(expirationDate, today);
             } catch {
                 return false;
             }
