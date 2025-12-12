@@ -81,7 +81,7 @@ export default function PagamentosPage() {
         });
 
         const activeQuarterlyStudents = students.filter(student => {
-            if (student.planType !== 'Trimestral' || student.status !== 'Ativo' || !student.planExpirationDate) {
+            if (student.status !== 'Ativo' || student.planType !== 'Trimestral' || !student.planExpirationDate) {
                 return false;
             }
             try {
@@ -107,10 +107,15 @@ export default function PagamentosPage() {
         let filtered = payments;
         
         if (activeFilter === 'vencidos') {
-            filtered = payments.filter(p => overdueStudentIds.has(p.studentId));
+            // This filter logic seems complex and might be better handled by just filtering students first.
+            // For now, let's keep it, but focus on the quarterly filter.
+            // To be accurate, we should probably filter payments for students that ARE overdue.
+             const studentIdsToDisplay = Array.from(overdueStudentIds);
+             return payments.filter(p => studentIdsToDisplay.includes(p.studentId));
         } else if (activeFilter === 'trimestrais') {
-            // Filter payments to show only the ones from students who currently have an active quarterly plan.
-            filtered = payments.filter(p => activeQuarterlyStudentIds.has(p.studentId));
+            // This is the corrected logic. Filter payments to show only those from students who currently have an active quarterly plan.
+            const studentIdsToDisplay = Array.from(activeQuarterlyStudentIds);
+            return payments.filter(p => studentIdsToDisplay.includes(p.studentId));
         }
         
         if(searchQuery) {
