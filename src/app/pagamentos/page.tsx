@@ -105,21 +105,12 @@ export default function PagamentosPage() {
     const filteredPayments = useMemo(() => {
         if (!payments) return [];
         let filtered = payments;
-        const today = new Date();
-        today.setHours(0,0,0,0);
-
+        
         if (activeFilter === 'vencidos') {
-            filtered = payments.filter(p => {
-                if (!p.expirationDate || p.planType === 'Matrícula') return false;
-                try {
-                    const expirationDate = parseISO(p.expirationDate);
-                    return isBefore(expirationDate, today);
-                } catch {
-                    return false;
-                }
-            });
+            filtered = payments.filter(p => overdueStudentIds.has(p.studentId));
         } else if (activeFilter === 'trimestrais') {
-            filtered = payments.filter(p => p.planType === 'Trimestral' && p.expirationDate && isAfter(parseISO(p.expirationDate), today));
+            // Filter payments to show only the ones from students who currently have an active quarterly plan.
+            filtered = payments.filter(p => activeQuarterlyStudentIds.has(p.studentId));
         }
         
         if(searchQuery) {
@@ -128,7 +119,7 @@ export default function PagamentosPage() {
             );
         }
         return filtered;
-    }, [payments, searchQuery, activeFilter]);
+    }, [payments, searchQuery, activeFilter, overdueStudentIds, activeQuarterlyStudentIds]);
 
     const handleExportData = () => {
         if (!payments) {
