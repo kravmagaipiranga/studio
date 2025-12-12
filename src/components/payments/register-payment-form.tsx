@@ -108,11 +108,6 @@ export function RegisterPaymentForm({
   useEffect(() => {
     if (paymentDateWatcher && planTypeWatcher) {
         try {
-            if (planTypeWatcher === 'Matrícula') {
-                setCalculatedExpiryDate('Não se aplica');
-                return;
-            }
-
             const paymentDate = parseISO(paymentDateWatcher);
             let expiryDate: Date | null = null;
             
@@ -120,7 +115,7 @@ export function RegisterPaymentForm({
                 const currentYear = paymentDate.getFullYear();
                 expiryDate = new Date(currentYear, 11, 31); // December 31st
             } else {
-                let monthsToAdd = 1; // Default for Mensal, Outros, Bolsa 50%
+                let monthsToAdd = 1; // Default for Mensal, Matrícula, Outros, Bolsa 50%
                 if (planTypeWatcher === 'Trimestral') monthsToAdd = 3;
 
                 const futureMonth = addMonths(paymentDate, monthsToAdd);
@@ -186,24 +181,23 @@ export function RegisterPaymentForm({
     let expirationDateISO: string | null = null;
     let studentUpdate: Partial<Student> = {};
 
-    if (values.planType !== 'Matrícula') {
-        const paymentDate = parseISO(values.paymentDate);
-        let expirationDate: Date;
-        if (values.planType === 'Bolsa 100%') {
-            expirationDate = new Date(paymentDate.getFullYear(), 11, 31);
-        } else {
-            const monthsToAdd = values.planType === 'Trimestral' ? 3 : 1;
-            expirationDate = setDate(addMonths(paymentDate, monthsToAdd), 5);
-        }
-        expirationDateISO = expirationDate.toISOString().split('T')[0];
+    const paymentDate = parseISO(values.paymentDate);
+    let expirationDate: Date;
 
-        studentUpdate = {
-            lastPaymentDate: values.paymentDate,
-            planExpirationDate: expirationDateISO,
-            paymentStatus: 'Pago',
-        };
+    if (values.planType === 'Bolsa 100%') {
+        expirationDate = new Date(paymentDate.getFullYear(), 11, 31);
+    } else {
+        const monthsToAdd = values.planType === 'Trimestral' ? 3 : 1; // Matrícula treated as 1 month
+        expirationDate = setDate(addMonths(paymentDate, monthsToAdd), 5);
     }
-     // Only if it's an enrollment payment, update student status to 'Ativo'
+    expirationDateISO = expirationDate.toISOString().split('T')[0];
+
+    studentUpdate = {
+        lastPaymentDate: values.paymentDate,
+        planExpirationDate: expirationDateISO,
+        paymentStatus: 'Pago',
+    };
+
     if (values.planType === 'Matrícula' && targetStudent.status !== 'Ativo') {
         studentUpdate.status = 'Ativo';
     }
@@ -337,7 +331,7 @@ export function RegisterPaymentForm({
                                 type="text"
                                 value={calculatedExpiryDate}
                                 disabled
-                                placeholder={planTypeWatcher === 'Matrícula' ? 'Não se aplica' : 'Calculada...'}
+                                placeholder={'Calculada...'}
                                 className="disabled:opacity-100 disabled:cursor-default"
                             />
                         </FormControl>
