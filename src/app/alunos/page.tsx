@@ -141,11 +141,14 @@ export default function AlunosPage() {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             students = students.filter(student => {
-                if (student.status !== 'Ativo') return false;
-                if (!student.planExpirationDate) return true;
+                if (student.status !== 'Ativo' || !student.planExpirationDate) {
+                    return false;
+                }
                 try {
                     return isBefore(parseISO(student.planExpirationDate), today);
-                } catch { return true; }
+                } catch { 
+                    return false; // Treat invalid dates as not overdue
+                }
             });
         } else if (activeFilter !== 'Todos') {
             students = students.filter(student => student.status === activeFilter);
@@ -399,6 +402,8 @@ export default function AlunosPage() {
         </div>
     );
 }
+
+    
 
     
 
