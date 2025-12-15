@@ -227,7 +227,7 @@ export default function AlunosPage() {
 
     return (
         <div className="h-full flex flex-col gap-4">
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+             <div className="grid gap-4 md:grid-cols-2">
                 <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
@@ -254,7 +254,10 @@ export default function AlunosPage() {
                         </div>
                     </CardContent>
                 </Card>
-                <StudentsByBeltChart students={allStudents || []} isLoading={isLoadingStudents} />
+            </div>
+
+            <div className="grid gap-4">
+                 <StudentsByBeltChart students={allStudents || []} isLoading={isLoadingStudents} />
             </div>
 
             <Card className="h-full flex flex-col flex-grow">

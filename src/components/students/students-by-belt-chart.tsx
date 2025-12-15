@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Funnel, FunnelChart, ResponsiveContainer, Tooltip, LabelList } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, LabelList } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Student } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,8 +43,7 @@ export function StudentsByBeltChart({ students, isLoading }: StudentsByBeltChart
                 value: counts[belt] || 0,
                 fill: beltColors[belt],
             }))
-            .filter(item => item.value > 0)
-            .reverse(); // Reverse the array to have lower belts at the base
+            .filter(item => item.value > 0);
 
     }, [students]);
 
@@ -56,7 +55,7 @@ export function StudentsByBeltChart({ students, isLoading }: StudentsByBeltChart
                     <Skeleton className="h-4 w-1/2" />
                 </CardHeader>
                 <CardContent>
-                    <Skeleton className="h-[100px] w-full" />
+                    <Skeleton className="h-48 w-full" />
                 </CardContent>
             </Card>
         )
@@ -70,39 +69,36 @@ export function StudentsByBeltChart({ students, isLoading }: StudentsByBeltChart
             </CardHeader>
             <CardContent>
                 {data.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={100}>
-                        <FunnelChart layout="horizontal">
+                    <ResponsiveContainer width="100%" height={200}>
+                        <BarChart layout="vertical" data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                             <XAxis type="number" hide />
+                            <YAxis 
+                                type="category" 
+                                dataKey="name"
+                                stroke="hsl(var(--foreground))"
+                                fontSize={12}
+                                tickLine={false}
+                                axisLine={false}
+                                width={80}
+                            />
                             <Tooltip 
+                                cursor={{fill: 'hsl(var(--muted))'}}
                                 contentStyle={{ 
                                     backgroundColor: 'hsl(var(--background))',
                                     borderColor: 'hsl(var(--border))'
                                 }}
                             />
-                            <Funnel
-                                data={data}
-                                dataKey="value"
-                                nameKey="name"
-                                lastShapeType="rectangle"
-                            >
+                            <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                                 <LabelList 
-                                    position="center" 
-                                    fill="#fff" 
-                                    stroke="hsl(var(--foreground))"
-                                    strokeWidth={0.5}
-                                    dataKey="name" 
-                                    className="text-xs font-semibold"
-                                    formatter={(label: string) => {
-                                        const count = data.find(d => d.name === label)?.value;
-                                        // A bit of a hack to make black belt label readable
-                                        if (label === 'Preta' && count && count > 0) return ''; 
-                                        return label;
-                                    }}
+                                    dataKey="value" 
+                                    position="right" 
+                                    className="fill-foreground font-semibold"
                                 />
-                            </Funnel>
-                        </FunnelChart>
+                            </Bar>
+                        </BarChart>
                     </ResponsiveContainer>
                 ) : (
-                    <div className="flex items-center justify-center h-[100px] text-sm text-muted-foreground">
+                    <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
                         Nenhum aluno ativo encontrado.
                     </div>
                 )}
