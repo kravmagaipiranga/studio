@@ -1,3 +1,4 @@
+
 import type { Metadata } from "next";
 import { PT_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
@@ -22,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={ptSans.className}>
+      <body className={ptSans.className} suppressHydrationWarning>
         <FirebaseClientProvider>
           <AppLayout>{children}</AppLayout>
         </FirebaseClientProvider>
