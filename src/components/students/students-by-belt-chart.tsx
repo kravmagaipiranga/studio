@@ -43,7 +43,8 @@ export function StudentsByBeltChart({ students, isLoading }: StudentsByBeltChart
                 value: counts[belt] || 0,
                 fill: beltColors[belt],
             }))
-            .filter(item => item.value > 0);
+            .filter(item => item.value > 0)
+            .reverse(); // Reverse the array to have lower belts at the base
 
     }, [students]);
 
