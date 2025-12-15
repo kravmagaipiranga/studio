@@ -19,6 +19,7 @@ import { differenceInMonths, isBefore, parseISO, startOfMonth, endOfMonth, isWit
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { StudentsByBeltChart } from "@/components/students/students-by-belt-chart";
 
 type FilterType = 'Todos' | 'Ativo' | 'Inativo' | 'Vencido';
 
@@ -226,7 +227,7 @@ export default function AlunosPage() {
 
     return (
         <div className="h-full flex flex-col gap-4">
-             <div className="grid gap-4 md:grid-cols-2">
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
@@ -253,6 +254,7 @@ export default function AlunosPage() {
                         </div>
                     </CardContent>
                 </Card>
+                <StudentsByBeltChart students={allStudents || []} isLoading={isLoadingStudents} />
             </div>
 
             <Card className="h-full flex flex-col flex-grow">
@@ -402,6 +404,8 @@ export default function AlunosPage() {
         </div>
     );
 }
+
+    
 
     
 
