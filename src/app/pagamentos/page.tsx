@@ -71,11 +71,13 @@ export default function PagamentosPage() {
 
         const overdueStudents = students.filter(s => {
             if (s.status !== 'Ativo' || !s.planExpirationDate) {
+                // If no expiration date, they are not considered overdue by this logic,
+                // but might need manual checking.
                 return false;
             }
             try {
                 const expirationDate = parseISO(s.planExpirationDate);
-                // A student is overdue only if their plan expiration is BEFORE today.
+                // A student is overdue ONLY if their plan expiration is strictly BEFORE today.
                 return isBefore(expirationDate, today);
             } catch {
                 return false; // Invalid date format, treat as not overdue.
@@ -284,3 +286,5 @@ export default function PagamentosPage() {
         </>
     );
 }
+
+    
