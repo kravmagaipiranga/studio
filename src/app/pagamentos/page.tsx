@@ -6,7 +6,7 @@ import { useState, useMemo } from "react";
 import { collection, query, orderBy } from "firebase/firestore";
 import { PaymentsTable } from "@/components/payments/payments-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search, CheckCircle, ClipboardCheck } from "lucide-react";
+import { Download, PlusCircle, Search, CheckCircle, ClipboardCheck, AlertCircle } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { Student, Payment } from "@/lib/types";
@@ -14,10 +14,10 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth, isWithinInterval, subMonths, startOfISOWeek } from "date-fns";
 import { cn } from "@/lib/utils";
 
-type FilterType = 'todos' | 'trimestrais' | 'mensais';
+type FilterType = 'todos' | 'trimestrais' | 'mensais' | 'expirados';
 
 export default function PagamentosPage() {
     const firestore = useFirestore();
@@ -86,7 +86,7 @@ export default function PagamentosPage() {
     }, [students, payments]);
 
     const filteredPayments = useMemo(() => {
-        if (!payments) return [];
+        if (!payments || !students) return [];
         
         let filtered = payments;
 
@@ -94,7 +94,27 @@ export default function PagamentosPage() {
             filtered = payments.filter(p => p.planType === 'Trimestral');
         } else if (activeFilter === 'mensais') {
             filtered = payments.filter(p => p.planType === 'Mensal');
+        } else if (activeFilter === 'expirados') {
+            const today = new Date();
+            const prevMonth = subMonths(today, 1);
+            const prevMonthStart = startOfMonth(prevMonth);
+            const prevMonthEnd = endOfMonth(prevMonth);
+            
+            const activeStudentIds = new Set(students.filter(s => s.status === 'Ativo').map(s => s.id));
+
+            filtered = payments.filter(p => {
+                if (!p.expirationDate || !activeStudentIds.has(p.studentId)) {
+                    return false;
+                }
+                try {
+                    const expirationDate = parseISO(p.expirationDate);
+                    return isWithinInterval(expirationDate, { start: prevMonthStart, end: prevMonthEnd });
+                } catch {
+                    return false;
+                }
+            });
         }
+
 
         if(searchQuery) {
             return filtered.filter(payment => 
@@ -104,7 +124,7 @@ export default function PagamentosPage() {
 
         return filtered;
 
-    }, [payments, searchQuery, activeFilter]);
+    }, [payments, students, searchQuery, activeFilter]);
 
     const handleExportData = () => {
         if (!payments) {
@@ -224,6 +244,12 @@ export default function PagamentosPage() {
                         onClick={() => setActiveFilter('trimestrais')}
                      >
                         Planos Trimestrais
+                     </Button>
+                     <Button 
+                        variant={activeFilter === 'expirados' ? 'destructive' : 'outline'}
+                        onClick={() => setActiveFilter('expirados')}
+                     >
+                        Planos Expirados
                      </Button>
                 </div>
                 <DatePickerWithRange />
