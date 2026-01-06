@@ -6,7 +6,7 @@ import { useState, useMemo } from "react";
 import { collection, query, orderBy } from "firebase/firestore";
 import { PaymentsTable } from "@/components/payments/payments-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search, AlertCircle, CheckCircle, ClipboardCheck } from "lucide-react";
+import { Download, PlusCircle, Search, CheckCircle, ClipboardCheck } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { Student, Payment } from "@/lib/types";
@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { cn } from "@/lib/utils";
 
-type FilterType = 'todos' | 'vencidos' | 'trimestrais';
+type FilterType = 'todos' | 'trimestrais';
 
 export default function PagamentosPage() {
     const firestore = useFirestore();
@@ -43,11 +43,10 @@ export default function PagamentosPage() {
 
     const { 
         paidInMonthCount, 
-        overdueCount, 
         activeQuarterlyPlansCount,
         activeQuarterlyStudentIds 
     } = useMemo(() => {
-        if (!students || !payments) return { paidInMonthCount: 0, overdueCount: 0, activeQuarterlyPlansCount: 0, overdueStudentIds: new Set(), activeQuarterlyStudentIds: new Set() };
+        if (!students || !payments) return { paidInMonthCount: 0, activeQuarterlyPlansCount: 0, activeQuarterlyStudentIds: new Set() };
         
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
@@ -68,19 +67,6 @@ export default function PagamentosPage() {
             .map(p => p.studentId)
         );
 
-        const overdueStudents = students.filter(s => {
-            if (s.status !== 'Ativo' || !s.planExpirationDate) {
-                return false;
-            }
-            try {
-                const expirationDate = parseISO(s.planExpirationDate);
-                return isBefore(expirationDate, today);
-            } catch {
-                return false;
-            }
-        });
-
-
         const activeQuarterlyStudents = students.filter(student => {
             if (student.status !== 'Ativo' || student.planType !== 'Trimestral' || !student.planExpirationDate) {
                 return false;
@@ -95,7 +81,6 @@ export default function PagamentosPage() {
         
         return { 
             paidInMonthCount: paidThisMonthIds.size, 
-            overdueCount: overdueStudents.length, 
             activeQuarterlyPlansCount: activeQuarterlyStudents.length,
             activeQuarterlyStudentIds: new Set(activeQuarterlyStudents.map(s => s.id))
         };
@@ -162,7 +147,7 @@ export default function PagamentosPage() {
 
     return (
         <>
-            <div className="grid gap-4 md:grid-cols-3 mb-4">
+            <div className="grid gap-4 md:grid-cols-2 mb-4">
                 <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
@@ -175,20 +160,6 @@ export default function PagamentosPage() {
                             {isLoading ? <Skeleton className="h-8 w-12"/> : paidInMonthCount}
                         </div>
                         <p className="text-xs text-muted-foreground">Alunos com planos pagos no mês corrente.</p>
-                    </CardContent>
-                </Card>
-                 <Card 
-                     className="bg-rose-50 border-rose-200 dark:bg-rose-950 dark:border-rose-800"
-                 >
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-rose-800 dark:text-rose-200">Alunos Vencidos</CardTitle>
-                        <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
-                    </CardHeader>
-                    <CardContent>
-                         <div className="text-2xl font-bold text-rose-900 dark:text-rose-100">
-                             {isLoading ? <Skeleton className="h-8 w-12"/> : overdueCount}
-                        </div>
-                         <p className="text-xs text-muted-foreground">Planos que expiraram e não foram renovados.</p>
                     </CardContent>
                 </Card>
                  <Card 
