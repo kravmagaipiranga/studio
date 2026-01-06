@@ -54,8 +54,6 @@ export default function PagamentosPage() {
         today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
         const currentMonthStart = startOfMonth(today);
         const currentMonthEnd = endOfMonth(today);
-        const twoMonthsAgo = subMonths(today, 2);
-
 
         const paidThisMonthIds = new Set(
           payments
@@ -72,27 +70,15 @@ export default function PagamentosPage() {
         );
 
         const overdueStudents = students.filter(s => {
-            if (s.status !== 'Ativo') return false;
-
-            // A student is NOT overdue if their current plan is valid.
-            if (s.planExpirationDate && isAfter(parseISO(s.planExpirationDate), today)) {
+            if (s.status !== 'Ativo' || !s.planExpirationDate) {
                 return false;
             }
-
-            // If we are here, their plan is not currently valid.
-            // Now, check if it expired within the last 2 months to be considered "recently overdue".
-            if (!s.planExpirationDate) {
-                // If they have no expiration date, they can't be recently overdue.
-                // This could be a new student or data issue.
-                return false;
-            }
-
             try {
                 const expirationDate = parseISO(s.planExpirationDate);
-                // Check if the expiration date is between 2 months ago and yesterday.
-                return isWithinInterval(expirationDate, { start: twoMonthsAgo, end: subDays(today, 1) });
+                // A student is overdue only if their plan expiration is BEFORE today.
+                return isBefore(expirationDate, today);
             } catch {
-                return false; // Invalid date format, don't consider them overdue.
+                return false; // Invalid date format, treat as not overdue.
             }
         });
 
@@ -220,7 +206,7 @@ export default function PagamentosPage() {
                          <div className="text-2xl font-bold text-rose-900 dark:text-rose-100">
                              {isLoading ? <Skeleton className="h-8 w-12"/> : overdueCount}
                         </div>
-                         <p className="text-xs text-muted-foreground">Planos expirados nos últimos 2 meses.</p>
+                         <p className="text-xs text-muted-foreground">Planos que expiraram e não foram renovados.</p>
                     </CardContent>
                 </Card>
                  <Card 
