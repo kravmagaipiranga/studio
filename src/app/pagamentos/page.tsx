@@ -45,7 +45,6 @@ export default function PagamentosPage() {
         paidInMonthCount, 
         overdueCount, 
         activeQuarterlyPlansCount,
-        overdueStudentIds,
         activeQuarterlyStudentIds 
     } = useMemo(() => {
         if (!students || !payments) return { paidInMonthCount: 0, overdueCount: 0, activeQuarterlyPlansCount: 0, overdueStudentIds: new Set(), activeQuarterlyStudentIds: new Set() };
@@ -98,7 +97,6 @@ export default function PagamentosPage() {
             paidInMonthCount: paidThisMonthIds.size, 
             overdueCount: overdueStudents.length, 
             activeQuarterlyPlansCount: activeQuarterlyStudents.length,
-            overdueStudentIds: new Set(overdueStudents.map(s => s.id)),
             activeQuarterlyStudentIds: new Set(activeQuarterlyStudents.map(s => s.id))
         };
 
@@ -109,9 +107,7 @@ export default function PagamentosPage() {
         
         let filtered = payments;
 
-        if (activeFilter === 'vencidos') {
-            filtered = payments.filter(p => overdueStudentIds.has(p.studentId));
-        } else if (activeFilter === 'trimestrais') {
+        if (activeFilter === 'trimestrais') {
             filtered = payments.filter(p => activeQuarterlyStudentIds.has(p.studentId));
         }
 
@@ -123,7 +119,7 @@ export default function PagamentosPage() {
 
         return filtered;
 
-    }, [payments, searchQuery, activeFilter, overdueStudentIds, activeQuarterlyStudentIds]);
+    }, [payments, searchQuery, activeFilter, activeQuarterlyStudentIds]);
 
     const handleExportData = () => {
         if (!payments) {
@@ -182,12 +178,7 @@ export default function PagamentosPage() {
                     </CardContent>
                 </Card>
                  <Card 
-                     onClick={() => setActiveFilter('vencidos')}
-                     className={cn(
-                         "cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1",
-                         activeFilter === 'vencidos' ? "ring-2 ring-destructive" : "",
-                         "bg-rose-50 border-rose-200 dark:bg-rose-950 dark:border-rose-800"
-                     )}
+                     className="bg-rose-50 border-rose-200 dark:bg-rose-950 dark:border-rose-800"
                  >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-rose-800 dark:text-rose-200">Alunos Vencidos</CardTitle>
@@ -255,13 +246,6 @@ export default function PagamentosPage() {
                         onClick={() => setActiveFilter('todos')}
                      >
                         Listar Todos
-                     </Button>
-                     <Button
-                        variant={activeFilter === 'vencidos' ? 'destructive' : 'outline'}
-                        onClick={() => setActiveFilter('vencidos')}
-                     >
-                        <AlertCircle className="mr-2 h-4 w-4"/>
-                        Planos Vencidos
                      </Button>
                 </div>
                 <DatePickerWithRange />
