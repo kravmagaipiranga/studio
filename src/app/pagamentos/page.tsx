@@ -73,23 +73,29 @@ export default function PagamentosPage() {
 
         const overdueStudents = students.filter(s => {
             if (s.status !== 'Ativo') return false;
-            
-            // Student is not overdue if they have a valid plan today
-            if(s.planExpirationDate && isAfter(parseISO(s.planExpirationDate), today)) {
+
+            // A student is NOT overdue if their current plan is valid.
+            if (s.planExpirationDate && isAfter(parseISO(s.planExpirationDate), today)) {
                 return false;
             }
 
-            // If they don't have a valid plan, check if their last expiration date
-            // was within the last 2 months.
-            if (!s.planExpirationDate) return false; // If no date, can't be recently expired.
+            // If we are here, their plan is not currently valid.
+            // Now, check if it expired within the last 2 months to be considered "recently overdue".
+            if (!s.planExpirationDate) {
+                // If they have no expiration date, they can't be recently overdue.
+                // This could be a new student or data issue.
+                return false;
+            }
+
             try {
                 const expirationDate = parseISO(s.planExpirationDate);
-                // The plan expired between 2 months ago and yesterday.
+                // Check if the expiration date is between 2 months ago and yesterday.
                 return isWithinInterval(expirationDate, { start: twoMonthsAgo, end: subDays(today, 1) });
             } catch {
-                return false; // Treat invalid dates as not overdue
+                return false; // Invalid date format, don't consider them overdue.
             }
         });
+
 
         const activeQuarterlyStudents = students.filter(student => {
             if (student.status !== 'Ativo' || student.planType !== 'Trimestral' || !student.planExpirationDate) {
@@ -116,33 +122,26 @@ export default function PagamentosPage() {
     const filteredPayments = useMemo(() => {
         if (!payments) return [];
         
-        let studentIdsToDisplay: string[] = [];
+        let studentIdsToDisplay: Set<string>;
 
         if (activeFilter === 'vencidos') {
-            studentIdsToDisplay = Array.from(overdueStudentIds);
+            studentIdsToDisplay = overdueStudentIds;
         } else if (activeFilter === 'trimestrais') {
-            studentIdsToDisplay = Array.from(activeQuarterlyStudentIds);
+            studentIdsToDisplay = activeQuarterlyStudentIds;
+        } else {
+             // For 'todos', we show all payments unless there's a search query
+            if (!searchQuery) return payments;
+            return payments.filter(p => 
+                p.studentName.toLowerCase().includes(searchQuery.toLowerCase())
+            );
         }
 
-        let filtered = payments;
-        
-        if (studentIdsToDisplay.length > 0) {
-            const studentIdSet = new Set(studentIdsToDisplay);
-            filtered = payments.filter(p => studentIdSet.has(p.studentId));
-        } else if (activeFilter !== 'todos') {
-            // If a filter is active but no students match, return empty
-            return [];
-        }
+        let filtered = payments.filter(p => studentIdsToDisplay.has(p.studentId));
         
         if(searchQuery) {
             return filtered.filter(payment => 
                 payment.studentName.toLowerCase().includes(searchQuery.toLowerCase())
             );
-        }
-
-        // If no filter is active, return all payments unless a search is applied
-        if (activeFilter === 'todos') {
-             return searchQuery ? filtered.filter(p => p.studentName.toLowerCase().includes(searchQuery.toLowerCase())) : payments;
         }
 
         return filtered;
