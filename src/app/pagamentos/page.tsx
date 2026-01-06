@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { cn } from "@/lib/utils";
 
-type FilterType = 'todos' | 'trimestrais';
+type FilterType = 'todos' | 'trimestrais' | 'mensais';
 
 export default function PagamentosPage() {
     const firestore = useFirestore();
@@ -44,9 +44,8 @@ export default function PagamentosPage() {
     const { 
         paidInMonthCount, 
         activeQuarterlyPlansCount,
-        activeQuarterlyStudentIds 
     } = useMemo(() => {
-        if (!students || !payments) return { paidInMonthCount: 0, activeQuarterlyPlansCount: 0, activeQuarterlyStudentIds: new Set() };
+        if (!students || !payments) return { paidInMonthCount: 0, activeQuarterlyPlansCount: 0 };
         
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
@@ -82,7 +81,6 @@ export default function PagamentosPage() {
         return { 
             paidInMonthCount: paidThisMonthIds.size, 
             activeQuarterlyPlansCount: activeQuarterlyStudents.length,
-            activeQuarterlyStudentIds: new Set(activeQuarterlyStudents.map(s => s.id))
         };
 
     }, [students, payments]);
@@ -93,7 +91,9 @@ export default function PagamentosPage() {
         let filtered = payments;
 
         if (activeFilter === 'trimestrais') {
-            filtered = payments.filter(p => activeQuarterlyStudentIds.has(p.studentId));
+            filtered = payments.filter(p => p.planType === 'Trimestral');
+        } else if (activeFilter === 'mensais') {
+            filtered = payments.filter(p => p.planType === 'Mensal');
         }
 
         if(searchQuery) {
@@ -104,7 +104,7 @@ export default function PagamentosPage() {
 
         return filtered;
 
-    }, [payments, searchQuery, activeFilter, activeQuarterlyStudentIds]);
+    }, [payments, searchQuery, activeFilter]);
 
     const handleExportData = () => {
         if (!payments) {
@@ -163,12 +163,7 @@ export default function PagamentosPage() {
                     </CardContent>
                 </Card>
                  <Card 
-                     onClick={() => setActiveFilter('trimestrais')}
-                     className={cn(
-                         "cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1",
-                         activeFilter === 'trimestrais' ? "ring-2 ring-blue-500" : "",
-                         "bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800"
-                     )}
+                     className={cn("bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800")}
                  >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
@@ -217,6 +212,18 @@ export default function PagamentosPage() {
                         onClick={() => setActiveFilter('todos')}
                      >
                         Listar Todos
+                     </Button>
+                     <Button 
+                        variant={activeFilter === 'mensais' ? 'default' : 'outline'}
+                        onClick={() => setActiveFilter('mensais')}
+                     >
+                        Planos Mensais
+                     </Button>
+                     <Button 
+                        variant={activeFilter === 'trimestrais' ? 'default' : 'outline'}
+                        onClick={() => setActiveFilter('trimestrais')}
+                     >
+                        Planos Trimestrais
                      </Button>
                 </div>
                 <DatePickerWithRange />
