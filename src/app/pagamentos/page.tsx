@@ -107,15 +107,11 @@ export default function PagamentosPage() {
         let filtered = payments;
         
         if (activeFilter === 'vencidos') {
-            // This filter logic seems complex and might be better handled by just filtering students first.
-            // For now, let's keep it, but focus on the quarterly filter.
-            // To be accurate, we should probably filter payments for students that ARE overdue.
              const studentIdsToDisplay = Array.from(overdueStudentIds);
-             return payments.filter(p => studentIdsToDisplay.includes(p.studentId));
+             filtered = payments.filter(p => studentIdsToDisplay.includes(p.studentId));
         } else if (activeFilter === 'trimestrais') {
-            // This is the corrected logic. Filter payments to show only those from students who currently have an active quarterly plan.
             const studentIdsToDisplay = Array.from(activeQuarterlyStudentIds);
-            return payments.filter(p => studentIdsToDisplay.includes(p.studentId));
+            filtered = payments.filter(p => studentIdsToDisplay.includes(p.studentId));
         }
         
         if(searchQuery) {
@@ -167,7 +163,7 @@ export default function PagamentosPage() {
 
     return (
         <>
-            <div className="grid gap-4 md:grid-cols-2 mb-4">
+            <div className="grid gap-4 md:grid-cols-3 mb-4">
                 <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
@@ -180,6 +176,25 @@ export default function PagamentosPage() {
                             {isLoading ? <Skeleton className="h-8 w-12"/> : paidInMonthCount}
                         </div>
                         <p className="text-xs text-muted-foreground">Alunos com planos pagos no mês corrente.</p>
+                    </CardContent>
+                </Card>
+                 <Card 
+                     onClick={() => setActiveFilter('vencidos')}
+                     className={cn(
+                         "cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1",
+                         activeFilter === 'vencidos' ? "ring-2 ring-destructive" : "",
+                         "bg-rose-50 border-rose-200 dark:bg-rose-950 dark:border-rose-800"
+                     )}
+                 >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-rose-800 dark:text-rose-200">Alunos Vencidos</CardTitle>
+                        <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                    </CardHeader>
+                    <CardContent>
+                         <div className="text-2xl font-bold text-rose-900 dark:text-rose-100">
+                             {isLoading ? <Skeleton className="h-8 w-12"/> : overdueCount}
+                        </div>
+                         <p className="text-xs text-muted-foreground">Alunos ativos com plano expirado.</p>
                     </CardContent>
                 </Card>
                  <Card 
@@ -237,6 +252,13 @@ export default function PagamentosPage() {
                         onClick={() => setActiveFilter('todos')}
                      >
                         Listar Todos
+                     </Button>
+                     <Button
+                        variant={activeFilter === 'vencidos' ? 'destructive' : 'outline'}
+                        onClick={() => setActiveFilter('vencidos')}
+                     >
+                        <AlertCircle className="mr-2 h-4 w-4"/>
+                        Planos Vencidos
                      </Button>
                 </div>
                 <DatePickerWithRange />
