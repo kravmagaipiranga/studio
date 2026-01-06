@@ -14,7 +14,7 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth, isWithinInterval, subMonths, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 
 type FilterType = 'todos' | 'vencidos' | 'trimestrais';
@@ -54,6 +54,8 @@ export default function PagamentosPage() {
         today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
         const currentMonthStart = startOfMonth(today);
         const currentMonthEnd = endOfMonth(today);
+        const twoMonthsAgo = subMonths(today, 2);
+
 
         const paidThisMonthIds = new Set(
           payments
@@ -71,12 +73,21 @@ export default function PagamentosPage() {
 
         const overdueStudents = students.filter(s => {
             if (s.status !== 'Ativo') return false;
-            if (!s.planExpirationDate) return true; // Consider overdue if no expiration date
+            
+            // Student is not overdue if they have a valid plan today
+            if(s.planExpirationDate && isAfter(parseISO(s.planExpirationDate), today)) {
+                return false;
+            }
+
+            // If they don't have a valid plan, check if their last expiration date
+            // was within the last 2 months.
+            if (!s.planExpirationDate) return false; // If no date, can't be recently expired.
             try {
                 const expirationDate = parseISO(s.planExpirationDate);
-                return isBefore(expirationDate, today);
+                // The plan expired between 2 months ago and yesterday.
+                return isWithinInterval(expirationDate, { start: twoMonthsAgo, end: subDays(today, 1) });
             } catch {
-                return true; // Treat invalid dates as overdue
+                return false; // Treat invalid dates as not overdue
             }
         });
 
@@ -104,14 +115,23 @@ export default function PagamentosPage() {
 
     const filteredPayments = useMemo(() => {
         if (!payments) return [];
+        
+        let studentIdsToDisplay: string[] = [];
+
+        if (activeFilter === 'vencidos') {
+            studentIdsToDisplay = Array.from(overdueStudentIds);
+        } else if (activeFilter === 'trimestrais') {
+            studentIdsToDisplay = Array.from(activeQuarterlyStudentIds);
+        }
+
         let filtered = payments;
         
-        if (activeFilter === 'vencidos') {
-             const studentIdsToDisplay = Array.from(overdueStudentIds);
-             filtered = payments.filter(p => studentIdsToDisplay.includes(p.studentId));
-        } else if (activeFilter === 'trimestrais') {
-            const studentIdsToDisplay = Array.from(activeQuarterlyStudentIds);
-            filtered = payments.filter(p => studentIdsToDisplay.includes(p.studentId));
+        if (studentIdsToDisplay.length > 0) {
+            const studentIdSet = new Set(studentIdsToDisplay);
+            filtered = payments.filter(p => studentIdSet.has(p.studentId));
+        } else if (activeFilter !== 'todos') {
+            // If a filter is active but no students match, return empty
+            return [];
         }
         
         if(searchQuery) {
@@ -119,7 +139,14 @@ export default function PagamentosPage() {
                 payment.studentName.toLowerCase().includes(searchQuery.toLowerCase())
             );
         }
+
+        // If no filter is active, return all payments unless a search is applied
+        if (activeFilter === 'todos') {
+             return searchQuery ? filtered.filter(p => p.studentName.toLowerCase().includes(searchQuery.toLowerCase())) : payments;
+        }
+
         return filtered;
+
     }, [payments, searchQuery, activeFilter, overdueStudentIds, activeQuarterlyStudentIds]);
 
     const handleExportData = () => {
@@ -194,7 +221,7 @@ export default function PagamentosPage() {
                          <div className="text-2xl font-bold text-rose-900 dark:text-rose-100">
                              {isLoading ? <Skeleton className="h-8 w-12"/> : overdueCount}
                         </div>
-                         <p className="text-xs text-muted-foreground">Alunos ativos com plano expirado.</p>
+                         <p className="text-xs text-muted-foreground">Planos expirados nos últimos 2 meses.</p>
                     </CardContent>
                 </Card>
                  <Card 
