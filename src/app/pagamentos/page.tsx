@@ -14,7 +14,7 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth, isWithinInterval, subMonths, subDays } from "date-fns";
+import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { cn } from "@/lib/utils";
 
 type FilterType = 'todos' | 'vencidos' | 'trimestrais';
@@ -71,16 +71,13 @@ export default function PagamentosPage() {
 
         const overdueStudents = students.filter(s => {
             if (s.status !== 'Ativo' || !s.planExpirationDate) {
-                // If no expiration date, they are not considered overdue by this logic,
-                // but might need manual checking.
                 return false;
             }
             try {
                 const expirationDate = parseISO(s.planExpirationDate);
-                // A student is overdue ONLY if their plan expiration is strictly BEFORE today.
                 return isBefore(expirationDate, today);
             } catch {
-                return false; // Invalid date format, treat as not overdue.
+                return false;
             }
         });
 
@@ -110,22 +107,14 @@ export default function PagamentosPage() {
     const filteredPayments = useMemo(() => {
         if (!payments) return [];
         
-        let studentIdsToDisplay: Set<string>;
+        let filtered = payments;
 
         if (activeFilter === 'vencidos') {
-            studentIdsToDisplay = overdueStudentIds;
+            filtered = payments.filter(p => overdueStudentIds.has(p.studentId));
         } else if (activeFilter === 'trimestrais') {
-            studentIdsToDisplay = activeQuarterlyStudentIds;
-        } else {
-             // For 'todos', we show all payments unless there's a search query
-            if (!searchQuery) return payments;
-            return payments.filter(p => 
-                p.studentName.toLowerCase().includes(searchQuery.toLowerCase())
-            );
+            filtered = payments.filter(p => activeQuarterlyStudentIds.has(p.studentId));
         }
 
-        let filtered = payments.filter(p => studentIdsToDisplay.has(p.studentId));
-        
         if(searchQuery) {
             return filtered.filter(payment => 
                 payment.studentName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -286,5 +275,3 @@ export default function PagamentosPage() {
         </>
     );
 }
-
-    
