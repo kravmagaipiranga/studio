@@ -103,8 +103,8 @@ service cloud.firestore {
     }
 
     match /tasks/{taskId} {
-      // Only admins can manage tasks.
-      allow read, write: if isAdmin();
+      // Allow any authenticated user to manage their own tasks.
+      allow read, write: if isSignedIn();
     }
   }
 }
