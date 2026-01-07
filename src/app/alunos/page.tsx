@@ -7,7 +7,7 @@ import { collection, query, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student, Payment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck, MoreHorizontal, UserPlus } from "lucide-react";
+import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck, MoreHorizontal, UserPlus, GraduationCap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,13 +21,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { StudentsByBeltChart } from "@/components/students/students-by-belt-chart";
 
-type FilterType = 'Todos' | 'Ativo' | 'Inativo' | 'Vencido';
+type FilterType = 'Todos' | 'Ativo' | 'Inativo' | 'Vencido' | 'Aptos para Revisão';
 
 const filterDescriptions: Record<FilterType, string> = {
     'Todos': "Lista completa de todos os alunos cadastrados.",
     'Ativo': "Alunos com matrícula ativa.",
     'Inativo': "Alunos que não estão mais ativos.",
-    'Vencido': "Alunos com pagamentos vencidos."
+    'Vencido': "Alunos com pagamentos vencidos.",
+    'Aptos para Revisão': "Alunos que cumprem os requisitos de tempo para a próxima graduação.",
 };
 
 const beltStyles: Record<string, string> = {
@@ -150,6 +151,34 @@ export default function AlunosPage() {
                 } catch { 
                     return false; // Treat invalid dates as not overdue
                 }
+            });
+        } else if (activeFilter === 'Aptos para Revisão') {
+            const now = new Date();
+            students = students.filter(student => {
+                if (student.status !== 'Ativo' || !student.belt) return false;
+        
+                const belt = student.belt.toLowerCase();
+        
+                try {
+                    if (belt === 'branca') {
+                        const startDate = student.startDate ? parseISO(student.startDate) : (student.registrationDate ? parseISO(student.registrationDate) : null);
+                        return startDate ? differenceInMonths(now, startDate) > 4 : false;
+                    }
+        
+                    if (!student.lastExamDate) return false;
+        
+                    const lastExamDate = parseISO(student.lastExamDate);
+                    const monthsSinceExam = differenceInMonths(now, lastExamDate);
+        
+                    if (belt === 'amarela') return monthsSinceExam > 12;
+                    if (belt === 'laranja') return monthsSinceExam > 18; // 1 ano e 6 meses
+                    if (belt === 'verde' || belt === 'azul') return monthsSinceExam > 24; // 2 anos
+                    if (belt === 'marrom') return monthsSinceExam > 36; // 3 anos
+        
+                } catch {
+                    return false;
+                }
+                return false;
             });
         } else if (activeFilter !== 'Todos') {
             students = students.filter(student => student.status === activeFilter);
@@ -289,7 +318,7 @@ export default function AlunosPage() {
                 </CardHeader>
                 <CardContent className="p-0 flex-grow flex flex-col">
                      <div className="p-4 space-y-4 border-b">
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
                              <Button 
                                 variant={activeFilter === 'Todos' ? 'default' : 'outline'}
                                 onClick={() => setActiveFilter('Todos')}
@@ -313,6 +342,14 @@ export default function AlunosPage() {
                                 onClick={() => setActiveFilter('Vencido')}
                              >
                                 Listar Vencidos
+                             </Button>
+                             <Button 
+                                variant={activeFilter === 'Aptos para Revisão' ? 'default' : 'outline'}
+                                onClick={() => setActiveFilter('Aptos para Revisão')}
+                                className="bg-blue-600 text-white hover:bg-blue-700"
+                             >
+                                <GraduationCap className="mr-2 h-4 w-4" />
+                                Aptos para Revisão
                              </Button>
                         </div>
                         <div className="relative">
@@ -413,5 +450,8 @@ export default function AlunosPage() {
     
 
     
+
+    
+
 
     
