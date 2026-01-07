@@ -7,7 +7,7 @@ import { collection, query, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student, Payment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck, MoreHorizontal, UserPlus, GraduationCap } from "lucide-react";
+import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck, MoreHorizontal, UserPlus, GraduationCap, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,6 +20,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { StudentsByBeltChart } from "@/components/students/students-by-belt-chart";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 
 type FilterType = 'Todos' | 'Ativo' | 'Inativo' | 'Vencido' | 'Aptos para Revisão' | 'Branca' | 'Amarela' | 'Laranja' | 'Verde' | 'Azul' | 'Marrom' | 'Preta';
 
@@ -269,6 +276,10 @@ export default function AlunosPage() {
         'Inativo': 'secondary',
         'Pendente': 'destructive'
     }
+    
+    const generalFilters: FilterType[] = ['Todos', 'Ativo', 'Inativo', 'Vencido'];
+    const beltFilters: FilterType[] = ['Branca', 'Amarela', 'Laranja', 'Verde', 'Azul', 'Marrom', 'Preta'];
+
 
     return (
         <div className="h-full flex flex-col gap-4">
@@ -333,52 +344,51 @@ export default function AlunosPage() {
                     </div>
                 </CardHeader>
                 <CardContent className="p-0 flex-grow flex flex-col">
-                     <div className="p-4 space-y-4 border-b">
-                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
-                             <Button 
-                                variant={activeFilter === 'Todos' ? 'default' : 'outline'}
-                                onClick={() => setActiveFilter('Todos')}
-                             >
-                                Listar Todos
-                             </Button>
-                             <Button 
-                                variant={activeFilter === 'Ativo' ? 'default' : 'outline'}
-                                onClick={() => setActiveFilter('Ativo')}
-                             >
-                                Listar Ativos
-                             </Button>
-                             <Button 
-                                variant={activeFilter === 'Inativo' ? 'default' : 'outline'}
-                                onClick={() => setActiveFilter('Inativo')}
-                             >
-                                Listar Inativos
-                             </Button>
-                             <Button 
-                                variant={activeFilter === 'Vencido' ? 'destructive' : 'outline'}
-                                onClick={() => setActiveFilter('Vencido')}
-                             >
-                                Listar Vencidos
-                             </Button>
+                    <div className="p-4 space-y-4 border-b">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline">
+                                        Filtro: {activeFilter}
+                                        <ChevronDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start">
+                                    {generalFilters.map(filter => (
+                                        <DropdownMenuItem key={filter} onSelect={() => setActiveFilter(filter)}>
+                                            Listar {filter}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline">
+                                        Faixa: {beltFilters.includes(activeFilter) ? activeFilter : 'Selecione'}
+                                        <ChevronDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start">
+                                    {beltFilters.map(belt => (
+                                        <DropdownMenuItem key={belt} onSelect={() => setActiveFilter(belt)}>
+                                            <div className="flex items-center">
+                                                <span className={cn("w-3 h-3 rounded-full mr-2", beltStyles[belt.toLowerCase()])}></span>
+                                                {belt}
+                                            </div>
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
                              <Button 
                                 variant={activeFilter === 'Aptos para Revisão' ? 'default' : 'outline'}
                                 onClick={() => setActiveFilter('Aptos para Revisão')}
-                                className="bg-blue-600 text-white hover:bg-blue-700"
+                                className={cn(activeFilter === 'Aptos para Revisão' && "bg-blue-600 text-white hover:bg-blue-700")}
                              >
                                 <GraduationCap className="mr-2 h-4 w-4" />
                                 Aptos para Revisão
                              </Button>
-                        </div>
-                         <div className="grid grid-cols-4 lg:grid-cols-7 gap-2 pt-2">
-                             {Object.entries(beltStyles).map(([belt, style]) => (
-                                 <Button
-                                     key={belt}
-                                     variant={activeFilter.toLowerCase() === belt ? 'default' : 'outline'}
-                                     onClick={() => setActiveFilter(belt.charAt(0).toUpperCase() + belt.slice(1) as FilterType)}
-                                     className={cn(activeFilter.toLowerCase() !== belt && style, 'capitalize')}
-                                 >
-                                    {belt}
-                                 </Button>
-                             ))}
                         </div>
                         <div className="relative">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -472,5 +482,7 @@ export default function AlunosPage() {
         </div>
     );
 }
+
+    
 
     
