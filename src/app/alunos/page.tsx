@@ -21,7 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { StudentsByBeltChart } from "@/components/students/students-by-belt-chart";
 
-type FilterType = 'Todos' | 'Ativo' | 'Inativo' | 'Vencido' | 'Aptos para Revisão';
+type FilterType = 'Todos' | 'Ativo' | 'Inativo' | 'Vencido' | 'Aptos para Revisão' | 'Branca' | 'Amarela' | 'Laranja' | 'Verde' | 'Azul' | 'Marrom' | 'Preta';
 
 const filterDescriptions: Record<FilterType, string> = {
     'Todos': "Lista completa de todos os alunos cadastrados.",
@@ -29,7 +29,16 @@ const filterDescriptions: Record<FilterType, string> = {
     'Inativo': "Alunos que não estão mais ativos.",
     'Vencido': "Alunos com pagamentos vencidos.",
     'Aptos para Revisão': "Alunos que cumprem os requisitos de tempo para a próxima graduação.",
+    'Branca': "Alunos ativos na faixa Branca.",
+    'Amarela': "Alunos ativos na faixa Amarela.",
+    'Laranja': "Alunos ativos na faixa Laranja.",
+    'Verde': "Alunos ativos na faixa Verde.",
+    'Azul': "Alunos ativos na faixa Azul.",
+    'Marrom': "Alunos ativos na faixa Marrom.",
+    'Preta': "Alunos ativos na faixa Preta.",
 };
+
+const beltOrder: (keyof typeof beltStyles)[] = ['branca', 'amarela', 'laranja', 'verde', 'azul', 'marrom', 'preta'];
 
 const beltStyles: Record<string, string> = {
   'branca': 'bg-white text-black border border-gray-300',
@@ -180,6 +189,8 @@ export default function AlunosPage() {
                 }
                 return false;
             });
+        } else if (beltOrder.includes(activeFilter.toLowerCase())) {
+            students = students.filter(student => student.status === 'Ativo' && student.belt?.toLowerCase() === activeFilter.toLowerCase());
         } else if (activeFilter !== 'Todos') {
             students = students.filter(student => student.status === activeFilter);
         }
@@ -246,7 +257,12 @@ export default function AlunosPage() {
         document.body.removeChild(link);
     };
 
-    const cardTitleSuffix = activeFilter === 'Todos' ? activeFilter : `${activeFilter}s`;
+    const cardTitle = activeFilter === 'Todos' 
+        ? 'Alunos - Todos' 
+        : beltOrder.includes(activeFilter.toLowerCase())
+        ? `Alunos - Faixa ${activeFilter}`
+        : `Alunos - ${activeFilter}s`;
+
 
     const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
         'Ativo': 'default',
@@ -293,7 +309,7 @@ export default function AlunosPage() {
                 <CardHeader className="border-b">
                     <div className="flex items-start justify-between gap-4">
                          <div>
-                            <CardTitle>Alunos - {cardTitleSuffix}</CardTitle>
+                            <CardTitle>{cardTitle}</CardTitle>
                             <CardDescription>{filterDescriptions[activeFilter]}</CardDescription>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -351,6 +367,18 @@ export default function AlunosPage() {
                                 <GraduationCap className="mr-2 h-4 w-4" />
                                 Aptos para Revisão
                              </Button>
+                        </div>
+                         <div className="grid grid-cols-4 lg:grid-cols-7 gap-2 pt-2">
+                             {Object.entries(beltStyles).map(([belt, style]) => (
+                                 <Button
+                                     key={belt}
+                                     variant={activeFilter.toLowerCase() === belt ? 'default' : 'outline'}
+                                     onClick={() => setActiveFilter(belt.charAt(0).toUpperCase() + belt.slice(1) as FilterType)}
+                                     className={cn(activeFilter.toLowerCase() !== belt && style, 'capitalize')}
+                                 >
+                                    {belt}
+                                 </Button>
+                             ))}
                         </div>
                         <div className="relative">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -444,14 +472,5 @@ export default function AlunosPage() {
         </div>
     );
 }
-
-    
-
-    
-
-    
-
-    
-
 
     
