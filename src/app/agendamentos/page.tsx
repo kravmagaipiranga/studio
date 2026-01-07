@@ -9,7 +9,7 @@ import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { Appointment } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, query, orderBy } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,7 +22,7 @@ export default function AgendamentosPage() {
 
     const appointmentsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
-        return collection(firestore, 'appointments');
+        return query(collection(firestore, 'appointments'), orderBy('classDate', 'desc'));
     }, [firestore]);
 
     const { data: initialAppointments, isLoading } = useCollection<Appointment>(appointmentsCollection);
