@@ -1,10 +1,8 @@
 
-
 export type Student = {
   id: string;
   name: string;
   email: string;
-  plan?: 'Básico' | 'Intermediário' | 'Avançado';
   registrationDate: string;
   status: 'Ativo' | 'Inativo' | 'Pendente';
   paymentStatus: 'Pago' | 'Vencido' | 'Pendente';
@@ -26,15 +24,29 @@ export type Student = {
   generalNotes?: string;
   fikmAnnuityPaid?: boolean;
   fikmAnnuityPaymentDate?: string;
-  fikmAnnuityPaymentMethod?: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+  fikmAnnuityPaymentMethod?: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
+  readyForReview?: boolean;
 
 
   // Dados Financeiros
-  planType?: 'Mensal' | 'Trimestral' | 'Bolsa';
+  planType?: 'Mensal' | 'Trimestral' | 'Bolsa 50%' | 'Bolsa 100%' | 'Outros' | 'Matrícula';
   planValue?: number;
+  paymentPreference?: ('pix' | 'dinheiro' | 'boleto')[];
   lastPaymentDate?: string;
   planExpirationDate?: string;
   paymentCredits?: string;
+};
+
+export type Payment = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  paymentDate: string;
+  planType: 'Mensal' | 'Trimestral' | 'Bolsa 50%' | 'Bolsa 100%' | 'Outros' | 'Matrícula';
+  amount: number;
+  expirationDate?: string;
+  paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
+  notes?: string;
 };
 
 export type RevenueData = {
@@ -53,7 +65,8 @@ export type Exam = {
   paymentStatus: 'Pago' | 'Pendente';
   paymentDate?: string;
   paymentAmount: number;
-  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+  paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
+  isNew?: boolean; // Flag for new rows in UI
 };
 
 export type Seminar = {
@@ -67,19 +80,23 @@ export type Seminar = {
   paymentStatus: 'Pago' | 'Pendente';
   paymentDate?: string;
   paymentAmount: number;
-  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+  paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
+  isNew?: boolean; // Flag for new rows in UI
 };
 
 export type PrivateClass = {
   id: string;
-  studentId: string;
+  studentId?: string; // Not linked to general students anymore, can be optional
   studentName: string;
-  studentBelt: string;
   classDate: string;
+  numberOfClasses: number;
+  pricePerClass: number;
+  paymentAmount: number; // This will be the calculated total
   paymentStatus: 'Pago' | 'Pendente';
   paymentDate?: string;
-  paymentAmount: number;
-  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+  paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
+  notes?: string;
+  isNew?: boolean; // Flag for new rows in UI
 };
 
 export type Appointment = {
@@ -90,6 +107,10 @@ export type Appointment = {
   classDate: string;
   classTime: string;
   notes?: string;
+  isNew?: boolean; // Flag for new rows in UI
+  enrolled?: boolean;
+  attended?: boolean;
+  missed?: boolean;
 };
 
 export type Sale = {
@@ -99,8 +120,31 @@ export type Sale = {
   item: string;
   value: number;
   date: string;
-  paymentMethod: 'Pix' | 'Cartão' | 'Dinheiro' | 'Pendente';
+  paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
   paymentStatus: 'Pago' | 'Pendente';
+  isNew?: boolean; // Flag for new rows in UI
 };
 
-    
+export type MonthlyIndicator = {
+  id: string; // YYYY-MM
+  year: number;
+  month: number;
+  previousMonthTotal?: number;
+  visits?: number;
+  trialClasses?: number;
+  newEnrollments?: number;
+  reenrollments?: number;
+  exits?: number;
+  womensMonth?: number;
+  // Calculated fields (stored for convenience or calculated on the fly)
+  totalStudents?: number;
+  evolution?: number;
+  conversionRate?: number;
+};
+
+export type Task = {
+    id: string;
+    text: string;
+    completed: boolean;
+    createdAt: any; // Firestore timestamp
+};

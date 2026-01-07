@@ -101,5 +101,10 @@ service cloud.firestore {
       // Only admins can read or write monthly indicators.
       allow read, write: if isAdmin();
     }
+
+    match /tasks/{taskId} {
+      // Only admins can manage tasks.
+      allow read, write: if isAdmin();
+    }
   }
 }

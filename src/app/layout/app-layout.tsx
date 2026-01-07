@@ -17,6 +17,7 @@ import {
   BarChart,
   Cake,
   Wallet,
+  ListChecks,
 } from "lucide-react";
 import {
   Sheet,
@@ -178,6 +179,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <BarChart className="h-4 w-4" />
                 Indicadores
               </NavItem>
+              <NavItem href="/lista-de-tarefas">
+                <ListChecks className="h-4 w-4" />
+                Lista de Tarefas
+              </NavItem>
             </nav>
           </div>
         </div>
@@ -246,6 +251,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <NavItem href="/indicadores" isMobile>
                   <BarChart className="h-5 w-5" />
                   Indicadores
+                </NavItem>
+                 <NavItem href="/lista-de-tarefas" isMobile>
+                  <ListChecks className="h-5 w-5" />
+                  Lista de Tarefas
                 </NavItem>
               </nav>
             </SheetContent>
