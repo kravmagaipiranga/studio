@@ -16,6 +16,7 @@ import {
   ShoppingCart,
   BarChart,
   Cake,
+  Wallet,
 } from "lucide-react";
 import {
   Sheet,
@@ -153,6 +154,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <CreditCard className="h-4 w-4" />
                 Pagamentos
               </NavItem>
+               <NavItem href="/creditos">
+                <Wallet className="h-4 w-4" />
+                Créditos
+              </NavItem>
               <NavItem href="/exames">
                 <ShieldCheck className="h-4 w-4" />
                 Exames
@@ -217,6 +222,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <NavItem href="/pagamentos" isMobile>
                   <CreditCard className="h-5 w-5" />
                   Pagamentos
+                </NavItem>
+                 <NavItem href="/creditos" isMobile>
+                  <Wallet className="h-5 w-5" />
+                  Créditos
                 </NavItem>
                  <NavItem href="/exames" isMobile>
                   <ShieldCheck className="h-5 w-5" />
