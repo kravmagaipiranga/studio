@@ -120,6 +120,11 @@ export function UniformsTable({ orders, setOrders, allStudents, isLoading }: Uni
     const { isNew, id, ...itemData } = itemToSave;
     const finalId = isNew ? doc(collection(firestore, "uniformOrders")).id : id;
 
+    // Firestore does not allow 'undefined' fields.
+    if (!itemData.paymentDate) {
+        delete itemData.paymentDate;
+    }
+
     const docRef = doc(firestore, 'uniformOrders', finalId);
     setDocumentNonBlocking(docRef, { ...itemData, id: finalId }, { merge: true });
 
