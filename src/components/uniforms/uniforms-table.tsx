@@ -1,6 +1,7 @@
 
 "use client"
 
+import { useState, useEffect } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -9,8 +10,8 @@ import {
 } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Save, Trash2, PackageCheck } from "lucide-react"
-import { UniformOrder, Student } from "@/lib/types"
+import { Save, Trash2, PackageCheck, PlusCircle, X } from "lucide-react"
+import { UniformOrder, Student, OrderItem } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
 import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
@@ -18,10 +19,13 @@ import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Combobox } from "../ui/combobox";
 import { useToast } from "@/hooks/use-toast";
-import { Textarea } from "../ui/textarea"
 import { cn } from "@/lib/utils"
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { UNIFORM_ITEMS } from "@/lib/uniform-items";
+import { v4 as uuidv4 } from 'uuid';
 
 interface UniformsTableProps {
   orders: UniformOrder[];
@@ -36,32 +40,79 @@ export function UniformsTable({ orders, setOrders, allStudents, isLoading }: Uni
   
   const studentOptions = allStudents.slice().sort((a,b) => a.name.localeCompare(b.name)).map(s => ({ value: s.id, label: s.name }));
 
-  const handleInputChange = (orderId: string, field: keyof UniformOrder, value: any) => {
+  const updateOrder = (orderId: string, updatedFields: Partial<UniformOrder>) => {
     setOrders(prev =>
-      prev.map(item => {
-        if (item.id === orderId) {
-          const updatedItem = { ...item, [field]: value };
-          if (field === 'studentId' && item.isNew) {
-            const selectedStudent = allStudents.find(s => s.id === value);
-            if (selectedStudent) {
-              updatedItem.studentName = selectedStudent.name;
-            }
+      prev.map(order => {
+        if (order.id === orderId) {
+          const newOrder = { ...order, ...updatedFields };
+          // Recalculate total value if items change
+          if (updatedFields.items) {
+            newOrder.totalValue = newOrder.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
           }
-          return updatedItem;
+          return newOrder;
         }
-        return item;
+        return order;
       })
     );
   };
   
+  const handleStudentChange = (orderId: string, studentId: string) => {
+    const student = allStudents.find(s => s.id === studentId);
+    updateOrder(orderId, { studentId, studentName: student?.name || "" });
+  };
+
+  const handleItemChange = (orderId: string, itemId: string, field: keyof OrderItem, value: any) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    
+    const newItems = order.items.map(item => 
+      item.id === itemId ? { ...item, [field]: value } : item
+    );
+    updateOrder(orderId, { items: newItems });
+  };
+
+  const handleAddItem = (orderId: string, predefinedItem: { name: string; price: number; sizes: string[] }) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    const newItem: OrderItem = {
+      id: uuidv4(),
+      name: predefinedItem.name,
+      price: predefinedItem.price,
+      size: predefinedItem.sizes[0] || "",
+      quantity: 1,
+    };
+    updateOrder(orderId, { items: [...order.items, newItem] });
+  };
+
+  const handleAddCustomItem = (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    const newItem: OrderItem = {
+      id: uuidv4(),
+      name: "Item Personalizado",
+      price: 0,
+      size: "Único",
+      quantity: 1,
+    };
+    updateOrder(orderId, { items: [...order.items, newItem] });
+  };
+
+  const handleRemoveItem = (orderId: string, itemId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    const newItems = order.items.filter(item => item.id !== itemId);
+    updateOrder(orderId, { items: newItems });
+  };
+
   const handleSaveOrder = (itemToSave: UniformOrder) => {
     if (!firestore) return;
 
-    if (!itemToSave.studentId || !itemToSave.items || !itemToSave.orderDate) {
+    if (!itemToSave.studentId || itemToSave.items.length === 0) {
         toast({
             variant: "destructive",
             title: "Campos Obrigatórios",
-            description: "Por favor, preencha Aluno, Itens e Data do Pedido antes de salvar."
+            description: "Por favor, selecione um Aluno e adicione pelo menos um item ao pedido."
         });
         return;
     }
@@ -144,7 +195,7 @@ export function UniformsTable({ orders, setOrders, allStudents, isLoading }: Uni
                             <Combobox
                                 options={studentOptions}
                                 value={order.studentId}
-                                onChange={(value) => handleInputChange(order.id, 'studentId', value)}
+                                onChange={(value) => handleStudentChange(order.id, value)}
                                 placeholder="Selecione..."
                                 searchPlaceholder="Buscar aluno..."
                                 notFoundText="Nenhum aluno encontrado."
@@ -158,26 +209,69 @@ export function UniformsTable({ orders, setOrders, allStudents, isLoading }: Uni
                             <Input 
                                 type="date"
                                 value={order.orderDate} 
-                                onChange={e => handleInputChange(order.id, 'orderDate', e.target.value)} 
+                                onChange={e => updateOrder(order.id, { orderDate: e.target.value })} 
                             />
                         </div>
                     </div>
-                     <div className="space-y-2 mt-4">
-                        <label className="text-xs font-semibold text-muted-foreground">Itens Solicitados</label>
-                        <Textarea
-                            placeholder="Ex: 1 Camiseta M, 1 Calça 42, 1 Luva G..."
-                            value={order.items}
-                            onChange={e => handleInputChange(order.id, 'items', e.target.value)}
-                        />
+                     
+                     <div className="space-y-4 mt-4 p-4 border rounded-lg bg-muted/30">
+                        <h4 className="font-semibold text-sm">Itens do Pedido</h4>
+                        {order.items.map((item) => (
+                            <div key={item.id} className="grid grid-cols-[1fr,100px,100px,80px,auto] gap-2 items-center">
+                                <Input value={item.name} onChange={e => handleItemChange(order.id, item.id, 'name', e.target.value)} placeholder="Nome do Item"/>
+                                
+                                <Select value={item.size} onValueChange={value => handleItemChange(order.id, item.id, 'size', value)}>
+                                    <SelectTrigger><SelectValue/></SelectTrigger>
+                                    <SelectContent>
+                                        {(UNIFORM_ITEMS.find(ui => ui.name === item.name)?.sizes || ['Único']).map(s => (
+                                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+
+                                <Input type="number" value={item.price} onChange={e => handleItemChange(order.id, item.id, 'price', parseFloat(e.target.value) || 0)} placeholder="Preço"/>
+                                
+                                <Select value={String(item.quantity)} onValueChange={value => handleItemChange(order.id, item.id, 'quantity', parseInt(value, 10))}>
+                                    <SelectTrigger><SelectValue/></SelectTrigger>
+                                    <SelectContent>
+                                        {[1,2,3,4,5].map(q => <SelectItem key={q} value={String(q)}>{q}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                
+                                <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(order.id, item.id)}>
+                                    <X className="h-4 w-4 text-destructive"/>
+                                </Button>
+                            </div>
+                        ))}
+                         <div className="flex gap-2">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" size="sm"><PlusCircle className="h-4 w-4 mr-2"/>Adicionar Item</Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="p-0">
+                                    <ScrollArea className="h-72">
+                                        <div className="p-4">
+                                        {UNIFORM_ITEMS.map(item => (
+                                            <div key={item.name} className="text-sm p-2 rounded-md hover:bg-accent cursor-pointer" onClick={() => handleAddItem(order.id, item)}>
+                                                {item.name}
+                                            </div>
+                                        ))}
+                                        </div>
+                                    </ScrollArea>
+                                </PopoverContent>
+                            </Popover>
+                             <Button variant="outline" size="sm" onClick={() => handleAddCustomItem(order.id)}>Adicionar Item Personalizado</Button>
+                        </div>
                      </div>
+
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 items-end">
                         <div className="space-y-2">
                             <label className="text-xs font-semibold text-muted-foreground">Valor Total (R$)</label>
-                            <Input type="number" value={order.totalValue} onChange={e => handleInputChange(order.id, 'totalValue', parseFloat(e.target.value) || 0)} />
+                            <Input type="number" value={order.totalValue} disabled className="font-bold text-lg h-12"/>
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-semibold text-muted-foreground">Status do Pagamento</label>
-                            <Select value={order.paymentStatus} onValueChange={(value) => handleInputChange(order.id, 'paymentStatus', value)}>
+                            <Select value={order.paymentStatus} onValueChange={(value) => updateOrder(order.id, { paymentStatus: value as 'Pago' | 'Pendente' })}>
                                 <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="Pago">Pago</SelectItem>
@@ -190,7 +284,7 @@ export function UniformsTable({ orders, setOrders, allStudents, isLoading }: Uni
                             <Input 
                                 type="date"
                                 value={order.paymentDate || ''} 
-                                onChange={e => handleInputChange(order.id, 'paymentDate', e.target.value)} 
+                                onChange={e => updateOrder(order.id, { paymentDate: e.target.value })} 
                                 disabled={order.paymentStatus !== 'Pago'}
                             />
                         </div>
@@ -198,7 +292,7 @@ export function UniformsTable({ orders, setOrders, allStudents, isLoading }: Uni
                             <Switch 
                                 id={`picked-up-${order.id}`} 
                                 checked={order.materialPickedUp}
-                                onCheckedChange={checked => handleInputChange(order.id, 'materialPickedUp', checked)}
+                                onCheckedChange={checked => updateOrder(order.id, { materialPickedUp: checked })}
                             />
                             <Label htmlFor={`picked-up-${order.id}`}>Material Retirado</Label>
                         </div>

@@ -53,7 +53,7 @@ export default function UniformesPage() {
          studentId: "",
          studentName: "",
          orderDate: new Date().toISOString().split('T')[0],
-         items: "",
+         items: [],
          totalValue: 0,
          paymentStatus: 'Pendente',
          paymentDate: undefined,
@@ -67,7 +67,7 @@ export default function UniformesPage() {
        if (!uniformOrders) return [];
        return uniformOrders.filter(order =>
          order.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         order.items.toLowerCase().includes(searchQuery.toLowerCase())
+         order.items.some(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
        );
     }, [uniformOrders, searchQuery]);
 

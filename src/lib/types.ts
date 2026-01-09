@@ -151,12 +151,20 @@ export type Task = {
     createdAt: any; // Firestore timestamp
 };
 
+export type OrderItem = {
+  id: string; // Unique ID for the item within the order (e.g., uuid)
+  name: string;
+  size: string;
+  quantity: number;
+  price: number; // Price per unit
+};
+
 export type UniformOrder = {
   id: string;
   studentId: string;
   studentName: string;
   orderDate: string;
-  items: string;
+  items: OrderItem[];
   totalValue: number;
   paymentStatus: 'Pago' | 'Pendente';
   paymentDate?: string;
