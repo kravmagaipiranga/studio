@@ -162,7 +162,7 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, isLoadi
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-muted-foreground">Horário</label>
-                                    <Input type="time" value={pc.classTime} onChange={e => handleInputChange(pc.id, 'classTime', e.target.value)} />
+                                    <Input type="time" value={pc.classTime || ''} onChange={e => handleInputChange(pc.id, 'classTime', e.target.value)} />
                                 </div>
                             </div>
                         </div>
