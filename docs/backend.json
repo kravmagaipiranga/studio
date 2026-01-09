@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Student": {
@@ -268,6 +269,63 @@
         "completed",
         "createdAt"
       ]
+    },
+    "UniformOrder": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UniformOrder",
+      "type": "object",
+      "description": "Represents a uniform order made by a student.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the order."
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Reference to the Student who made the order."
+        },
+        "studentName": {
+          "type": "string",
+          "description": "Denormalized student name for easy display."
+        },
+        "orderDate": {
+          "type": "string",
+          "description": "The date the order was placed.",
+          "format": "date-time"
+        },
+        "items": {
+          "type": "string",
+          "description": "A text description of the items ordered."
+        },
+        "totalValue": {
+          "type": "number",
+          "description": "The total value of the order."
+        },
+        "paymentStatus": {
+          "type": "string",
+          "description": "The payment status of the order.",
+          "enum": ["Pago", "Pendente"]
+        },
+        "paymentDate": {
+            "type": "string",
+            "description": "The date the payment was made.",
+            "format": "date-time"
+        },
+        "materialPickedUp": {
+            "type": "boolean",
+            "description": "Indicates if the student has picked up the material."
+        }
+      },
+      "required": [
+        "id",
+        "studentId",
+        "studentName",
+        "orderDate",
+        "items",
+        "totalValue",
+        "paymentStatus",
+        "materialPickedUp"
+      ]
     }
   },
   "auth": {
@@ -390,6 +448,22 @@
             {
               "name": "taskId",
               "description": "The unique identifier for the task."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/uniformOrders/{orderId}",
+        "definition": {
+          "entityName": "UniformOrder",
+          "schema": {
+            "$ref": "#/backend/entities/UniformOrder"
+          },
+          "description": "Stores student uniform orders.",
+          "params": [
+            {
+              "name": "orderId",
+              "description": "The unique identifier for the uniform order."
             }
           ]
         }

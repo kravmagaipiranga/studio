@@ -106,5 +106,10 @@ service cloud.firestore {
       // Allow any authenticated user to manage their own tasks.
       allow read, write: if isSignedIn();
     }
+
+    match /uniformOrders/{orderId} {
+      // Only admins can read or write uniform orders.
+      allow read, write: if isAdmin();
+    }
   }
 }

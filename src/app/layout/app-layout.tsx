@@ -18,6 +18,7 @@ import {
   Cake,
   Wallet,
   ListChecks,
+  Shirt,
 } from "lucide-react";
 import {
   Sheet,
@@ -175,6 +176,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <ShoppingCart className="h-4 w-4" />
                 Vendas
               </NavItem>
+              <NavItem href="/uniformes">
+                <Shirt className="h-4 w-4" />
+                Uniformes
+              </NavItem>
               <NavItem href="/indicadores">
                 <BarChart className="h-4 w-4" />
                 Indicadores
@@ -247,6 +252,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                  <NavItem href="/vendas" isMobile>
                   <ShoppingCart className="h-5 w-5" />
                   Vendas
+                </NavItem>
+                <NavItem href="/uniformes" isMobile>
+                  <Shirt className="h-5 w-5" />
+                  Uniformes
                 </NavItem>
                 <NavItem href="/indicadores" isMobile>
                   <BarChart className="h-5 w-5" />
