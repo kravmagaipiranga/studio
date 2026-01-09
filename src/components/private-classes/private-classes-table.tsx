@@ -54,11 +54,11 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, isLoadi
   const handleSaveClass = (itemToSave: PrivateClass) => {
     if (!firestore) return;
     
-    if (!itemToSave.studentName || !itemToSave.classDate) {
+    if (!itemToSave.studentName || !itemToSave.classDate || !itemToSave.classTime) {
         toast({
             variant: "destructive",
             title: "Campos Obrigatórios",
-            description: "Por favor, preencha Nome do Aluno e Data da Aula antes de salvar."
+            description: "Por favor, preencha Nome do Aluno, Data e Horário da Aula antes de salvar."
         });
         return;
     }
@@ -138,7 +138,7 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, isLoadi
                     <AccordionTrigger className="hover:no-underline">
                         <div className="flex items-center justify-between w-full">
                             <div className="flex-1 text-left font-medium">{pc.studentName || "Novo Registro"}</div>
-                            <div className="flex-1 text-left text-muted-foreground">{new Date(pc.classDate + 'T00:00:00').toLocaleDateString('pt-BR')}</div>
+                            <div className="flex-1 text-left text-muted-foreground">{new Date(pc.classDate + 'T00:00:00').toLocaleDateString('pt-BR')} às {pc.classTime}</div>
                             <div className="flex-1 text-left font-semibold">R$ {pc.paymentAmount.toFixed(2)}</div>
                             <div className="flex-1 text-left">
                                 <Badge variant={getStatusVariant(pc.paymentStatus)}>{pc.paymentStatus}</Badge>
@@ -155,9 +155,15 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, isLoadi
                                   onChange={e => handleInputChange(pc.id, 'studentName', e.target.value)} 
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-semibold text-muted-foreground">Data da Aula</label>
-                                <Input type="date" value={pc.classDate} onChange={e => handleInputChange(pc.id, 'classDate', e.target.value)} />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-muted-foreground">Data da Aula</label>
+                                    <Input type="date" value={pc.classDate} onChange={e => handleInputChange(pc.id, 'classDate', e.target.value)} />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-muted-foreground">Horário</label>
+                                    <Input type="time" value={pc.classTime} onChange={e => handleInputChange(pc.id, 'classTime', e.target.value)} />
+                                </div>
                             </div>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">

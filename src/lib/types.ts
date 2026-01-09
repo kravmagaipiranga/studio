@@ -90,6 +90,7 @@ export type PrivateClass = {
   studentId?: string; // Not linked to general students anymore, can be optional
   studentName: string;
   classDate: string;
+  classTime: string;
   numberOfClasses: number;
   pricePerClass: number;
   paymentAmount: number; // This will be the calculated total
@@ -142,4 +143,10 @@ export type MonthlyIndicator = {
   evolution?: number;
   conversionRate?: number;
 };
-    
+
+export type Task = {
+    id: string;
+    text: string;
+    completed: boolean;
+    createdAt: any; // Firestore timestamp
+};

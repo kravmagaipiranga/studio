@@ -78,6 +78,7 @@ export default function AulasPage() {
          id: `new_${uuidv4()}`,
          studentName: "",
          classDate: new Date().toISOString().split('T')[0],
+         classTime: "12:00",
          numberOfClasses: 1,
          pricePerClass: 150,
          paymentAmount: 150, // Calculated from numberOfClasses * pricePerClass
