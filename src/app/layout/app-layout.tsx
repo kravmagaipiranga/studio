@@ -19,6 +19,8 @@ import {
   Wallet,
   ListChecks,
   Shirt,
+  UserCircle,
+  LogOut,
 } from "lucide-react";
 import {
   Sheet,
@@ -38,16 +40,19 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useUser, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useUser, useCollection, useFirestore, useMemoFirebase, useAuth } from "@/firebase";
 import { useEffect, useMemo } from "react";
 import { FirebaseErrorListener } from "@/components/FirebaseErrorListener";
 import { collection } from "firebase/firestore";
 import type { Student } from "@/lib/types";
+import { signOut } from "firebase/auth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
+  const auth = useAuth();
   const firestore = useFirestore();
 
   const studentsCollection = useMemoFirebase(() => {
@@ -86,6 +91,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       router.push('/login');
     }
   }, [isUserLoading, user, pathname, router]);
+
+  const handleSignOut = async () => {
+    if (auth) {
+      await signOut(auth);
+      router.push('/login');
+    }
+  };
+
 
   // For public-facing pages, we render children without the main app layout.
   if (pathname === '/register' || pathname === '/login') {
@@ -140,23 +153,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              <NavItem href="/dashboard">
-                <Home className="h-4 w-4" />
-                Painel
-              </NavItem>
-               <NavItem href="/agendamentos">
-                <CalendarPlus className="h-4 w-4" />
-                Agendamentos
-              </NavItem>
               <NavItem href="/alunos">
                 <Users className="h-4 w-4" />
                 Alunos
+              </NavItem>
+              <NavItem href="/agendamentos">
+                <CalendarPlus className="h-4 w-4" />
+                Agendamentos
               </NavItem>
               <NavItem href="/pagamentos">
                 <CreditCard className="h-4 w-4" />
                 Pagamentos
               </NavItem>
-               <NavItem href="/creditos">
+              <NavItem href="/creditos">
                 <Wallet className="h-4 w-4" />
                 Créditos
               </NavItem>
@@ -168,21 +177,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <BookCopy className="h-4 w-4" />
                 Seminários
               </NavItem>
-               <NavItem href="/aulas">
+              <NavItem href="/aulas">
                 <ClipboardList className="h-4 w-4" />
                 Aulas Particulares
               </NavItem>
-               <NavItem href="/vendas">
+              <NavItem href="/vendas">
                 <ShoppingCart className="h-4 w-4" />
                 Vendas
               </NavItem>
               <NavItem href="/uniformes">
                 <Shirt className="h-4 w-4" />
                 Uniformes
-              </NavItem>
-              <NavItem href="/indicadores">
-                <BarChart className="h-4 w-4" />
-                Indicadores
               </NavItem>
               <NavItem href="/lista-de-tarefas">
                 <ListChecks className="h-4 w-4" />
@@ -217,17 +222,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 >
                   <span>Krav Magá IPIRANGA</span>
                 </Link>
-                <NavItem href="/dashboard" isMobile>
-                  <Home className="h-5 w-5" />
-                  Painel
-                </NavItem>
-                 <NavItem href="/agendamentos" isMobile>
-                  <CalendarPlus className="h-5 w-5" />
-                  Agendamentos
-                </NavItem>
                 <NavItem href="/alunos" isMobile>
                   <Users className="h-5 w-5" />
                   Alunos
+                </NavItem>
+                <NavItem href="/agendamentos" isMobile>
+                  <CalendarPlus className="h-5 w-5" />
+                  Agendamentos
                 </NavItem>
                 <NavItem href="/pagamentos" isMobile>
                   <CreditCard className="h-5 w-5" />
@@ -271,9 +272,34 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="w-full flex-1">
             {/* Futuro campo de busca global */}
           </div>
-          <div className="flex items-center font-medium">
-            Admin
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.photoURL || undefined} />
+                      <AvatarFallback>
+                        <UserCircle className="h-6 w-6" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium">Admin</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Menu do Gestor</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href="/dashboard"><Home className="mr-2 h-4 w-4" />Painel</Link>
+                </DropdownMenuItem>
+                 <DropdownMenuItem asChild>
+                    <Link href="/indicadores"><BarChart className="mr-2 h-4 w-4" />Indicadores</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
           {children}
