@@ -21,7 +21,7 @@ export const UNIFORM_ITEMS = [
     },
     { 
         name: "Kimono", 
-        price: 380, 
+        price: 350, 
         sizes: ["P", "M", "G", "GG", "XGG"] 
     },
 ];
