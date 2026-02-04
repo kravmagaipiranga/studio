@@ -1,7 +1,7 @@
 
-
 export type Student = {
   id: string;
+  userId?: string; // Firebase Auth User ID
   name: string;
   email: string;
   registrationDate: string;

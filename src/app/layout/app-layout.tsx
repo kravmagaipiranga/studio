@@ -48,6 +48,24 @@ import type { Student } from "@/lib/types";
 import { signOut } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+const protectedAdminRoutes = [
+  "/alunos",
+  "/agendamentos",
+  "/pagamentos",
+  "/creditos",
+  "/exames",
+  "/seminarios",
+  "/aulas",
+  "/vendas",
+  "/uniformes",
+  "/lista-de-tarefas",
+  "/dashboard",
+  "/indicadores",
+];
+
+const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno"];
+
+
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -82,12 +100,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }, [students]);
 
   useEffect(() => {
-    // If auth is still loading, do nothing to prevent flickering.
     if (isUserLoading) return;
     
-    // If auth has loaded and there's no user, redirect to login page.
-    // We allow access to public pages like /register and the login page itself.
-    if (!user && pathname !== '/login' && pathname !== '/register') {
+    const isProtectedRoute = protectedAdminRoutes.some(route => pathname.startsWith(route));
+
+    if (!user && isProtectedRoute) {
       router.push('/login');
     }
   }, [isUserLoading, user, pathname, router]);
@@ -99,14 +116,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
-
-  // For public-facing pages, we render children without the main app layout.
-  if (pathname === '/register' || pathname === '/login') {
+  // For public-facing pages, render children without the main app layout.
+  if (publicRoutes.some(route => pathname.startsWith(route))) {
     return <>{children}</>;
   }
   
   // While loading auth state for protected routes, show a simple loader.
-  // This prevents the layout from flashing before the redirect can happen.
   if (isUserLoading || !user) {
       return (
         <div className="flex items-center justify-center min-h-screen">
@@ -114,7 +129,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       );
   }
-
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -311,7 +325,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
 function NavItem({ href, children, isMobile = false }: { href: string; children: React.ReactNode; isMobile?: boolean; }) {
   const pathname = usePathname();
-  const isActive = pathname === href;
+  const isActive = pathname.startsWith(href);
 
   if (isMobile) {
     return (

@@ -48,6 +48,7 @@ const formSchema = z.object({
   phone: z.string().min(10, "O número de telefone/WhatsApp é obrigatório."),
   email: z.string().email("Por favor, insira um endereço de e-mail válido."),
   
+  userId: z.string().optional(),
   startDate: z.string().optional(),
   lastExamDate: z.string().optional(),
   readyForReview: z.boolean().optional(),
@@ -139,6 +140,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
       cpf: "",
       phone: "",
       email: "",
+      userId: "",
       tshirtSize: "M",
       pantsSize: "M",
       emergencyContacts: "",
@@ -182,6 +184,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
         cpf: student.cpf || "",
         phone: student.phone || "",
         email: student.email || "",
+        userId: student.userId || "",
         tshirtSize: student.tshirtSize || "M",
         pantsSize: student.pantsSize || "M",
         emergencyContacts: student.emergencyContacts || "",
@@ -390,6 +393,19 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                     />
                     
                     <h3 className="text-lg font-medium border-b pb-2 pt-4">Controle Interno</h3>
+                     <FormField
+                        control={form.control}
+                        name="userId"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>User ID (para login do aluno)</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Cole o UID do Firebase Auth aqui" {...field} value={field.value ?? ''} />
+                            </FormControl>
+                             <FormMessage />
+                        </FormItem>
+                        )}
+                    />
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <FormField
                             control={form.control}

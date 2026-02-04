@@ -34,13 +34,12 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
-
-    function newDocStudentIdMatchesPath(studentId) {
-      return request.resource.data.studentId == studentId;
-    }
-
-    function studentIdIsImmutable() {
-      return request.resource.data.studentId == resource.data.studentId;
+    
+    function studentCanUpdate() {
+      // Students can only update a specific set of non-critical fields.
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'name', 'dob', 'cpf', 'phone', 'email', 'tshirtSize', 'pantsSize', 
+        'emergencyContacts', 'medicalHistory', 'address']);
     }
 
 
@@ -49,10 +48,17 @@ service cloud.firestore {
     // ------------------------------------------------------------------------
 
     match /students/{studentId} {
-      // Allow any signed-in user to read the list of students or get a single student.
-      allow get, list: if isSignedIn();
-      // Allow only admins to create, update, or delete students.
-      allow create, update, delete: if isAdmin();
+      // Admins can see all students. Students can only query for their own record via their userId.
+      allow get, list: if isAdmin();
+      
+      // A student can get their own document if they know the direct path (not used in portal).
+      allow get: if request.auth.uid == resource.data.userId;
+
+      // Admins can create and delete students.
+      allow create, delete: if isAdmin();
+
+      // Admins can update anything. Students can only update specific fields on their own document.
+      allow update: if isAdmin() || (request.auth.uid == resource.data.userId && studentCanUpdate());
     }
     
     // New top-level payments collection
