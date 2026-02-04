@@ -16,7 +16,7 @@ export const UNIFORM_ITEMS = [
     },
     { 
         name: "Luvas de Treino", 
-        price: 185, 
+        price: 200, 
         sizes: ["P", "M", "G"] 
     },
     { 
