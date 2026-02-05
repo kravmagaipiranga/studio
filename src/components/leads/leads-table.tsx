@@ -1,4 +1,3 @@
-
 "use client"
 
 import {
@@ -10,15 +9,15 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Trash2, MessageSquare } from "lucide-react"
+import { Trash2, MessageSquare, Save } from "lucide-react"
 import { Lead } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
 import { useFirestore, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
 import { doc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { Checkbox } from "../ui/checkbox"
-import { format, parseISO } from "date-fns"
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "../ui/input"
 
 interface LeadsTableProps {
   leads: Lead[];
@@ -39,6 +38,28 @@ export function LeadsTable({
 }: LeadsTableProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
+
+  const handleInputChange = (leadId: string, field: keyof Lead, value: string) => {
+    setLeads(prevLeads => 
+      prevLeads.map(lead => 
+        lead.id === leadId ? { ...lead, [field]: value } : lead
+      )
+    );
+  };
+
+  const handleSave = (lead: Lead) => {
+    if (!firestore) return;
+    const docRef = doc(firestore, 'leads', lead.id);
+    updateDocumentNonBlocking(docRef, {
+        name: lead.name,
+        contactDate: lead.contactDate,
+        phone: lead.phone,
+    });
+    toast({
+      title: "Lead Atualizado",
+      description: `O lead de ${lead.name} foi atualizado.`
+    });
+  };
 
   const handleDelete = (lead: Lead) => {
     if (!firestore) return;
@@ -131,16 +152,32 @@ export function LeadsTable({
                         />
                     </TableCell>
                     <TableCell>
-                      <div className="font-medium">{lead.name}</div>
+                      <Input
+                        value={lead.name}
+                        onChange={(e) => handleInputChange(lead.id, 'name', e.target.value)}
+                        className="h-auto p-0 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+                      />
                     </TableCell>
                     <TableCell>
-                      {format(parseISO(lead.contactDate), 'dd/MM/yyyy')}
+                      <Input
+                        type="date"
+                        value={lead.contactDate}
+                        onChange={(e) => handleInputChange(lead.id, 'contactDate', e.target.value)}
+                        className="h-auto p-0 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+                      />
                     </TableCell>
                     <TableCell>
-                      {lead.phone}
+                      <Input
+                        value={lead.phone}
+                        onChange={(e) => handleInputChange(lead.id, 'phone', e.target.value)}
+                        className="h-auto p-0 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+                      />
                     </TableCell>
                     <TableCell className="text-right pr-4">
                         <div className="flex items-center justify-end gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => handleSave(lead)}>
+                                <Save className="h-4 w-4" />
+                            </Button>
                             <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
                                 <Button variant="outline" size="sm" disabled={whatsappLink === '#'}>
                                     <MessageSquare className="h-4 w-4 mr-2"/>
