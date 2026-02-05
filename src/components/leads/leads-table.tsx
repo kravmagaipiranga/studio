@@ -1,4 +1,3 @@
-
 "use client"
 
 import {
@@ -107,7 +106,7 @@ export function LeadsTable({
                 </TableHead>
                 <TableHead className="w-[80px]">Contactado</TableHead>
                 <TableHead className="w-[80px]">Respondeu</TableHead>
-                <TableHead>Nome do Lead</TableHead>
+                <TableHead className="min-w-[250px]">Nome do Lead</TableHead>
                 <TableHead>Data do Contato</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead className="text-right pr-4">Ações</TableHead>
@@ -175,12 +174,12 @@ export function LeadsTable({
                       />
                     </TableCell>
                     <TableCell className="text-right pr-4">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1">
                             <Button variant="ghost" size="icon" onClick={() => handleSave(lead)}>
                                 <Save className="h-4 w-4" />
                             </Button>
                             <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
-                                <Button variant="outline" size="sm" disabled={whatsappLink === '#'}>
+                                <Button variant="secondary" size="sm" disabled={whatsappLink === '#'}>
                                     <MessageSquare className="h-4 w-4 mr-2"/>
                                     WhatsApp
                                 </Button>
