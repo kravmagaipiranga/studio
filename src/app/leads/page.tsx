@@ -5,18 +5,21 @@ import { useState, useMemo, useEffect } from "react";
 import { LeadsTable } from "@/components/leads/leads-table";
 import { LeadImportDialog } from "@/components/leads/lead-import-dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Search, Phone, PhoneForwarded, PhoneOff, Upload } from "lucide-react";
+import { Download, Search, Phone, PhoneForwarded, PhoneOff, Upload, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Lead } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy } from "firebase/firestore";
+import { collection, query, orderBy, doc, writeBatch } from "firebase/firestore";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LeadsPage() {
     const firestore = useFirestore();
+    const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState("");
     const [leads, setLeads] = useState<Lead[]>([]);
+    const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
 
     const leadsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -47,6 +50,11 @@ export default function LeadsPage() {
          lead.phone.toLowerCase().includes(searchQuery.toLowerCase())
        );
     }, [leads, searchQuery]);
+    
+    useEffect(() => {
+        setSelectedLeads([]);
+    }, [filteredLeads]);
+
 
     const handleExportData = () => {
         if (!leads) return;
@@ -65,6 +73,70 @@ export default function LeadsPage() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    };
+
+    const handleToggleAll = () => {
+        if (selectedLeads.length === filteredLeads.length) {
+            setSelectedLeads([]);
+        } else {
+            setSelectedLeads(filteredLeads.map(l => l.id));
+        }
+    };
+
+    const handleToggleOne = (leadId: string) => {
+        setSelectedLeads(prev => 
+            prev.includes(leadId) ? prev.filter(id => id !== leadId) : [...prev, leadId]
+        );
+    };
+
+    const handleBulkDelete = async () => {
+        if (!firestore || selectedLeads.length === 0) return;
+
+        const batch = writeBatch(firestore);
+        selectedLeads.forEach(id => {
+            const docRef = doc(firestore, 'leads', id);
+            batch.delete(docRef);
+        });
+
+        try {
+            await batch.commit();
+            toast({
+                title: "Leads Excluídos",
+                description: `${selectedLeads.length} leads foram removidos com sucesso.`
+            });
+            setSelectedLeads([]);
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Erro ao Excluir",
+                description: "Não foi possível remover os leads selecionados."
+            });
+        }
+    };
+    
+    const handleBulkMarkContacted = async () => {
+        if (!firestore || selectedLeads.length === 0) return;
+
+        const batch = writeBatch(firestore);
+        selectedLeads.forEach(id => {
+            const docRef = doc(firestore, 'leads', id);
+            batch.update(docRef, { contacted: true });
+        });
+
+        try {
+            await batch.commit();
+            toast({
+                title: "Leads Atualizados",
+                description: `${selectedLeads.length} leads foram marcados como contactados.`
+            });
+            setSelectedLeads([]);
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Erro ao Atualizar",
+                description: "Não foi possível atualizar os leads selecionados."
+            });
+        }
     };
 
     return (
@@ -135,12 +207,26 @@ export default function LeadsPage() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
+                {selectedLeads.length > 0 && (
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={handleBulkMarkContacted}>
+                           Marcar {selectedLeads.length} como contactado
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir {selectedLeads.length}
+                        </Button>
+                    </div>
+                )}
             </div>
              <div className="flex flex-1 rounded-lg shadow-sm mt-4">
                 <LeadsTable 
                     leads={filteredLeads}
                     setLeads={setLeads}
                     isLoading={isLoading}
+                    selectedLeads={selectedLeads}
+                    onToggleAll={handleToggleAll}
+                    onToggleOne={handleToggleOne}
                 />
             </div>
         </>

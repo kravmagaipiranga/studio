@@ -24,9 +24,19 @@ interface LeadsTableProps {
   leads: Lead[];
   setLeads: React.Dispatch<React.SetStateAction<Lead[]>>;
   isLoading: boolean;
+  selectedLeads: string[];
+  onToggleAll: () => void;
+  onToggleOne: (leadId: string) => void;
 }
 
-export function LeadsTable({ leads, setLeads, isLoading }: LeadsTableProps) {
+export function LeadsTable({ 
+    leads, 
+    setLeads, 
+    isLoading,
+    selectedLeads,
+    onToggleAll,
+    onToggleOne,
+}: LeadsTableProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -34,7 +44,6 @@ export function LeadsTable({ leads, setLeads, isLoading }: LeadsTableProps) {
     if (!firestore) return;
     const docRef = doc(firestore, 'leads', lead.id);
     deleteDocumentNonBlocking(docRef);
-    setLeads(prev => prev.filter(l => l.id !== lead.id));
     toast({
       title: "Lead Removido",
       description: `O lead de ${lead.name} foi removido.`
@@ -46,12 +55,13 @@ export function LeadsTable({ leads, setLeads, isLoading }: LeadsTableProps) {
     const docRef = doc(firestore, 'leads', lead.id);
     const newStatus = !lead.contacted;
     updateDocumentNonBlocking(docRef, { contacted: newStatus });
-    setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, contacted: newStatus } : l));
   };
 
   const cleanPhoneNumber = (phone: string) => {
     return phone.replace(/\D/g, '');
   };
+
+  const isAllSelected = leads.length > 0 && selectedLeads.length === leads.length;
 
   return (
     <Card className="w-full">
@@ -59,7 +69,14 @@ export function LeadsTable({ leads, setLeads, isLoading }: LeadsTableProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40px] pl-4">Status</TableHead>
+                <TableHead className="w-[60px] pl-4">
+                    <Checkbox
+                        checked={isAllSelected}
+                        onCheckedChange={onToggleAll}
+                        aria-label="Selecionar todos"
+                    />
+                </TableHead>
+                <TableHead className="w-[80px]">Contactado</TableHead>
                 <TableHead>Nome do Lead</TableHead>
                 <TableHead>Data do Contato</TableHead>
                 <TableHead>Telefone</TableHead>
@@ -70,6 +87,7 @@ export function LeadsTable({ leads, setLeads, isLoading }: LeadsTableProps) {
             {isLoading && Array.from({ length: 5 }).map((_, index) => (
                 <TableRow key={index}>
                   <TableCell className="pl-4"><Skeleton className="h-5 w-5" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-5" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-28" /></TableCell>
@@ -78,12 +96,18 @@ export function LeadsTable({ leads, setLeads, isLoading }: LeadsTableProps) {
               ))}
               {!isLoading && leads.map((lead: Lead) => {
                 const whatsappNumber = cleanPhoneNumber(lead.phone);
-                // Basic check for Brazilian mobile numbers
                 const whatsappLink = whatsappNumber.length >= 10 ? `https://wa.me/55${whatsappNumber}` : '#';
 
                 return (
-                  <TableRow key={lead.id}>
+                  <TableRow key={lead.id} data-state={selectedLeads.includes(lead.id) && "selected"}>
                     <TableCell className="pl-4">
+                       <Checkbox
+                            checked={selectedLeads.includes(lead.id)}
+                            onCheckedChange={() => onToggleOne(lead.id)}
+                            aria-label="Selecionar lead"
+                        />
+                    </TableCell>
+                    <TableCell>
                        <Checkbox
                             checked={lead.contacted}
                             onCheckedChange={() => handleToggleContacted(lead)}
@@ -117,7 +141,7 @@ export function LeadsTable({ leads, setLeads, isLoading }: LeadsTableProps) {
               })}
               {!isLoading && leads.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     Nenhum lead encontrado. Comece importando um arquivo.
                   </TableCell>
                 </TableRow>
