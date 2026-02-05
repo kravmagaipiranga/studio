@@ -1,4 +1,5 @@
 
+
 export type Student = {
   id: string;
   userId?: string; // Firebase Auth User ID
@@ -170,4 +171,13 @@ export type UniformOrder = {
   paymentDate?: string;
   materialPickedUp: boolean;
   isNew?: boolean;
+};
+
+export type Lead = {
+  id: string;
+  contactDate: string;
+  name: string;
+  phone: string;
+  contacted: boolean;
+  isNew?: boolean; // For UI state
 };

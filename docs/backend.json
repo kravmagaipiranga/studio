@@ -330,6 +330,41 @@
         "paymentStatus",
         "materialPickedUp"
       ]
+    },
+    "Lead": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Lead",
+      "type": "object",
+      "description": "Represents a potential student lead.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the lead."
+        },
+        "contactDate": {
+          "type": "string",
+          "description": "The date the lead was contacted.",
+          "format": "date-time"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the lead."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The phone number of the lead."
+        },
+        "contacted": {
+          "type": "boolean",
+          "description": "Whether the lead has been contacted."
+        }
+      },
+      "required": [
+        "id",
+        "contactDate",
+        "name",
+        "phone"
+      ]
     }
   },
   "auth": {
@@ -468,6 +503,22 @@
             {
               "name": "orderId",
               "description": "The unique identifier for the uniform order."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/leads/{leadId}",
+        "definition": {
+          "entityName": "Lead",
+          "schema": {
+            "$ref": "#/backend/entities/Lead"
+          },
+          "description": "Stores leads from marketing campaigns.",
+          "params": [
+            {
+              "name": "leadId",
+              "description": "The unique identifier for the lead."
             }
           ]
         }

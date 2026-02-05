@@ -21,6 +21,7 @@ import {
   Shirt,
   UserCircle,
   LogOut,
+  Phone,
 } from "lucide-react";
 import {
   Sheet,
@@ -61,6 +62,7 @@ const protectedAdminRoutes = [
   "/lista-de-tarefas",
   "/dashboard",
   "/indicadores",
+  "/leads",
 ];
 
 const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno"];
@@ -207,6 +209,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <ListChecks className="h-4 w-4" />
                 Lista de Tarefas
               </NavItem>
+              <NavItem href="/leads">
+                <Phone className="h-4 w-4" />
+                Leads CAT CPKM
+              </NavItem>
             </nav>
           </div>
         </div>
@@ -279,6 +285,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                  <NavItem href="/lista-de-tarefas" isMobile>
                   <ListChecks className="h-5 w-5" />
                   Lista de Tarefas
+                </NavItem>
+                <NavItem href="/leads" isMobile>
+                  <Phone className="h-5 w-5" />
+                  Leads CAT CPKM
                 </NavItem>
               </nav>
             </SheetContent>

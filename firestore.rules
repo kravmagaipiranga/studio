@@ -117,5 +117,10 @@ service cloud.firestore {
       // Only admins can read or write uniform orders.
       allow read, write: if isAdmin();
     }
+
+    match /leads/{leadId} {
+      // Only admins can read or write leads.
+      allow read, write: if isAdmin();
+    }
   }
 }
