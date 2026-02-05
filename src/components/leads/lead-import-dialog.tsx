@@ -19,7 +19,7 @@ import { useFirestore, setDocumentNonBlocking } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Lead } from "@/lib/types";
 import { Lightbulb } from "lucide-react";
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 
 interface LeadImportDialogProps {
   children: React.ReactNode;
@@ -56,15 +56,17 @@ export function LeadImportDialog({ children }: LeadImportDialogProps) {
       
       let contactDate;
       try {
-        // Handle Excel date format (number of days since 1900) or standard formats
-        if (!isNaN(Number(rawContactDate))) {
+        if (!isNaN(Number(rawContactDate))) { // Handle Excel date format (number of days since 1900)
             const excelDate = new Date(1900, 0, Number(rawContactDate) - 1);
             contactDate = format(excelDate, 'yyyy-MM-dd');
-        } else {
+        } else if (rawContactDate.includes('/')) { // Handle DD/MM/AAAA format
+            const parsedDate = parse(rawContactDate, 'dd/MM/yyyy', new Date());
+            contactDate = format(parsedDate, 'yyyy-MM-dd');
+        } else { // Assume standard format like YYYY-MM-DD
             contactDate = format(new Date(rawContactDate), 'yyyy-MM-dd');
         }
       } catch (e) {
-        contactDate = format(new Date(), 'yyyy-MM-dd');
+        contactDate = format(new Date(), 'yyyy-MM-dd'); // Fallback
       }
 
       const newLeadId = doc(collection(firestore, "leads")).id;
@@ -116,7 +118,7 @@ export function LeadImportDialog({ children }: LeadImportDialogProps) {
                 <Lightbulb className="h-5 w-5 text-yellow-500 mt-1 flex-shrink-0" />
                 <p className="text-sm text-muted-foreground">
                     Certifique-se de que a ordem das colunas na sua planilha seja: <br/>
-                    <code className="font-mono text-xs bg-muted p-0.5 rounded">Data do Contato</code>, <code className="font-mono text-xs bg-muted p-0.5 rounded">Nome</code>, <code className="font-mono text-xs bg-muted p-0.5 rounded">Telefone</code>.
+                    <code className="font-mono text-xs bg-muted p-0.5 rounded">Data do Contato (DD/MM/AAAA)</code>, <code className="font-mono text-xs bg-muted p-0.5 rounded">Nome</code>, <code className="font-mono text-xs bg-muted p-0.5 rounded">Telefone</code>.
                 </p>
             </div>
             <Textarea

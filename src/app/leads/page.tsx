@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from "react";
 import { LeadsTable } from "@/components/leads/leads-table";
 import { LeadImportDialog } from "@/components/leads/lead-import-dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Search, Phone, PhoneForwarded, PhoneOff, Upload, Trash2, PhoneIncoming } from "lucide-react";
+import { Download, Search, Phone, PhoneForwarded, PhoneOff, Upload, Trash2, PhoneIncoming, Calendar as CalendarIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Lead } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
@@ -13,6 +13,12 @@ import { collection, query, orderBy, doc, writeBatch } from "firebase/firestore"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { DateRange } from "react-day-picker";
+import { isWithinInterval, parseISO, startOfMonth, endOfMonth, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 export default function LeadsPage() {
     const firestore = useFirestore();
@@ -20,6 +26,10 @@ export default function LeadsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [leads, setLeads] = useState<Lead[]>([]);
     const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+     const [dateRange, setDateRange] = useState<DateRange | undefined>({
+        from: startOfMonth(new Date()),
+        to: endOfMonth(new Date()),
+    });
 
     const leadsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -46,11 +56,28 @@ export default function LeadsPage() {
 
     const filteredLeads = useMemo(() => {
        if (!leads) return [];
-       return leads.filter(lead =>
+       let filtered = leads.filter(lead =>
          lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
          lead.phone.toLowerCase().includes(searchQuery.toLowerCase())
        );
-    }, [leads, searchQuery]);
+
+       if (dateRange?.from) {
+           const range = {
+               start: dateRange.from,
+               end: dateRange.to || dateRange.from
+           };
+           filtered = filtered.filter(lead => {
+               try {
+                   const contactDate = parseISO(lead.contactDate);
+                   return isWithinInterval(contactDate, range);
+               } catch {
+                   return false;
+               }
+           });
+       }
+
+       return filtered;
+    }, [leads, searchQuery, dateRange]);
     
     useEffect(() => {
         setSelectedLeads([]);
@@ -247,22 +274,62 @@ export default function LeadsPage() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                {selectedLeads.length > 0 && (
-                    <div className="flex items-center gap-2">
+                 <Popover>
+                    <PopoverTrigger asChild>
+                    <Button
+                        id="date"
+                        variant={"outline"}
+                        className={cn(
+                        "w-[300px] justify-start text-left font-normal",
+                        !dateRange && "text-muted-foreground"
+                        )}
+                    >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateRange?.from ? (
+                        dateRange.to ? (
+                            <>
+                            {format(dateRange.from, "LLL dd, y", { locale: ptBR })} -{" "}
+                            {format(dateRange.to, "LLL dd, y", { locale: ptBR })}
+                            </>
+                        ) : (
+                            format(dateRange.from, "LLL dd, y", { locale: ptBR })
+                        )
+                        ) : (
+                        <span>Selecione um período</span>
+                        )}
+                    </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                        initialFocus
+                        mode="range"
+                        defaultMonth={dateRange?.from}
+                        selected={dateRange}
+                        onSelect={setDateRange}
+                        numberOfMonths={2}
+                        locale={ptBR}
+                    />
+                    </PopoverContent>
+                </Popover>
+            </div>
+             <div className="mt-4">
+                 {selectedLeads.length > 0 && (
+                    <div className="flex items-center gap-2 mb-4">
+                        <span className="text-sm text-muted-foreground">{selectedLeads.length} selecionados</span>
                         <Button variant="outline" size="sm" onClick={handleBulkMarkContacted}>
-                           Marcar {selectedLeads.length} como contactado
+                           Marcar como contactado
                         </Button>
                         <Button variant="outline" size="sm" onClick={handleBulkMarkResponded}>
-                           Marcar {selectedLeads.length} como respondeu
+                           Marcar como respondeu
                         </Button>
                         <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Excluir {selectedLeads.length}
+                            Excluir selecionados
                         </Button>
                     </div>
                 )}
             </div>
-             <div className="flex flex-1 rounded-lg shadow-sm mt-4">
+             <div className="flex flex-1 rounded-lg shadow-sm">
                 <LeadsTable 
                     leads={filteredLeads}
                     setLeads={setLeads}
