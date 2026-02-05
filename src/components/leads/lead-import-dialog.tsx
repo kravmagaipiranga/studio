@@ -75,6 +75,7 @@ export function LeadImportDialog({ children }: LeadImportDialogProps) {
         name: name?.trim() || "Nome não informado",
         phone: phone?.trim().replace(/\D/g, '') || "", // Remove non-digits
         contacted: false,
+        responded: false,
       };
 
       const docRef = doc(firestore, 'leads', newLeadId);

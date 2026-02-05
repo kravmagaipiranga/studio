@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from "react";
 import { LeadsTable } from "@/components/leads/leads-table";
 import { LeadImportDialog } from "@/components/leads/lead-import-dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Search, Phone, PhoneForwarded, PhoneOff, Upload, Trash2 } from "lucide-react";
+import { Download, Search, Phone, PhoneForwarded, PhoneOff, Upload, Trash2, PhoneIncoming } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Lead } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
@@ -34,13 +34,14 @@ export default function LeadsPage() {
         }
     }, [initialLeads]);
     
-    const { totalLeads, contactedLeads, pendingLeads } = useMemo(() => {
-        if (!leads) return { totalLeads: 0, contactedLeads: 0, pendingLeads: 0 };
+    const { totalLeads, contactedLeads, pendingLeads, respondedLeads } = useMemo(() => {
+        if (!leads) return { totalLeads: 0, contactedLeads: 0, pendingLeads: 0, respondedLeads: 0 };
         
         const total = leads.length;
         const contacted = leads.filter(l => l.contacted).length;
+        const responded = leads.filter(l => l.responded).length;
         
-        return { totalLeads: total, contactedLeads: contacted, pendingLeads: total - contacted };
+        return { totalLeads: total, contactedLeads: contacted, pendingLeads: total - contacted, respondedLeads: responded };
     }, [leads]);
 
     const filteredLeads = useMemo(() => {
@@ -59,10 +60,10 @@ export default function LeadsPage() {
     const handleExportData = () => {
         if (!leads) return;
 
-        const headers = ["Data Contato", "Nome", "Telefone", "Contactado"];
+        const headers = ["Data Contato", "Nome", "Telefone", "Contactado", "Respondeu"];
         const csvContent = [
             headers.join(','),
-            ...leads.map(l => [l.contactDate, l.name, l.phone, l.contacted].join(','))
+            ...leads.map(l => [l.contactDate, l.name, l.phone, l.contacted, !!l.responded].join(','))
         ].join('\n');
 
         const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
@@ -139,9 +140,35 @@ export default function LeadsPage() {
         }
     };
 
+    const handleBulkMarkResponded = async () => {
+        if (!firestore || selectedLeads.length === 0) return;
+
+        const batch = writeBatch(firestore);
+        selectedLeads.forEach(id => {
+            const docRef = doc(firestore, 'leads', id);
+            batch.update(docRef, { responded: true });
+        });
+
+        try {
+            await batch.commit();
+            toast({
+                title: "Leads Atualizados",
+                description: `${selectedLeads.length} leads foram marcados como 'respondeu'.`
+            });
+            setSelectedLeads([]);
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Erro ao Atualizar",
+                description: "Não foi possível atualizar os leads selecionados."
+            });
+        }
+    };
+
+
     return (
         <>
-            <div className="grid gap-4 md:grid-cols-3 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total de Leads</CardTitle>
@@ -179,6 +206,19 @@ export default function LeadsPage() {
                         </div>
                     </CardContent>
                 </Card>
+                <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                            Leads que Responderam
+                        </CardTitle>
+                        <PhoneIncoming className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                            {isLoading ? <Skeleton className="h-8 w-12"/> : respondedLeads}
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             <div className="flex items-center justify-between gap-4">
@@ -211,6 +251,9 @@ export default function LeadsPage() {
                     <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={handleBulkMarkContacted}>
                            Marcar {selectedLeads.length} como contactado
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={handleBulkMarkResponded}>
+                           Marcar {selectedLeads.length} como respondeu
                         </Button>
                         <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
                             <Trash2 className="mr-2 h-4 w-4" />

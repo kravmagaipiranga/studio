@@ -179,5 +179,6 @@ export type Lead = {
   name: string;
   phone: string;
   contacted: boolean;
+  responded?: boolean;
   isNew?: boolean; // For UI state
 };

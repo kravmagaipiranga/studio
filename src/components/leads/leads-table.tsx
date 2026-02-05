@@ -56,6 +56,13 @@ export function LeadsTable({
     const newStatus = !lead.contacted;
     updateDocumentNonBlocking(docRef, { contacted: newStatus });
   };
+  
+  const handleToggleResponded = (lead: Lead) => {
+    if (!firestore) return;
+    const docRef = doc(firestore, 'leads', lead.id);
+    const newStatus = !lead.responded;
+    updateDocumentNonBlocking(docRef, { responded: newStatus });
+  };
 
   const cleanPhoneNumber = (phone: string) => {
     return phone.replace(/\D/g, '');
@@ -77,6 +84,7 @@ export function LeadsTable({
                     />
                 </TableHead>
                 <TableHead className="w-[80px]">Contactado</TableHead>
+                <TableHead className="w-[80px]">Respondeu</TableHead>
                 <TableHead>Nome do Lead</TableHead>
                 <TableHead>Data do Contato</TableHead>
                 <TableHead>Telefone</TableHead>
@@ -87,6 +95,7 @@ export function LeadsTable({
             {isLoading && Array.from({ length: 5 }).map((_, index) => (
                 <TableRow key={index}>
                   <TableCell className="pl-4"><Skeleton className="h-5 w-5" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-5" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-5" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-24" /></TableCell>
@@ -112,6 +121,13 @@ export function LeadsTable({
                             checked={lead.contacted}
                             onCheckedChange={() => handleToggleContacted(lead)}
                             aria-label="Marcar como contactado"
+                        />
+                    </TableCell>
+                    <TableCell>
+                       <Checkbox
+                            checked={!!lead.responded}
+                            onCheckedChange={() => handleToggleResponded(lead)}
+                            aria-label="Marcar como respondeu"
                         />
                     </TableCell>
                     <TableCell>
@@ -141,7 +157,7 @@ export function LeadsTable({
               })}
               {!isLoading && leads.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={7} className="h-24 text-center">
                     Nenhum lead encontrado. Comece importando um arquivo.
                   </TableCell>
                 </TableRow>

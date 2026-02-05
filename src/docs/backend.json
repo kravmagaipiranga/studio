@@ -12,6 +12,10 @@
           "type": "string",
           "description": "Unique identifier for the Student entity."
         },
+        "userId": {
+          "type": "string",
+          "description": "The Firebase Auth User ID associated with this student for login."
+        },
         "firstName": {
           "type": "string",
           "description": "The first name of the student."
@@ -239,6 +243,133 @@
         "year",
         "month"
       ]
+    },
+    "Task": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Task",
+      "type": "object",
+      "description": "Represents a single to-do item.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the task."
+        },
+        "text": {
+          "type": "string",
+          "description": "The content of the task."
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the task is completed or not."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the task was created."
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "completed",
+        "createdAt"
+      ]
+    },
+    "UniformOrder": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UniformOrder",
+      "type": "object",
+      "description": "Represents a uniform order made by a student.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the order."
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Reference to the Student who made the order."
+        },
+        "studentName": {
+          "type": "string",
+          "description": "Denormalized student name for easy display."
+        },
+        "orderDate": {
+          "type": "string",
+          "description": "The date the order was placed.",
+          "format": "date-time"
+        },
+        "items": {
+          "type": "string",
+          "description": "A text description of the items ordered."
+        },
+        "totalValue": {
+          "type": "number",
+          "description": "The total value of the order."
+        },
+        "paymentStatus": {
+          "type": "string",
+          "description": "The payment status of the order.",
+          "enum": ["Pago", "Pendente"]
+        },
+        "paymentDate": {
+            "type": "string",
+            "description": "The date the payment was made.",
+            "format": "date-time"
+        },
+        "materialPickedUp": {
+            "type": "boolean",
+            "description": "Indicates if the student has picked up the material."
+        }
+      },
+      "required": [
+        "id",
+        "studentId",
+        "studentName",
+        "orderDate",
+        "items",
+        "totalValue",
+        "paymentStatus",
+        "materialPickedUp"
+      ]
+    },
+    "Lead": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Lead",
+      "type": "object",
+      "description": "Represents a potential student lead.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the lead."
+        },
+        "contactDate": {
+          "type": "string",
+          "description": "The date the lead was contacted.",
+          "format": "date-time"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the lead."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The phone number of the lead."
+        },
+        "contacted": {
+          "type": "boolean",
+          "description": "Whether the lead has been contacted."
+        },
+        "responded": {
+            "type": "boolean",
+            "description": "Indicates if the lead has responded to contact."
+        }
+      },
+      "required": [
+        "id",
+        "contactDate",
+        "name",
+        "phone"
+      ]
     }
   },
   "auth": {
@@ -345,6 +476,54 @@
             {
               "name": "indicatorId",
               "description": "The unique identifier for the monthly indicator report."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/tasks/{taskId}",
+        "definition": {
+          "entityName": "Task",
+          "schema": {
+            "$ref": "#/backend/entities/Task"
+          },
+          "description": "Stores individual to-do tasks for the admin.",
+          "params": [
+            {
+              "name": "taskId",
+              "description": "The unique identifier for the task."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/uniformOrders/{orderId}",
+        "definition": {
+          "entityName": "UniformOrder",
+          "schema": {
+            "$ref": "#/backend/entities/UniformOrder"
+          },
+          "description": "Stores student uniform orders.",
+          "params": [
+            {
+              "name": "orderId",
+              "description": "The unique identifier for the uniform order."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/leads/{leadId}",
+        "definition": {
+          "entityName": "Lead",
+          "schema": {
+            "$ref": "#/backend/entities/Lead"
+          },
+          "description": "Stores leads from marketing campaigns.",
+          "params": [
+            {
+              "name": "leadId",
+              "description": "The unique identifier for the lead."
             }
           ]
         }
