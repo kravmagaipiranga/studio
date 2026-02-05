@@ -1,3 +1,4 @@
+
 "use client"
 
 import {
@@ -86,6 +87,8 @@ export function LeadsTable({
   };
 
   const cleanPhoneNumber = (phone: string) => {
+    // Return empty if phone is not a valid string
+    if (typeof phone !== 'string') return '';
     return phone.replace(/\D/g, '');
   };
 
@@ -107,8 +110,8 @@ export function LeadsTable({
                 <TableHead className="w-[80px]">Contactado</TableHead>
                 <TableHead className="w-[80px]">Respondeu</TableHead>
                 <TableHead className="min-w-[250px] w-[30%]">Nome do Lead</TableHead>
-                <TableHead>Data do Contato</TableHead>
-                <TableHead>Telefone</TableHead>
+                <TableHead className="min-w-[150px]">Data do Contato</TableHead>
+                <TableHead className="min-w-[180px]">Telefone</TableHead>
                 <TableHead className="text-right pr-4">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -177,7 +180,7 @@ export function LeadsTable({
                     </TableCell>
                     <TableCell className="text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="hover:bg-transparent" onClick={() => handleSave(lead)}>
+                            <Button variant="ghost" size="icon" className="hover:bg-transparent text-muted-foreground hover:text-foreground" onClick={() => handleSave(lead)}>
                                 <Save className="h-4 w-4" />
                             </Button>
                             <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
@@ -186,8 +189,8 @@ export function LeadsTable({
                                     WhatsApp
                                 </Button>
                             </a>
-                            <Button variant="ghost" size="icon" className="hover:bg-transparent" onClick={() => handleDelete(lead)}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
+                            <Button variant="ghost" size="icon" className="hover:bg-transparent text-muted-foreground hover:text-destructive" onClick={() => handleDelete(lead)}>
+                                <Trash2 className="h-4 w-4" />
                             </Button>
                         </div>
                     </TableCell>

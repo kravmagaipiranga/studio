@@ -14,7 +14,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { DateRange } from "react-day-picker";
-import { isWithinInterval, parseISO, startOfMonth, endOfMonth, format } from "date-fns";
+import { isWithinInterval, parseISO, startOfMonth, endOfMonth, format, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -44,27 +44,14 @@ export default function LeadsPage() {
         }
     }, [initialLeads]);
     
-    const { totalLeads, contactedLeads, pendingLeads, respondedLeads } = useMemo(() => {
-        if (!leads) return { totalLeads: 0, contactedLeads: 0, pendingLeads: 0, respondedLeads: 0 };
-        
-        const total = leads.length;
-        const contacted = leads.filter(l => l.contacted).length;
-        const responded = leads.filter(l => l.responded).length;
-        
-        return { totalLeads: total, contactedLeads: contacted, pendingLeads: total - contacted, respondedLeads: responded };
-    }, [leads]);
-
     const filteredLeads = useMemo(() => {
        if (!leads) return [];
-       let filtered = leads.filter(lead =>
-         lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         lead.phone.toLowerCase().includes(searchQuery.toLowerCase())
-       );
+       let filtered = leads;
 
        if (dateRange?.from) {
            const range = {
-               start: dateRange.from,
-               end: dateRange.to || dateRange.from
+               start: startOfDay(dateRange.from),
+               end: endOfDay(dateRange.to || dateRange.from)
            };
            filtered = filtered.filter(lead => {
                try {
@@ -76,9 +63,25 @@ export default function LeadsPage() {
            });
        }
 
+       if (searchQuery) {
+         filtered = filtered.filter(lead =>
+           lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           lead.phone.toLowerCase().includes(searchQuery.toLowerCase())
+         );
+       }
+
        return filtered;
     }, [leads, searchQuery, dateRange]);
     
+    const { totalLeads, contactedLeads, pendingLeads, respondedLeads } = useMemo(() => {
+        const data = filteredLeads || [];
+        const total = data.length;
+        const contacted = data.filter(l => l.contacted).length;
+        const responded = data.filter(l => l.responded).length;
+        
+        return { totalLeads: total, contactedLeads: contacted, pendingLeads: total - contacted, respondedLeads: responded };
+    }, [filteredLeads]);
+
     useEffect(() => {
         setSelectedLeads([]);
     }, [filteredLeads]);
