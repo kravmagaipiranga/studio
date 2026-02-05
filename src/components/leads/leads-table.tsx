@@ -106,7 +106,7 @@ export function LeadsTable({
                 </TableHead>
                 <TableHead className="w-[80px]">Contactado</TableHead>
                 <TableHead className="w-[80px]">Respondeu</TableHead>
-                <TableHead className="min-w-[250px]">Nome do Lead</TableHead>
+                <TableHead className="min-w-[250px] w-[30%]">Nome do Lead</TableHead>
                 <TableHead>Data do Contato</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead className="text-right pr-4">Ações</TableHead>
@@ -126,7 +126,9 @@ export function LeadsTable({
               ))}
               {!isLoading && leads.map((lead: Lead) => {
                 const whatsappNumber = cleanPhoneNumber(lead.phone);
-                const whatsappLink = whatsappNumber.length >= 10 ? `https://wa.me/55${whatsappNumber}` : '#';
+                const whatsappLink = whatsappNumber.length >= 10 
+                    ? `https://wa.me/${whatsappNumber.startsWith('55') ? whatsappNumber : '55' + whatsappNumber}` 
+                    : '#';
 
                 return (
                   <TableRow key={lead.id} data-state={selectedLeads.includes(lead.id) && "selected"}>
@@ -175,16 +177,16 @@ export function LeadsTable({
                     </TableCell>
                     <TableCell className="text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleSave(lead)}>
+                            <Button variant="ghost" size="icon" className="hover:bg-transparent" onClick={() => handleSave(lead)}>
                                 <Save className="h-4 w-4" />
                             </Button>
                             <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
-                                <Button variant="secondary" size="sm" disabled={whatsappLink === '#'}>
+                                <Button variant="secondary" size="sm" disabled={whatsappLink === '#'} className="bg-green-500 text-white hover:bg-green-600">
                                     <MessageSquare className="h-4 w-4 mr-2"/>
                                     WhatsApp
                                 </Button>
                             </a>
-                            <Button variant="ghost" size="icon" onClick={() => handleDelete(lead)}>
+                            <Button variant="ghost" size="icon" className="hover:bg-transparent" onClick={() => handleDelete(lead)}>
                                 <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                         </div>
