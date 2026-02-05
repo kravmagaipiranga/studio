@@ -1,3 +1,4 @@
+
 "use client"
 
 import {
@@ -155,7 +156,7 @@ export function LeadsTable({
                       <Input
                         value={lead.name}
                         onChange={(e) => handleInputChange(lead.id, 'name', e.target.value)}
-                        className="h-auto p-0 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="h-auto p-1 border-0 bg-transparent rounded-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:bg-muted/50"
                       />
                     </TableCell>
                     <TableCell>
@@ -163,14 +164,14 @@ export function LeadsTable({
                         type="date"
                         value={lead.contactDate}
                         onChange={(e) => handleInputChange(lead.id, 'contactDate', e.target.value)}
-                        className="h-auto p-0 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="h-auto p-1 border-0 bg-transparent rounded-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:bg-muted/50"
                       />
                     </TableCell>
                     <TableCell>
                       <Input
                         value={lead.phone}
                         onChange={(e) => handleInputChange(lead.id, 'phone', e.target.value)}
-                        className="h-auto p-0 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="h-auto p-1 border-0 bg-transparent rounded-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:bg-muted/50"
                       />
                     </TableCell>
                     <TableCell className="text-right pr-4">

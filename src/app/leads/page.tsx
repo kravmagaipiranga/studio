@@ -274,43 +274,48 @@ export default function LeadsPage() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                 <Popover>
-                    <PopoverTrigger asChild>
-                    <Button
-                        id="date"
-                        variant={"outline"}
-                        className={cn(
-                        "w-[300px] justify-start text-left font-normal",
-                        !dateRange && "text-muted-foreground"
-                        )}
-                    >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateRange?.from ? (
-                        dateRange.to ? (
-                            <>
-                            {format(dateRange.from, "LLL dd, y", { locale: ptBR })} -{" "}
-                            {format(dateRange.to, "LLL dd, y", { locale: ptBR })}
-                            </>
-                        ) : (
-                            format(dateRange.from, "LLL dd, y", { locale: ptBR })
-                        )
-                        ) : (
-                        <span>Selecione um período</span>
-                        )}
+                 <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={() => setDateRange(undefined)}>
+                        Listar Todos
                     </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="end">
-                    <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={dateRange?.from}
-                        selected={dateRange}
-                        onSelect={setDateRange}
-                        numberOfMonths={2}
-                        locale={ptBR}
-                    />
-                    </PopoverContent>
-                </Popover>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <Button
+                            id="date"
+                            variant={"outline"}
+                            className={cn(
+                            "w-[300px] justify-start text-left font-normal",
+                            !dateRange && "text-muted-foreground"
+                            )}
+                        >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {dateRange?.from ? (
+                            dateRange.to ? (
+                                <>
+                                {format(dateRange.from, "LLL dd, y", { locale: ptBR })} -{" "}
+                                {format(dateRange.to, "LLL dd, y", { locale: ptBR })}
+                                </>
+                            ) : (
+                                format(dateRange.from, "LLL dd, y", { locale: ptBR })
+                            )
+                            ) : (
+                            <span>Selecione um período</span>
+                            )}
+                        </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="end">
+                        <Calendar
+                            initialFocus
+                            mode="range"
+                            defaultMonth={dateRange?.from}
+                            selected={dateRange}
+                            onSelect={setDateRange}
+                            numberOfMonths={2}
+                            locale={ptBR}
+                        />
+                        </PopoverContent>
+                    </Popover>
+                </div>
             </div>
              <div className="mt-4">
                  {selectedLeads.length > 0 && (
