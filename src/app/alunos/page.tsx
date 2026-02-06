@@ -20,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { StudentsByBeltChart } from "@/components/students/students-by-belt-chart";
+import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -96,6 +97,7 @@ function getInitials(name: string) {
 export default function AlunosPage() {
     const firestore = useFirestore();
     const router = useRouter();
+    const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState("");
     const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
     
@@ -217,8 +219,12 @@ export default function AlunosPage() {
     };
 
     const handleExportData = () => {
-        if (!allStudents) {
-            alert("Os dados dos alunos ainda não foram carregados.");
+        if (!filteredStudents || filteredStudents.length === 0) {
+            toast({
+                variant: "destructive",
+                title: "Nenhum aluno para exportar",
+                description: "O filtro atual não retornou nenhum aluno.",
+            });
             return;
         }
 
@@ -241,7 +247,7 @@ export default function AlunosPage() {
             return toStr;
         };
 
-        const studentRows = allStudents.map(s => [
+        const studentRows = filteredStudents.map(s => [
             s.id, s.name, s.email, s.registrationDate, s.status,
             s.paymentStatus, s.dueDate, s.dob, s.cpf,
             s.tshirtSize, s.pantsSize, s.phone, s.emergencyContacts,
@@ -262,6 +268,11 @@ export default function AlunosPage() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+
+        toast({
+            title: "Exportação Concluída",
+            description: `${filteredStudents.length} alunos foram exportados.`,
+        });
     };
 
     const cardTitle = activeFilter === 'Todos' 
