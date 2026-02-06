@@ -7,7 +7,7 @@ import { collection, query, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student, Payment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck, MoreHorizontal, UserPlus, GraduationCap, ChevronDown } from "lucide-react";
+import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck, UserX, MoreHorizontal, UserPlus, GraduationCap, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -441,7 +441,23 @@ export default function AlunosPage() {
                                                     <AvatarFallback>{getInitials(student.name)}</AvatarFallback>
                                                 </Avatar>
                                                 <div>
-                                                    <div>{student.name}</div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span>{student.name}</span>
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger>
+                                                                    {student.userId ? (
+                                                                        <UserCheck className="h-4 w-4 text-green-500" />
+                                                                    ) : (
+                                                                        <UserX className="h-4 w-4 text-red-500" />
+                                                                    )}
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>{student.userId ? "Perfil de login vinculado" : "Nenhum login vinculado"}</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    </div>
                                                     <div className="text-xs text-muted-foreground">{student.email}</div>
                                                 </div>
                                             </div>
@@ -493,6 +509,8 @@ export default function AlunosPage() {
         </div>
     );
 }
+
+    
 
     
 
