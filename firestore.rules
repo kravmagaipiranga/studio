@@ -48,14 +48,24 @@ service cloud.firestore {
     // ------------------------------------------------------------------------
 
     match /students/{studentId} {
-      // Admins can see all students. Students can only query for their own record via their userId.
+      // Admins can see all students.
       allow get, list: if isAdmin();
       
       // A student can get their own document if they know the direct path (not used in portal).
       allow get: if request.auth.uid == resource.data.userId;
 
-      // Admins can create and delete students.
-      allow create, delete: if isAdmin();
+      // Admins can create students.
+      // Anyone can create a student if the status is 'Pendente' and they are not setting protected fields.
+      allow create: if isAdmin() || (
+        request.resource.data.status == 'Pendente' &&
+        !('userId' in request.resource.data) &&
+        !('planExpirationDate' in request.resource.data) &&
+        !('readyForReview' in request.resource.data) &&
+        !('paymentCredits' in request.resource.data)
+      );
+
+      // Admins can delete students.
+      allow delete: if isAdmin();
 
       // Admins can update anything. Students can only update specific fields on their own document.
       allow update: if isAdmin() || (request.auth.uid == resource.data.userId && studentCanUpdate());
