@@ -8,12 +8,13 @@ import { useState } from "react";
 import { CheckCircle, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { addDocumentNonBlocking, useFirestore } from "@/firebase";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "../ui/textarea";
+import { Checkbox } from "../ui/checkbox";
 
 const registrationSchema = z.object({
   name: z.string().min(3, "O nome completo é obrigatório."),
@@ -24,6 +25,12 @@ const registrationSchema = z.object({
   tshirtSize: z.string().min(1, "Selecione um tamanho de camiseta."),
   pantsSize: z.string().min(1, "Selecione um tamanho de calça."),
   emergencyContacts: z.string().optional(),
+  termsAccepted: z.literal(true, {
+    errorMap: () => ({ message: "Você deve ler e aceitar os termos e condições." }),
+  }),
+  veracityDeclared: z.literal(true, {
+    errorMap: () => ({ message: "Você deve declarar a veracidade das informações." }),
+  }),
 });
 
 export function PublicRegistrationForm() {
@@ -43,6 +50,8 @@ export function PublicRegistrationForm() {
       tshirtSize: "",
       pantsSize: "",
       emergencyContacts: "",
+      termsAccepted: false,
+      veracityDeclared: false,
     },
   });
 
@@ -60,8 +69,10 @@ export function PublicRegistrationForm() {
 
     const newStudentId = doc(collection(firestore, "students")).id;
     
+    const { termsAccepted, veracityDeclared, ...studentValues } = values;
+
     const studentData = {
-      ...values,
+      ...studentValues,
       id: newStudentId,
       status: 'Pendente' as const,
       belt: 'Branca',
@@ -237,6 +248,57 @@ export function PublicRegistrationForm() {
                             </FormItem>
                             )}
                         />
+
+                        <FormField
+                            control={form.control}
+                            name="termsAccepted"
+                            render={({ field }) => (
+                                <FormItem className="space-y-3 rounded-md border p-4">
+                                    <div className="flex items-center space-x-3">
+                                        <FormControl>
+                                            <Checkbox
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                                id="terms"
+                                            />
+                                        </FormControl>
+                                        <label
+                                            htmlFor="terms"
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                        >
+                                            Li e aceito os termos e condições do contrato.
+                                        </label>
+                                    </div>
+                                    <FormDescription>
+                                        Atenção: Marcar a opção “Li e aceito os termos e condições do contrato” neste formulário de inscrição, representa sua assinatura eletrônica e possui a mesma validade jurídica de uma assinatura em um documento impresso. Assim, você estará concordando com todos os termos, itens e cláusulas deste contrato.
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="veracityDeclared"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                    <FormControl>
+                                        <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        id="veracity"
+                                        />
+                                    </FormControl>
+                                    <div className="space-y-1 leading-none">
+                                        <label htmlFor="veracity" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
+                                            Declaro que todas as informações fornecidas neste formulário são verdadeiras e precisas.
+                                        </label>
+                                        <FormMessage />
+                                    </div>
+                                </FormItem>
+                            )}
+                        />
+
 
                         <div className="flex justify-end pt-4">
                             <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
