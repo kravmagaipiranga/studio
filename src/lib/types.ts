@@ -16,7 +16,7 @@ export type Student = {
   tshirtSize: string;
   pantsSize: string;
   phone: string;
-  emergencyContacts: string;
+  emergencyContacts?: string;
   
   // Dados de controle interno
   startDate?: string;
