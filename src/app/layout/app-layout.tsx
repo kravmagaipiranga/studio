@@ -22,6 +22,7 @@ import {
   UserCircle,
   LogOut,
   Phone,
+  UserPlus,
 } from "lucide-react";
 import {
   Sheet,
@@ -213,6 +214,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <Phone className="h-4 w-4" />
                 Leads CAT CPKM
               </NavItem>
+              <NavItem href="/register" target="_blank">
+                <UserPlus className="h-4 w-4" />
+                Cadastro Público
+              </NavItem>
             </nav>
           </div>
         </div>
@@ -290,6 +295,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <Phone className="h-5 w-5" />
                   Leads CAT CPKM
                 </NavItem>
+                <NavItem href="/register" isMobile target="_blank">
+                  <UserPlus className="h-5 w-5" />
+                  Cadastro Público
+                </NavItem>
               </nav>
             </SheetContent>
           </Sheet>
@@ -333,17 +342,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function NavItem({ href, children, isMobile = false }: { href: string; children: React.ReactNode; isMobile?: boolean; }) {
+function NavItem({ href, children, isMobile = false, target }: { href: string; children: React.ReactNode; isMobile?: boolean; target?: string; }) {
   const pathname = usePathname();
   const isActive = pathname.startsWith(href);
+  
+  const linkProps = {
+    href: href,
+    target: target,
+    rel: target === '_blank' ? 'noopener noreferrer' : undefined,
+  };
 
   if (isMobile) {
     return (
        <Link
-        href={href}
+        {...linkProps}
         className={cn(
             "mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground",
-            isActive && "bg-muted text-foreground"
+            !target && isActive && "bg-muted text-foreground"
         )}
       >
         {children}
@@ -353,10 +368,10 @@ function NavItem({ href, children, isMobile = false }: { href: string; children:
 
   return (
     <Link
-      href={href}
+      {...linkProps}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-        isActive && "text-primary bg-muted"
+        !target && isActive && "text-primary bg-muted"
       )}
     >
       {children}
