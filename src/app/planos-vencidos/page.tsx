@@ -6,7 +6,7 @@ import { collection, query, where } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Search, AlertTriangle } from "lucide-react";
+import { Search, AlertTriangle, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -81,6 +81,21 @@ export default function PlanosVencidosPage() {
         router.push(`/alunos/${studentId}/editar`);
     };
 
+    const generateWhatsAppMessage = (student: Student) => {
+        const expirationDate = student.planExpirationDate 
+            ? format(parseISO(student.planExpirationDate), 'dd/MM/yyyy') 
+            : 'pendente';
+        
+        const message = `Olá, ${student.name.split(' ')[0]}! Tudo bem?\n\n` +
+                        `Somos do Krav Magá Ipiranga. Entramos em contato para lembrar que seu plano venceu em ${expirationDate}.\n\n` +
+                        `Para renovar e continuar treinando, você pode fazer o pagamento através do nosso link: https://kravmagaipiranga.com/pgto\n\n` +
+                        `Ou, se preferir, via PIX usando a chave: thiago@kravmaga.org.br (CNPJ: 31.116.136/0001-95).\n\n` +
+                        `Se o pagamento já foi efetuado, por favor, desconsidere esta mensagem.\n\n` +
+                        `Qualquer dúvida, estamos à disposição!\nKida!`;
+
+        return encodeURIComponent(message);
+    }
+
     return (
         <div className="flex flex-col gap-4">
             <div className="grid gap-4 md:grid-cols-2">
@@ -139,39 +154,53 @@ export default function PlanosVencidosPage() {
                                     <TableCell><Skeleton className="h-8 w-32 ml-auto"/></TableCell>
                                 </TableRow>
                             ))}
-                            {!isLoading && expiredStudents.map((student) => (
-                                <TableRow key={student.id} className="cursor-pointer" onClick={() => handleSelectStudent(student.id)}>
-                                    <TableCell className="font-medium">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar>
-                                                <AvatarFallback>{getInitials(student.name)}</AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <span>{student.name}</span>
-                                                <div className="text-xs text-muted-foreground">{student.email}</div>
+                            {!isLoading && expiredStudents.map((student) => {
+                                const phone = student.phone?.replace(/\D/g, '');
+                                const message = generateWhatsAppMessage(student);
+                                const whatsappLink = phone ? `https://wa.me/55${phone}?text=${message}` : '#';
+
+                                return (
+                                    <TableRow key={student.id} className="cursor-pointer" onClick={() => handleSelectStudent(student.id)}>
+                                        <TableCell className="font-medium">
+                                            <div className="flex items-center gap-3">
+                                                <Avatar>
+                                                    <AvatarFallback>{getInitials(student.name)}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <span>{student.name}</span>
+                                                    <div className="text-xs text-muted-foreground">{student.email}</div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="destructive">Vencido</Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="secondary">{student.planType || 'Não definido'}</Badge>
-                                    </TableCell>
-                                     <TableCell>
-                                        {student.planExpirationDate 
-                                            ? format(parseISO(student.planExpirationDate), 'dd/MM/yyyy') 
-                                            : 'Sem data'}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Link href={`/pagamentos/novo/editar?aluno=${student.id}`} passHref>
-                                            <Button size="sm" onClick={(e) => e.stopPropagation()}>
-                                                Registrar Pagamento
-                                            </Button>
-                                        </Link>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="destructive">Vencido</Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="secondary">{student.planType || 'Não definido'}</Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            {student.planExpirationDate 
+                                                ? format(parseISO(student.planExpirationDate), 'dd/MM/yyyy') 
+                                                : 'Sem data'}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <a href={whatsappLink} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                                                    <Button size="sm" variant="outline" disabled={!student.phone}>
+                                                        <MessageSquare className="mr-2 h-4 w-4" />
+                                                        WhatsApp
+                                                    </Button>
+                                                </a>
+                                                <Link href={`/pagamentos/novo/editar?aluno=${student.id}`} passHref>
+                                                    <Button size="sm" onClick={(e) => e.stopPropagation()}>
+                                                        Registrar Pagamento
+                                                    </Button>
+                                                </Link>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            })}
                         </TableBody>
                     </Table>
                     {!isLoading && expiredStudents.length === 0 && (
@@ -184,5 +213,3 @@ export default function PlanosVencidosPage() {
         </div>
     );
 }
-
-    
