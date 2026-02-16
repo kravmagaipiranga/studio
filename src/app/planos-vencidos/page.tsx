@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from "react";
@@ -6,7 +5,7 @@ import { collection, query, where } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Search, AlertTriangle, MessageSquare } from "lucide-react";
+import { Search, AlertTriangle, MessageSquare, Mail } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -95,6 +94,25 @@ export default function PlanosVencidosPage() {
 
         return encodeURIComponent(message);
     }
+    
+    const generateEmailLink = (student: Student) => {
+        if (!student.email) return '#';
+
+        const expirationDate = student.planExpirationDate 
+            ? format(parseISO(student.planExpirationDate), 'dd/MM/yyyy') 
+            : 'pendente';
+        
+        const subject = `Lembrete de Pagamento - Krav Magá Ipiranga`;
+        
+        const body = `Olá, ${student.name.split(' ')[0]}! Tudo bem?\n\n` +
+                        `Somos do Krav Magá Ipiranga. Entramos em contato para lembrar que seu plano venceu em ${expirationDate}.\n\n` +
+                        `Para renovar e continuar treinando, você pode fazer o pagamento através do nosso link: https://kravmagaipiranga.com/pgto\n\n` +
+                        `Ou, se preferir, via PIX usando a chave: thiago@kravmaga.org.br (CNPJ: 31.116.136/0001-95).\n\n` +
+                        `Se o pagamento já foi efetuado, por favor, desconsidere esta mensagem.\n\n` +
+                        `Qualquer dúvida, estamos à disposição!\nKida!`;
+
+        return `mailto:${student.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    }
 
     return (
         <div className="flex flex-col gap-4">
@@ -158,6 +176,7 @@ export default function PlanosVencidosPage() {
                                 const phone = student.phone?.replace(/\D/g, '');
                                 const message = generateWhatsAppMessage(student);
                                 const whatsappLink = phone ? `https://wa.me/55${phone}?text=${message}` : '#';
+                                const emailLink = generateEmailLink(student);
 
                                 return (
                                     <TableRow key={student.id} className="cursor-pointer" onClick={() => handleSelectStudent(student.id)}>
@@ -189,6 +208,12 @@ export default function PlanosVencidosPage() {
                                                     <Button size="sm" variant="outline" disabled={!student.phone}>
                                                         <MessageSquare className="mr-2 h-4 w-4" />
                                                         WhatsApp
+                                                    </Button>
+                                                </a>
+                                                <a href={emailLink} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                                                    <Button size="sm" variant="outline" disabled={!student.email}>
+                                                        <Mail className="mr-2 h-4 w-4" />
+                                                        Email
                                                     </Button>
                                                 </a>
                                                 <Link href={`/pagamentos/novo/editar?aluno=${student.id}`} passHref>
