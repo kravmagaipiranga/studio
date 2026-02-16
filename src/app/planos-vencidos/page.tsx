@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from "react";
@@ -47,8 +48,8 @@ export default function PlanosVencidosPage() {
         let students = activeStudents.filter(student => {
             // A student's plan is considered expired if they don't have an expiration date
             // or if the expiration date is in the past.
-            // We exclude students with 100% scholarship as they don't have payment obligations.
-            if (student.planType === 'Bolsa 100%') {
+            // We exclude students with 100% scholarship or whose plan type is just 'Matrícula'.
+            if (student.planType === 'Bolsa 100%' || student.planType === 'Matrícula') {
                 return false;
             }
             if (!student.planExpirationDate) {
