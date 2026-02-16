@@ -12,7 +12,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { isBefore, parseISO, format } from "date-fns";
+import { isBefore, parseISO, format, addMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
@@ -99,18 +100,37 @@ export default function PlanosVencidosPage() {
     const generateEmailLink = (student: Student) => {
         if (!student.email) return '#';
 
-        const expirationDate = student.planExpirationDate 
-            ? format(parseISO(student.planExpirationDate), 'dd/MM/yyyy') 
-            : 'pendente';
-        
         const subject = `Lembrete de Pagamento - Krav Magá Ipiranga`;
-        
-        const body = `Olá, ${student.name.split(' ')[0]}! Tudo bem?\n\n` +
-                        `Somos do Krav Magá Ipiranga. Entramos em contato para lembrar que seu plano venceu em ${expirationDate}.\n\n` +
-                        `Para renovar e continuar treinando, você pode fazer o pagamento através do nosso link: https://kravmagaipiranga.com/pgto\n\n` +
-                        `Ou, se preferir, via PIX usando a chave: thiago@kravmaga.org.br (CNPJ: 31.116.136/0001-95).\n\n` +
-                        `Se o pagamento já foi efetuado, por favor, desconsidere esta mensagem.\n\n` +
-                        `Qualquer dúvida, estamos à disposição!\nKida!`;
+        let body = '';
+
+        if (student.planType === 'Trimestral' && student.lastPaymentDate) {
+             const paymentDate = parseISO(student.lastPaymentDate);
+             const paymentDay = format(paymentDate, 'dd/MM/yyyy');
+             
+             const month1 = format(paymentDate, 'MMMM', { locale: ptBR });
+             const month2 = format(addMonths(paymentDate, 1), 'MMMM', { locale: ptBR });
+             const month3 = format(addMonths(paymentDate, 2), 'MMMM', { locale: ptBR });
+             const monthsCovered = `${month1}, ${month2} e ${month3}`;
+
+             body = `Olá, ${student.name.split(' ')[0]}! Tudo bem?\n\n` +
+                    `Estamos entrando em contato para lembrar que o prazo referente ao seu último pagamento trimestral da sua mensalidade terminou.\n\n` +
+                    `Seu último pagamento registrado em nosso sistema foi realizado no dia ${paymentDay}, e ele cobre os meses de ${monthsCovered}.\n\n` +
+                    `Com isso, o prazo para pagamento da próxima mensalidade irá vencer nos próximos dias. O QR code para realizar seu próximo pagamento pode ser encontrado no link: https://kravmagaipiranga.com/pgto\n\n` +
+                    `Caso prefira pagar diretamente por PIX, use a chave thiago@kravmaga.org.br ou o CNPJ 31116136000195.\n\n` +
+                    `Essa é uma mensagem automática. Se seu pagamento já foi realizado, desconsidere essa mensagem. Qualquer dúvida, estamos à disposição!\n\n`+
+                    `Até a aula! Kida!`;
+        } else {
+             const expirationDate = student.planExpirationDate 
+                ? format(parseISO(student.planExpirationDate), 'dd/MM/yyyy') 
+                : 'pendente';
+            
+            body = `Olá, ${student.name.split(' ')[0]}! Tudo bem?\n\n` +
+                   `Somos do Krav Magá Ipiranga. Entramos em contato para lembrar que seu plano venceu em ${expirationDate}.\n\n` +
+                   `Para renovar e continuar treinando, você pode fazer o pagamento através do nosso link: https://kravmagaipiranga.com/pgto\n\n` +
+                   `Ou, se preferir, via PIX usando a chave: thiago@kravmaga.org.br (CNPJ: 31.116.136/0001-95).\n\n` +
+                   `Se o pagamento já foi efetuado, por favor, desconsidere esta mensagem.\n\n` +
+                   `Qualquer dúvida, estamos à disposição!\nKida!`;
+        }
 
         return `mailto:${student.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     }
