@@ -1,4 +1,3 @@
-
 "use client"
 
 import {
@@ -91,6 +90,36 @@ export function LeadsTable({
     if (typeof phone !== 'string') return '';
     return phone.replace(/\D/g, '');
   };
+  
+  const generateWhatsAppMessage = (leadName: string) => {
+    const message = `Olá, ${leadName}! Tudo bem? 👋
+
+Aqui é o Professor Thiago, do Centro de Krav Magá Ipiranga.
+
+Recentemente, você entrou em contato com a Central de Atendimento para saber mais sobre nossa academia. Gostaria de te convidar para sentir na pele a segurança e a confiança que o Krav Magá proporciona através de uma aula experimental gratuita. 🛡️
+
+Você sabia que o Centro de Treinamento Krav Magá Ipiranga foi oficialmente premiado com o título "Self Defence School of the Year 2025 – South East Brazil", no GHP Active Lifestyle Awards 2025?
+
+O prêmio reconhece instituições que se destacam na promoção de saúde, bem-estar, estilo de vida ativo e segurança pessoal, avaliando critérios como impacto social, qualidade dos serviços, compromisso com os alunos, profissionalismo e contribuição para o desenvolvimento da comunidade.
+
+Com mais de 27 anos de experiência, somos o maior CT da região e estamos prontos para te ajudar a descobrir sua força.
+
+Horários disponíveis para iniciantes:
+🔹 Seg/Qua: 18h e 20h
+🔹 Ter/Qui: 19h e 20h
+🔹 Sáb: 10h30
+
+Podemos reservar sua vaga para esta semana?
+
+Basta responder por aqui ou clicar no link: 🔗 https://form.jotform.com/kravmagaipiranga/agende
+
+Qualquer dúvida, estou à disposição! 👊
+
+Professor Thiago
+kravmagaipiranga.com`;
+
+    return encodeURIComponent(message);
+  };
 
   const isAllSelected = leads.length > 0 && selectedLeads.length === leads.length;
 
@@ -109,7 +138,7 @@ export function LeadsTable({
                 </TableHead>
                 <TableHead className="w-[80px]">Contactado</TableHead>
                 <TableHead className="w-[80px]">Respondeu</TableHead>
-                <TableHead className="min-w-[250px] w-[30%]">Nome do Lead</TableHead>
+                <TableHead className="min-w-[250px]">Nome do Lead</TableHead>
                 <TableHead className="min-w-[150px]">Data do Contato</TableHead>
                 <TableHead className="min-w-[180px]">Telefone</TableHead>
                 <TableHead className="text-right pr-4">Ações</TableHead>
@@ -129,8 +158,9 @@ export function LeadsTable({
               ))}
               {!isLoading && leads.map((lead: Lead) => {
                 const whatsappNumber = cleanPhoneNumber(lead.phone);
+                const message = generateWhatsAppMessage(lead.name);
                 const whatsappLink = whatsappNumber.length >= 10 
-                    ? `https://wa.me/${whatsappNumber.startsWith('55') ? whatsappNumber : '55' + whatsappNumber}` 
+                    ? `https://wa.me/${whatsappNumber.startsWith('55') ? whatsappNumber : '55' + whatsappNumber}?text=${message}` 
                     : '#';
 
                 return (
