@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -102,6 +101,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     });
   }, [students]);
 
+  const pendingStudents = useMemo(() => {
+    if (!students) return [];
+    return students.filter(student => student.status === 'Pendente');
+  }, [students]);
+
+  const totalNotifications = (birthdayStudents?.length || 0) + (pendingStudents?.length || 0);
+
   useEffect(() => {
     if (isUserLoading) return;
     
@@ -146,23 +152,42 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="ml-auto h-8 w-8 relative">
                   <Bell className="h-4 w-4" />
-                  {birthdayStudents.length > 0 && (
+                  {totalNotifications > 0 && (
                     <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500" />
                   )}
                   <span className="sr-only">Alternar notificações</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Aniversariantes de Hoje</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {birthdayStudents.length > 0 ? (
-                    birthdayStudents.map(student => (
-                      <DropdownMenuItem key={student.id}>
-                        <Cake className="mr-2 h-4 w-4" />
-                        <span>Parabéns, {student.name}!</span>
+              <DropdownMenuContent align="end" className="w-64">
+                {pendingStudents.length > 0 && (
+                  <>
+                    <DropdownMenuLabel>Novos Cadastros</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {pendingStudents.map(student => (
+                      <DropdownMenuItem key={student.id} asChild>
+                        <Link href={`/alunos/${student.id}/editar`}>
+                          <UserPlus className="mr-2 h-4 w-4" />
+                          <span className="truncate">{student.name} aguarda ativação.</span>
+                        </Link>
                       </DropdownMenuItem>
-                    ))
-                ) : (
+                    ))}
+                  </>
+                )}
+                
+                {birthdayStudents.length > 0 && (
+                    <>
+                      {pendingStudents.length > 0 && <DropdownMenuSeparator />}
+                      <DropdownMenuLabel>Aniversariantes de Hoje</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {birthdayStudents.map(student => (
+                        <DropdownMenuItem key={student.id}>
+                          <Cake className="mr-2 h-4 w-4" />
+                          <span>Parabéns, {student.name}!</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </>
+                )}
+                {totalNotifications === 0 && (
                   <DropdownMenuItem disabled>Nenhuma notificação hoje.</DropdownMenuItem>
                 )}
               </DropdownMenuContent>
