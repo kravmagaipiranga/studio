@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -22,6 +23,7 @@ import {
   LogOut,
   Phone,
   UserPlus,
+  CalendarX,
 } from "lucide-react";
 import {
   Sheet,
@@ -63,6 +65,7 @@ const protectedAdminRoutes = [
   "/dashboard",
   "/indicadores",
   "/leads",
+  "/planos-vencidos",
 ];
 
 const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno"];
@@ -207,6 +210,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <CreditCard className="h-4 w-4" />
                 Pagamentos
               </NavItem>
+              <NavItem href="/planos-vencidos">
+                <CalendarX className="h-4 w-4" />
+                Planos Vencidos
+              </NavItem>
               <NavItem href="/creditos">
                 <Wallet className="h-4 w-4" />
                 Créditos
@@ -283,6 +290,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <NavItem href="/pagamentos" isMobile>
                   <CreditCard className="h-5 w-5" />
                   Pagamentos
+                </NavItem>
+                <NavItem href="/planos-vencidos" isMobile>
+                  <CalendarX className="h-5 w-5" />
+                  Planos Vencidos
                 </NavItem>
                  <NavItem href="/creditos" isMobile>
                   <Wallet className="h-5 w-5" />
@@ -403,3 +414,5 @@ function NavItem({ href, children, isMobile = false, target }: { href: string; c
     </Link>
   );
 }
+
+    
