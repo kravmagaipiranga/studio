@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from "react";
 import { LeadsTable } from "@/components/leads/leads-table";
 import { LeadImportDialog } from "@/components/leads/lead-import-dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Search, Phone, PhoneForwarded, PhoneOff, Upload, Trash2, PhoneIncoming, Calendar as CalendarIcon } from "lucide-react";
+import { Download, Search, Phone, PhoneForwarded, PhoneOff, Upload, Trash2, PhoneIncoming, Calendar as CalendarIcon, FilterX } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Lead } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
@@ -14,11 +14,33 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { DateRange } from "react-day-picker";
-import { isWithinInterval, parseISO, startOfMonth, endOfMonth, format, startOfDay, endOfDay } from "date-fns";
+import { isWithinInterval, parseISO, startOfMonth, endOfMonth, format, startOfDay, endOfDay, setMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const months = [
+  { value: "0", label: "Janeiro" },
+  { value: "1", label: "Fevereiro" },
+  { value: "2", label: "Março" },
+  { value: "3", label: "Abril" },
+  { value: "4", label: "Maio" },
+  { value: "5", label: "Junho" },
+  { value: "6", label: "Julho" },
+  { value: "7", label: "Agosto" },
+  { value: "8", label: "Setembro" },
+  { value: "9", label: "Outubro" },
+  { value: "10", label: "Novembro" },
+  { value: "11", label: "Dezembro" },
+];
 
 export default function LeadsPage() {
     const firestore = useFirestore();
@@ -26,10 +48,8 @@ export default function LeadsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [leads, setLeads] = useState<Lead[]>([]);
     const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
-     const [dateRange, setDateRange] = useState<DateRange | undefined>({
-        from: startOfMonth(new Date()),
-        to: endOfMonth(new Date()),
-    });
+    const [selectedMonth, setSelectedMonth] = useState<string>("none");
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
     const leadsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -48,7 +68,21 @@ export default function LeadsPage() {
        if (!leads) return [];
        let filtered = leads;
 
-       if (dateRange?.from) {
+       if (selectedMonth !== "none") {
+           const year = new Date().getFullYear();
+           const monthIdx = parseInt(selectedMonth);
+           const start = startOfMonth(new Date(year, monthIdx, 1));
+           const end = endOfMonth(new Date(year, monthIdx, 1));
+           
+           filtered = filtered.filter(lead => {
+               try {
+                   const contactDate = parseISO(lead.contactDate);
+                   return isWithinInterval(contactDate, { start, end });
+               } catch {
+                   return false;
+               }
+           });
+       } else if (dateRange?.from) {
            const range = {
                start: startOfDay(dateRange.from),
                end: endOfDay(dateRange.to || dateRange.from)
@@ -71,7 +105,16 @@ export default function LeadsPage() {
        }
 
        return filtered;
-    }, [leads, searchQuery, dateRange]);
+    }, [leads, searchQuery, dateRange, selectedMonth]);
+
+    // Apply "Last 30" limit if no filters are active
+    const displayedLeads = useMemo(() => {
+        const isFiltering = searchQuery !== "" || selectedMonth !== "none" || dateRange !== undefined;
+        if (!isFiltering) {
+            return filteredLeads.slice(0, 30);
+        }
+        return filteredLeads;
+    }, [filteredLeads, searchQuery, selectedMonth, dateRange]);
     
     const { totalLeads, contactedLeads, pendingLeads, respondedLeads } = useMemo(() => {
         const data = filteredLeads || [];
@@ -84,7 +127,7 @@ export default function LeadsPage() {
 
     useEffect(() => {
         setSelectedLeads([]);
-    }, [filteredLeads]);
+    }, [displayedLeads]);
 
 
     const handleExportData = () => {
@@ -107,10 +150,10 @@ export default function LeadsPage() {
     };
 
     const handleToggleAll = () => {
-        if (selectedLeads.length === filteredLeads.length) {
+        if (selectedLeads.length === displayedLeads.length) {
             setSelectedLeads([]);
         } else {
-            setSelectedLeads(filteredLeads.map(l => l.id));
+            setSelectedLeads(displayedLeads.map(l => l.id));
         }
     };
 
@@ -195,13 +238,19 @@ export default function LeadsPage() {
         }
     };
 
+    const clearFilters = () => {
+        setSearchQuery("");
+        setSelectedMonth("none");
+        setDateRange(undefined);
+    };
+
 
     return (
         <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total de Leads</CardTitle>
+                        <CardTitle className="text-sm font-medium">Leads no Filtro</CardTitle>
                         <Phone className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -266,28 +315,39 @@ export default function LeadsPage() {
                     </Button>
                 </div>
             </div>
-            <div className="mt-4 flex items-center justify-between gap-4">
-                <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        type="search"
-                        placeholder="Buscar por nome ou telefone..."
-                        className="pl-8"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                </div>
-                 <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={() => setDateRange(undefined)}>
-                        Listar Todos
-                    </Button>
+            
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                    <div className="relative w-full max-w-sm sm:w-64">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="search"
+                            placeholder="Buscar por nome ou telefone..."
+                            className="pl-8"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+
+                    <Select value={selectedMonth} onValueChange={(val) => { setSelectedMonth(val); setDateRange(undefined); }}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Filtrar por Mês" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">Todos os meses</SelectItem>
+                            {months.map(m => (
+                                <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
                     <Popover>
                         <PopoverTrigger asChild>
                         <Button
                             id="date"
                             variant={"outline"}
                             className={cn(
-                            "w-[300px] justify-start text-left font-normal",
+                            "w-[280px] justify-start text-left font-normal",
                             !dateRange && "text-muted-foreground"
                             )}
                         >
@@ -302,7 +362,7 @@ export default function LeadsPage() {
                                 format(dateRange.from, "LLL dd, y", { locale: ptBR })
                             )
                             ) : (
-                            <span>Selecione um período</span>
+                            <span>Período personalizado</span>
                             )}
                         </Button>
                         </PopoverTrigger>
@@ -310,16 +370,26 @@ export default function LeadsPage() {
                         <Calendar
                             initialFocus
                             mode="range"
-                            defaultMonth={dateRange?.from}
+                            defaultMonth={dateRange?.from || new Date()}
                             selected={dateRange}
-                            onSelect={setDateRange}
+                            onSelect={(range) => { setDateRange(range); setSelectedMonth("none"); }}
                             numberOfMonths={2}
                             locale={ptBR}
                         />
                         </PopoverContent>
                     </Popover>
+
+                    <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+                        <FilterX className="h-4 w-4 mr-2" />
+                        Limpar
+                    </Button>
                 </div>
+                
+                {displayedLeads.length > 0 && searchQuery === "" && selectedMonth === "none" && !dateRange && (
+                    <span className="text-xs text-muted-foreground italic">Exibindo últimos 30 leads (sem filtros ativos)</span>
+                )}
             </div>
+
              <div className="mt-4">
                  {selectedLeads.length > 0 && (
                     <div className="flex items-center gap-2 mb-4">
@@ -339,7 +409,7 @@ export default function LeadsPage() {
             </div>
              <div className="flex flex-1 rounded-lg shadow-sm">
                 <LeadsTable 
-                    leads={filteredLeads}
+                    leads={displayedLeads}
                     setLeads={setLeads}
                     isLoading={isLoading}
                     selectedLeads={selectedLeads}
