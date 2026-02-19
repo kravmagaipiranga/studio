@@ -24,6 +24,7 @@ import {
   Phone,
   UserPlus,
   CalendarX,
+  Gift,
 } from "lucide-react";
 import {
   Sheet,
@@ -68,7 +69,7 @@ const protectedAdminRoutes = [
   "/planos-vencidos",
 ];
 
-const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno"];
+const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/gift-card"];
 
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -88,7 +89,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const birthdayStudents = useMemo(() => {
     if (!students) return [];
     const today = new Date();
-    const todayMonth = today.getMonth() + 1; // getMonth() is 0-indexed
+    const todayMonth = today.getMonth() + 1;
     const todayDay = today.getDate();
 
     return students.filter(student => {
@@ -128,12 +129,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // For public-facing pages, render children without the main app layout.
   if (publicRoutes.some(route => pathname.startsWith(route))) {
     return <>{children}</>;
   }
   
-  // While loading auth state for protected routes, show a simple loader.
   if (isUserLoading || !user) {
       return (
         <div className="flex items-center justify-center min-h-screen">
@@ -250,6 +249,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <UserPlus className="h-4 w-4" />
                 Cadastro Público
               </NavItem>
+              <NavItem href="/gift-card" target="_blank">
+                <Gift className="h-4 w-4" />
+                Gift Card Público
+              </NavItem>
             </nav>
           </div>
         </div>
@@ -335,11 +338,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <UserPlus className="h-5 w-5" />
                   Cadastro Público
                 </NavItem>
+                <NavItem href="/gift-card" isMobile target="_blank">
+                  <Gift className="h-5 w-5" />
+                  Gift Card Público
+                </NavItem>
               </nav>
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-            {/* Futuro campo de busca global */}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -414,5 +420,3 @@ function NavItem({ href, children, isMobile = false, target }: { href: string; c
     </Link>
   );
 }
-
-    

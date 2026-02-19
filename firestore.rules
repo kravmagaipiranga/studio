@@ -3,134 +3,42 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * Core Philosophy: This ruleset implements a Role-Based Access Control (RBAC) model
-     * with two primary roles: "Admin" (the primary user) and "Student" (data entities).
-     * Admins possess comprehensive write permissions across the database.
-     * Authenticated users are generally restricted to reading public data or their own data.
-     *
-     * Key Security Decisions:
-     * - Admin Access: A user is an Admin if their UID exists as a document in the `/roles_admin`
-     *   collection. This is a secure and explicit way to manage administrative privileges.
-     * - Default Deny: All operations are denied by default.
-     * - Production Security: Write operations on critical data are restricted to Admins.
-     * - Simplification for MVP: Read access is granted to any signed-in user for core data
-     *   to ensure the application is usable for the primary admin user without complex role setup initially.
-     */
-
-    // ------------------------------------------------------------------------
-    // Helper Functions
-    // ------------------------------------------------------------------------
-
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    // A user is an admin if their UID is a document in 'roles_admin'.
     function isAdmin() {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
-    
-    function studentCanUpdate() {
-      // Students can only update a specific set of non-critical fields.
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-        'name', 'dob', 'cpf', 'phone', 'email', 'tshirtSize', 'pantsSize', 
-        'emergencyContacts', 'medicalHistory', 'address']);
-    }
-
-
-    // ------------------------------------------------------------------------
-    // Collection Rules
-    // ------------------------------------------------------------------------
 
     match /students/{studentId} {
-      // Admins can see all students.
-      allow get, list: if isAdmin();
-      
-      // A student can get their own document if they know the direct path (not used in portal).
-      allow get: if request.auth.uid == resource.data.userId;
-
-      // Admins can create students.
-      // Anyone can create a student if the status is 'Pendente' and they are not setting protected fields.
+      allow get, list: if isSignedIn();
       allow create: if isAdmin() || (
         request.resource.data.status == 'Pendente' &&
-        !('userId' in request.resource.data) &&
-        !('planExpirationDate' in request.resource.data) &&
-        !('readyForReview' in request.resource.data) &&
-        !('paymentCredits' in request.resource.data)
+        !('userId' in request.resource.data)
       );
-
-      // Admins can delete students.
-      allow delete: if isAdmin();
-
-      // Admins can update anything. Students can only update specific fields on their own document.
-      allow update: if isAdmin() || (request.auth.uid == resource.data.userId && studentCanUpdate());
+      allow update, delete: if isAdmin();
     }
     
-    // New top-level payments collection
+    match /giftCardOrders/{orderId} {
+      allow create: if true; // Public creation allowed
+      allow read, write: if isAdmin();
+    }
+    
     match /payments/{paymentId} {
-      // Any signed-in user can see payment history (for admin panel).
       allow get, list: if isSignedIn();
-      // Only admins can create, update, or delete payment records.
       allow create, update, delete: if isAdmin();
     }
     
-    // Admin-only write collections
-    match /appointments/{docId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-    match /privateClasses/{docId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-    match /seminars/{docId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-    match /sales/{docId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-    match /exams/{examId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-    
-    match /plans/{planId} {
-      // Plans are public to read for any signed-in user.
-      allow get, list: if isSignedIn();
-      // Only admins can manage plans.
-      allow create, update, delete: if isAdmin();
-    }
-    
-    match /roles_admin/{userId} {
-      // Only Admins can see or manage other admins.
-      allow read, write: if isAdmin();
-    }
-
-    match /indicators/{indicatorId} {
-      // Only admins can read or write monthly indicators.
-      allow read, write: if isAdmin();
-    }
-
-    match /tasks/{taskId} {
-      // Allow any authenticated user to manage their own tasks.
-      allow read, write: if isSignedIn();
-    }
-
-    match /uniformOrders/{orderId} {
-      // Only admins can read or write uniform orders.
-      allow read, write: if isAdmin();
-    }
-
-    match /leads/{leadId} {
-      // Only admins can read or write leads.
-      allow read, write: if isAdmin();
-    }
+    match /appointments/{docId} { allow read, write: if isSignedIn(); }
+    match /privateClasses/{docId} { allow read, write: if isSignedIn(); }
+    match /seminars/{docId} { allow read, write: if isSignedIn(); }
+    match /sales/{docId} { allow read, write: if isSignedIn(); }
+    match /exams/{examId} { allow read, write: if isSignedIn(); }
+    match /indicators/{indicatorId} { allow read, write: if isAdmin(); }
+    match /tasks/{taskId} { allow read, write: if isSignedIn(); }
+    match /uniformOrders/{orderId} { allow read, write: if isAdmin(); }
+    match /leads/{leadId} { allow read, write: if isAdmin(); }
+    match /roles_admin/{userId} { allow read, write: if isAdmin(); }
   }
 }
