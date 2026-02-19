@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from "react";
@@ -26,7 +25,7 @@ import {
   RadioGroupItem,
 } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { CheckCircle, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
+import { CheckCircle, Loader2, ArrowRight, ArrowLeft, Copy, QrCode } from "lucide-react";
 
 const formSchema = z.object({
   buyerName: z.string().min(3, "Nome completo é obrigatório."),
@@ -96,18 +95,74 @@ export function GiftCardForm() {
     }
   }
 
+  const copyPixKey = () => {
+    navigator.clipboard.writeText("31116136000195");
+    toast({
+      title: "Chave Copiada!",
+      description: "A chave CNPJ foi copiada para sua área de transferência.",
+    });
+  };
+
   if (isSuccess) {
+    const method = form.getValues('paymentMethod');
     return (
-      <Card className="border-green-200 bg-green-50/50">
-        <CardContent className="p-10 text-center">
-          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-4">Pedido Realizado com Sucesso!</h2>
-          <div className="space-y-4 text-muted-foreground text-left max-w-md mx-auto">
-            <p><strong>1. Confirmação:</strong> Você receberá um e-mail com as instruções de pagamento.</p>
-            <p><strong>2. Envio:</strong> Após a confirmação, o Gift Card digital será enviado para o seu e-mail.</p>
-            <p><strong>3. Agendamento:</strong> O presenteado poderá agendar a aula através do nosso WhatsApp.</p>
+      <Card className="border-green-200 bg-green-50/50 overflow-hidden">
+        <CardContent className="p-10 text-center space-y-6">
+          <div className="flex flex-col items-center">
+            <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+            <h2 className="text-2xl font-bold">Pedido Realizado!</h2>
+            <p className="text-muted-foreground">Seu pedido foi registrado com sucesso.</p>
           </div>
-          <Button className="mt-8" variant="outline" onClick={() => window.location.reload()}>Fazer novo pedido</Button>
+
+          {method === 'Pix' ? (
+            <div className="space-y-6 animate-in fade-in zoom-in duration-500">
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-border inline-block mx-auto">
+                {/* QR Code Placeholder for the provided image logic */}
+                <img 
+                  src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020126360014BR.GOV.BCB.PIX0114311161360001955204000053039865802BR5925Centro%20Treinamento%20Krav%20Maga6009Sao%20Paulo62070503***6304E2B1" 
+                  alt="QR Code PIX" 
+                  className="w-48 h-48 mx-auto"
+                />
+                <p className="text-[10px] text-muted-foreground mt-2 uppercase tracking-widest font-bold">Escaneie para pagar</p>
+              </div>
+
+              <div className="p-4 bg-white rounded-lg border border-primary/20 max-w-sm mx-auto">
+                <p className="text-xs font-semibold text-primary uppercase mb-2">Chave CNPJ (Pix)</p>
+                <div className="flex items-center justify-between gap-2 bg-muted p-2 rounded border">
+                  <code className="text-sm font-bold truncate">31.116.136/0001-95</code>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={copyPixKey}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="text-sm text-muted-foreground space-y-2 max-w-sm mx-auto">
+                <p>Após o pagamento, envie o comprovante se desejar agilizar a liberação.</p>
+                <p>O Gift Card digital será enviado para <strong>{form.getValues('buyerEmail')}</strong> em até 24h úteis após a compensação.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-md mx-auto">
+              <div className="p-6 bg-blue-50 rounded-xl border border-blue-200">
+                <p className="text-lg font-semibold text-blue-900 leading-tight">
+                  O boleto será enviado no seu e-mail ou WhatsApp informado em breve.
+                </p>
+              </div>
+              <div className="text-sm text-muted-foreground space-y-4 text-left">
+                <p><strong>Próximos passos:</strong></p>
+                <ul className="list-disc list-inside space-y-2">
+                  <li>Verifique sua caixa de entrada e pasta de spam.</li>
+                  <li>O boleto pode levar até 1 hora para ser gerado por nossa equipe.</li>
+                  <li>Após o pagamento, o banco leva de 1 a 3 dias úteis para confirmar.</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+          <div className="pt-6 border-t flex flex-col gap-2">
+            <Button className="w-full" onClick={() => window.location.reload()}>Fazer novo pedido</Button>
+            <Button variant="ghost" className="w-full" onClick={() => window.print()}>Imprimir Confirmação</Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -247,7 +302,7 @@ export function GiftCardForm() {
                   )}
                 />
                 <div className="p-4 bg-muted rounded-md text-sm text-muted-foreground">
-                  <p>Ao clicar em finalizar, seu pedido será processado e as instruções de pagamento serão enviadas para <strong>{form.getValues('buyerEmail')}</strong>.</p>
+                  <p>Ao clicar em finalizar, seu pedido será processado e as instruções de pagamento serão exibidas a seguir para o método <strong>{form.watch('paymentMethod')}</strong>.</p>
                 </div>
               </div>
             )}
