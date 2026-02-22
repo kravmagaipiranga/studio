@@ -40,6 +40,6 @@ service cloud.firestore {
     match /uniformOrders/{orderId} { allow read, write: if isAdmin(); }
     match /leads/{leadId} { allow read, write: if isAdmin(); }
     match /roles_admin/{userId} { allow read, write: if isAdmin(); }
-    match /womensMonth/{leadId} { allow read, write: if isAdmin(); }
+    match /womensMonth/{leadId} { allow read, write: if isSignedIn(); }
   }
 }
