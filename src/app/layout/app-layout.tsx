@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -24,6 +23,7 @@ import {
   Phone,
   UserPlus,
   CalendarX,
+  Star,
 } from "lucide-react";
 import {
   Sheet,
@@ -66,9 +66,10 @@ const protectedAdminRoutes = [
   "/indicadores",
   "/leads",
   "/planos-vencidos",
+  "/mes-das-mulheres",
 ];
 
-const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/mes-das-mulheres/registro"];
+const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/mes-das-mulheres/registro", "/gift-card"];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -203,6 +204,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <NavItem href="/alunos">
                 <Users className="h-4 w-4" /> Alunos
               </NavItem>
+              <NavItem href="/mes-das-mulheres">
+                <Star className="h-4 w-4 text-pink-600" /> Mês das Mulheres
+              </NavItem>
               <NavItem href="/agendamentos">
                 <CalendarPlus className="h-4 w-4" /> Agendamentos
               </NavItem>
@@ -266,6 +270,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <span>Krav Magá IPIRANGA</span>
                 </Link>
                 <NavItem href="/alunos" isMobile><Users className="h-5 w-5" /> Alunos</NavItem>
+                <NavItem href="/mes-das-mulheres" isMobile><Star className="h-5 w-5 text-pink-600" /> Mês das Mulheres</NavItem>
                 <NavItem href="/agendamentos" isMobile><CalendarPlus className="h-5 w-5" /> Agendamentos</NavItem>
                 <NavItem href="/pagamentos" isMobile><CreditCard className="h-5 w-5" /> Pagamentos</NavItem>
                 <NavItem href="/planos-vencidos" isMobile><CalendarX className="h-5 w-5" /> Planos Vencidos</NavItem>

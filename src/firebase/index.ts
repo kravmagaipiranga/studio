@@ -1,4 +1,3 @@
-
 'use client';
 
 import { getApps, initializeApp, type FirebaseApp } from 'firebase/app';
@@ -28,8 +27,6 @@ let firebaseServices: FirebaseServices | null = null;
 
 /**
  * Initializes Firebase services in an idempotent way.
- * This ensures that Firebase is only initialized once, whether on the server or client.
- * It now returns all core services.
  */
 export function initializeFirebase(): FirebaseServices {
   if (firebaseServices) {

@@ -1,4 +1,3 @@
-
 export type Student = {
   id: string;
   name: string;
@@ -7,28 +6,21 @@ export type Student = {
   status: 'Ativo' | 'Inativo' | 'Pendente';
   paymentStatus: 'Pago' | 'Vencido' | 'Pendente';
   dueDate?: string;
-  
-  // Dados preenchidos pelo aluno
   dob: string;
   cpf: string;
   tshirtSize: string;
   pantsSize: string;
   phone: string;
   emergencyContacts: string;
-  
-  // Dados de controle interno
   startDate?: string;
   lastExamDate?: string;
-  belt: string; // cor
+  belt: string;
   medicalHistory?: string;
   generalNotes?: string;
   fikmAnnuityPaid?: boolean;
   fikmAnnuityPaymentDate?: string;
   fikmAnnuityPaymentMethod?: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
   readyForReview?: boolean;
-
-
-  // Dados Financeiros
   planType?: 'Mensal' | 'Trimestral' | 'Bolsa 50%' | 'Bolsa 100%' | 'Outros' | 'Matrícula';
   planValue?: number;
   paymentPreference?: ('pix' | 'dinheiro' | 'boleto')[];
@@ -49,10 +41,70 @@ export type Payment = {
   notes?: string;
 };
 
-export type RevenueData = {
-  month: string;
-  revenue: number;
-}
+export type WomensMonthLead = {
+  id: string;
+  name: string;
+  whatsapp: string;
+  chosenClass: string;
+  hasCompanions: boolean;
+  companionNames?: string;
+  year: number;
+  attended: boolean;
+  createdAt: string;
+  isNew?: boolean;
+};
+
+export type MonthlyIndicator = {
+  id: string;
+  year: number;
+  month: number;
+  previousMonthTotal?: number;
+  visits?: number;
+  trialClasses?: number;
+  newEnrollments?: number;
+  reenrollments?: number;
+  exits?: number;
+  womensMonth?: number;
+  totalStudents?: number;
+  evolution?: number;
+  conversionRate?: number;
+};
+
+export type Task = {
+    id: string;
+    text: string;
+    completed: boolean;
+    createdAt: any;
+};
+
+export type Appointment = {
+  id: string;
+  name: string;
+  whatsapp: string;
+  email: string;
+  classDate: string;
+  classTime: string;
+  notes?: string;
+  isNew?: boolean;
+  enrolled?: boolean;
+  attended?: boolean;
+  missed?: boolean;
+};
+
+export type PrivateClass = {
+  id: string;
+  studentName: string;
+  classDate: string;
+  classTime: string;
+  numberOfClasses: number;
+  pricePerClass: number;
+  paymentAmount: number;
+  paymentStatus: 'Pago' | 'Pendente';
+  paymentDate?: string;
+  paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
+  notes?: string;
+  isNew?: boolean;
+};
 
 export type Exam = {
   id: string;
@@ -66,7 +118,7 @@ export type Exam = {
   paymentDate?: string;
   paymentAmount: number;
   paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
-  isNew?: boolean; // Flag for new rows in UI
+  isNew?: boolean;
 };
 
 export type Seminar = {
@@ -81,36 +133,7 @@ export type Seminar = {
   paymentDate?: string;
   paymentAmount: number;
   paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
-  isNew?: boolean; // Flag for new rows in UI
-};
-
-export type PrivateClass = {
-  id: string;
-  studentId?: string; // Not linked to general students anymore, can be optional
-  studentName: string;
-  classDate: string;
-  numberOfClasses: number;
-  pricePerClass: number;
-  paymentAmount: number; // This will be the calculated total
-  paymentStatus: 'Pago' | 'Pendente';
-  paymentDate?: string;
-  paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
-  notes?: string;
-  isNew?: boolean; // Flag for new rows in UI
-};
-
-export type Appointment = {
-  id: string;
-  name: string;
-  whatsapp: string;
-  email: string;
-  classDate: string;
-  classTime: string;
-  notes?: string;
-  isNew?: boolean; // Flag for new rows in UI
-  enrolled?: boolean;
-  attended?: boolean;
-  missed?: boolean;
+  isNew?: boolean;
 };
 
 export type Sale = {
@@ -122,31 +145,7 @@ export type Sale = {
   date: string;
   paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
   paymentStatus: 'Pago' | 'Pendente';
-  isNew?: boolean; // Flag for new rows in UI
-};
-
-export type MonthlyIndicator = {
-  id: string; // YYYY-MM
-  year: number;
-  month: number;
-  previousMonthTotal?: number;
-  visits?: number;
-  trialClasses?: number;
-  newEnrollments?: number;
-  reenrollments?: number;
-  exits?: number;
-  womensMonth?: number;
-  // Calculated fields (stored for convenience or calculated on the fly)
-  totalStudents?: number;
-  evolution?: number;
-  conversionRate?: number;
-};
-
-export type Task = {
-    id: string;
-    text: string;
-    completed: boolean;
-    createdAt: any; // Firestore timestamp
+  isNew?: boolean;
 };
 
 export type UniformOrder = {
