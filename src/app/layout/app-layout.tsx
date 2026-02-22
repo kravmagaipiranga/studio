@@ -260,12 +260,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <span className="sr-only">Navegação</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col">
+            <SheetContent side="left" className="flex flex-col overflow-y-auto">
                <SheetHeader className="sr-only">
                   <SheetTitle>Menu</SheetTitle>
                   <SheetDescription>Navegação principal.</SheetDescription>
               </SheetHeader>
-              <nav className="grid gap-2 text-lg font-medium">
+              <nav className="grid gap-2 text-lg font-medium py-4">
                 <Link href="#" className="flex items-center gap-2 text-lg font-semibold mb-4">
                   <span>Krav Magá IPIRANGA</span>
                 </Link>
@@ -274,9 +274,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <NavItem href="/agendamentos" isMobile><CalendarPlus className="h-5 w-5" /> Agendamentos</NavItem>
                 <NavItem href="/pagamentos" isMobile><CreditCard className="h-5 w-5" /> Pagamentos</NavItem>
                 <NavItem href="/planos-vencidos" isMobile><CalendarX className="h-5 w-5" /> Planos Vencidos</NavItem>
+                <NavItem href="/creditos" isMobile><Wallet className="h-5 w-5" /> Créditos</NavItem>
                 <NavItem href="/exames" isMobile><ShieldCheck className="h-5 w-5" /> Exames</NavItem>
+                <NavItem href="/seminarios" isMobile><BookCopy className="h-5 w-5" /> Seminários</NavItem>
                 <NavItem href="/aulas" isMobile><ClipboardList className="h-5 w-5" /> Aulas Particulares</NavItem>
                 <NavItem href="/vendas" isMobile><ShoppingCart className="h-5 w-5" /> Vendas</NavItem>
+                <NavItem href="/uniformes" isMobile><Shirt className="h-5 w-5" /> Uniformes</NavItem>
+                <NavItem href="/lista-de-tarefas" isMobile><ListChecks className="h-5 w-5" /> Lista de Tarefas</NavItem>
+                <NavItem href="/leads" isMobile><Phone className="h-5 w-5" /> Leads CAT CPKM</NavItem>
+                <NavItem href="/register" isMobile target="_blank"><UserPlus className="h-5 w-5" /> Cadastro Público</NavItem>
               </nav>
             </SheetContent>
           </Sheet>
