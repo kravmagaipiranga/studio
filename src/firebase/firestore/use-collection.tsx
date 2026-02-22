@@ -66,7 +66,7 @@ export function useCollection<T = any>(
         if (error.code === 'permission-denied') {
             const contextualError = new FirestorePermissionError({
               operation: 'list',
-              path: (memoizedTargetRefOrQuery as any).path || 'collection',
+              path: 'collection',
             })
 
             setError(contextualError)
