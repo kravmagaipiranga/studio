@@ -24,7 +24,6 @@ import {
   Phone,
   UserPlus,
   CalendarX,
-  Gift,
 } from "lucide-react";
 import {
   Sheet,
@@ -69,7 +68,7 @@ const protectedAdminRoutes = [
   "/planos-vencidos",
 ];
 
-const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/gift-card"];
+const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno"];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -83,10 +82,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
+  // Only fetch students if the user is signed in to avoid permission errors
   const studentsCollection = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null;
     return collection(firestore, 'students');
-  }, [firestore]);
+  }, [firestore, user]);
 
   const { data: students } = useCollection<Student>(studentsCollection);
 
@@ -239,9 +239,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </NavItem>
               <NavItem href="/register" target="_blank">
                 <UserPlus className="h-4 w-4" /> Cadastro Público
-              </NavItem>
-              <NavItem href="/gift-card" target="_blank">
-                <Gift className="h-4 w-4" /> Gift Card Público
               </NavItem>
             </nav>
           </div>
