@@ -53,11 +53,13 @@
         "name": { "type": "string" },
         "whatsapp": { "type": "string" },
         "chosenClass": { "type": "string" },
+        "hasCompanions": { "type": "boolean" },
+        "companionNames": { "type": "string" },
         "year": { "type": "number" },
         "attended": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "name", "whatsapp", "year", "attended", "createdAt"]
+      "required": ["id", "name", "whatsapp", "chosenClass", "hasCompanions", "year", "attended", "createdAt"]
     }
   },
   "auth": {

@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -24,6 +25,7 @@ import {
   UserPlus,
   CalendarX,
   Gift,
+  Star,
 } from "lucide-react";
 import {
   Sheet,
@@ -66,9 +68,10 @@ const protectedAdminRoutes = [
   "/indicadores",
   "/leads",
   "/planos-vencidos",
+  "/mes-das-mulheres",
 ];
 
-const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/gift-card"];
+const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/gift-card", "/mes-das-mulheres/registro"];
 
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -114,7 +117,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isUserLoading) return;
     
-    const isProtectedRoute = protectedAdminRoutes.some(route => pathname.startsWith(route));
+    const isProtectedRoute = protectedAdminRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));
 
     if (!user && isProtectedRoute) {
       router.push('/login');
@@ -128,7 +131,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
-  if (publicRoutes.some(route => pathname.startsWith(route))) {
+  if (publicRoutes.some(route => pathname === route || pathname.startsWith(route + "/"))) {
     return <>{children}</>;
   }
   
@@ -244,6 +247,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <Phone className="h-4 w-4" />
                 Leads CAT CPKM
               </NavItem>
+              <NavItem href="/mes-das-mulheres">
+                <Star className="h-4 w-4 text-pink-500" />
+                Mês das Mulheres
+              </NavItem>
               <NavItem href="/register" target="_blank">
                 <UserPlus className="h-4 w-4" />
                 Cadastro Público
@@ -332,6 +339,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <NavItem href="/leads" isMobile>
                   <Phone className="h-5 w-5" />
                   Leads CAT CPKM
+                </NavItem>
+                <NavItem href="/mes-das-mulheres" isMobile>
+                  <Star className="h-5 w-5 text-pink-500" />
+                  Mês das Mulheres
                 </NavItem>
                 <NavItem href="/register" isMobile target="_blank">
                   <UserPlus className="h-5 w-5" />

@@ -6,15 +6,16 @@ import { collection, query, where, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { WomensMonthLead } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Search, Star, Download } from "lucide-react";
+import { PlusCircle, Search, Star, Download, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { WomensMonthTable } from "@/components/womens-month/womens-month-table";
 import { v4 as uuidv4 } from "uuid";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 
-export default function WomensMonthPage() {
+export default function WomensMonthAdminPage() {
   const firestore = useFirestore();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedYear, setSelectedYear] = useState<number>(2026);
@@ -25,7 +26,7 @@ export default function WomensMonthPage() {
     return query(
       collection(firestore, 'womensMonth'),
       where('year', '==', selectedYear),
-      orderBy('name', 'asc')
+      orderBy('createdAt', 'desc')
     );
   }, [firestore, selectedYear]);
 
@@ -48,6 +49,7 @@ export default function WomensMonthPage() {
       name: "",
       whatsapp: "",
       chosenClass: "",
+      hasCompanions: false,
       year: selectedYear,
       attended: false,
       createdAt: new Date().toISOString(),
@@ -58,10 +60,18 @@ export default function WomensMonthPage() {
 
   const handleExport = () => {
     if (leads.length === 0) return;
-    const headers = ["Nome", "WhatsApp", "Turma", "Compareceu", "Ano"];
+    const headers = ["Nome", "WhatsApp", "Turma", "Acompanhantes", "Nomes Acomp.", "Compareceu", "Inscrição"];
     const csvContent = [
       headers.join(','),
-      ...leads.map(l => [l.name, l.whatsapp, l.chosenClass, l.attended ? "Sim" : "Não", l.year].join(','))
+      ...leads.map(l => [
+        l.name, 
+        l.whatsapp, 
+        l.chosenClass, 
+        l.hasCompanions ? "Sim" : "Não", 
+        `"${l.companionNames || ''}"`,
+        l.attended ? "Sim" : "Não", 
+        l.createdAt
+      ].join(','))
     ].join('\n');
 
     const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
@@ -75,15 +85,21 @@ export default function WomensMonthPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Star className="h-6 w-6 text-pink-500 fill-pink-500" />
-            Campanha Mês das Mulheres
+            Gestão: Mês das Mulheres
           </h1>
-          <p className="text-muted-foreground">Gestão das participantes do mês de aula grátis (Março).</p>
+          <p className="text-muted-foreground">Acompanhe as inscrições da campanha de aulas gratuitas.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/mes-das-mulheres/registro" target="_blank">
+            <Button variant="outline" className="text-pink-600 border-pink-200 hover:bg-pink-50">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Ver Formulário Público
+            </Button>
+          </Link>
           <Select value={String(selectedYear)} onValueChange={(val) => setSelectedYear(Number(val))}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="Ano" />
@@ -94,7 +110,7 @@ export default function WomensMonthPage() {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={handleAddLead}>
+          <Button onClick={handleAddLead} className="bg-pink-600 hover:bg-pink-700">
             <PlusCircle className="mr-2 h-4 w-4" />
             Novo Registro
           </Button>
@@ -106,33 +122,35 @@ export default function WomensMonthPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-pink-50 border-pink-200 dark:bg-pink-950 dark:border-pink-900">
+        <Card className="bg-pink-50 border-pink-200 dark:bg-pink-950">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-pink-800 dark:text-pink-300">Total Inscritas</CardTitle>
+            <CardTitle className="text-sm font-medium text-pink-800">Total Inscritas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-pink-900 dark:text-pink-100">
+            <div className="text-2xl font-bold text-pink-900">
               {isLoading ? <Skeleton className="h-8 w-12" /> : leads.length}
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-900">
+        <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-emerald-800 dark:text-emerald-300">Compareceram</CardTitle>
+            <CardTitle className="text-sm font-medium text-emerald-800">Compareceram</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
+            <div className="text-2xl font-bold text-emerald-900">
               {isLoading ? <Skeleton className="h-8 w-12" /> : leads.filter(l => l.attended).length}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Aguardando Contato</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Conversão Atual</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {isLoading ? <Skeleton className="h-8 w-12" /> : leads.length - leads.filter(l => l.attended).length}
+              {isLoading ? <Skeleton className="h-8 w-12" /> : 
+                leads.length > 0 ? `${Math.round((leads.filter(l => l.attended).length / leads.length) * 100)}%` : "0%"
+              }
             </div>
           </CardContent>
         </Card>
@@ -144,7 +162,7 @@ export default function WomensMonthPage() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Buscar por nome ou whatsapp..."
+              placeholder="Buscar por nome ou WhatsApp..."
               className="pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

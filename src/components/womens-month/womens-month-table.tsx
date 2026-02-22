@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Trash2, MessageSquare, Save, CheckCircle2, Circle } from "lucide-react"
+import { Trash2, MessageSquare, Save, Users, Info } from "lucide-react"
 import { WomensMonthLead } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
 import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
@@ -19,6 +19,8 @@ import { useToast } from "@/hooks/use-toast"
 import { Input } from "../ui/input"
 import { cn } from "@/lib/utils"
 import { Checkbox } from "../ui/checkbox"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface WomensMonthTableProps {
   leads: WomensMonthLead[];
@@ -36,11 +38,11 @@ export function WomensMonthTable({ leads, setLeads, isLoading }: WomensMonthTabl
 
   const handleSave = (lead: WomensMonthLead) => {
     if (!firestore) return;
-    if (!lead.name || !lead.whatsapp) {
+    if (!lead.name || !lead.whatsapp || !lead.chosenClass) {
       toast({
         variant: "destructive",
         title: "Campos Obrigatórios",
-        description: "Preencha o nome e o WhatsApp antes de salvar."
+        description: "Preencha Nome, WhatsApp e Turma antes de salvar."
       });
       return;
     }
@@ -93,7 +95,9 @@ Aqui é o Professor Thiago, do Centro de Krav Magá Ipiranga.
 
 Vimos seu interesse na nossa campanha especial do Mês das Mulheres! 🛡️
 
-Sua vaga para realizar um mês de aulas gratuitas durante o mês de março na turma de *${lead.chosenClass || 'iniciantes'}* está pré-reservada.
+Sua vaga para realizar um mês de aulas gratuitas durante o mês de março na turma de *${lead.chosenClass}* está pré-reservada.
+
+${lead.hasCompanions ? `Vimos também que você pretende trazer acompanhantes (${lead.companionNames}). Elas também são muito bem-vindas! 👯‍♀️` : ''}
 
 Gostaria de confirmar sua participação? Alguma dúvida sobre como funciona o treino ou localização?
 
@@ -116,10 +120,11 @@ Estamos ansiosos para te receber no tatame! 👊`;
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[100px] text-center">Compareceu?</TableHead>
-          <TableHead className="min-w-[200px]">Nome da Interessada</TableHead>
+          <TableHead className="w-[80px] text-center">Presença</TableHead>
+          <TableHead className="min-w-[200px]">Nome</TableHead>
           <TableHead className="min-w-[150px]">WhatsApp</TableHead>
-          <TableHead className="min-w-[150px]">Turma Escolhida</TableHead>
+          <TableHead className="min-w-[180px]">Turma</TableHead>
+          <TableHead className="w-[100px] text-center">Acomp.</TableHead>
           <TableHead className="text-right">Ações</TableHead>
         </TableRow>
       </TableHeader>
@@ -131,7 +136,7 @@ Estamos ansiosos para te receber no tatame! 👊`;
                 <Checkbox 
                     checked={lead.attended} 
                     onCheckedChange={() => handleToggleAttendance(lead)}
-                    className="h-5 w-5"
+                    className="h-5 w-5 border-pink-300 data-[state=checked]:bg-pink-600"
                 />
               </div>
             </TableCell>
@@ -152,20 +157,59 @@ Estamos ansiosos para te receber no tatame! 👊`;
               />
             </TableCell>
             <TableCell>
-              <Input
-                value={lead.chosenClass}
-                onChange={e => handleInputChange(lead.id, 'chosenClass', e.target.value)}
-                placeholder="Ex: Seg/Qua 20h"
-                className="h-8 border-transparent focus:border-input"
-              />
+              <Select 
+                value={lead.chosenClass} 
+                onValueChange={val => handleInputChange(lead.id, 'chosenClass', val)}
+              >
+                <SelectTrigger className="h-8 border-transparent focus:border-input">
+                    <SelectValue placeholder="Escolha..." />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="Segundas e Quartas 18h">Segundas e Quartas 18h</SelectItem>
+                    <SelectItem value="Terças e Quintas 19h">Terças e Quintas 19h</SelectItem>
+                    <SelectItem value="Segundas e Quartas 20h">Segundas e Quartas 20h</SelectItem>
+                    <SelectItem value="Sábados 10h30">Sábados 10h30</SelectItem>
+                </SelectContent>
+              </Select>
+            </TableCell>
+            <TableCell className="text-center">
+              <div className="flex justify-center items-center gap-2">
+                <Checkbox 
+                    checked={lead.hasCompanions} 
+                    onCheckedChange={val => handleInputChange(lead.id, 'hasCompanions', val)}
+                    className="h-4 w-4"
+                />
+                {lead.hasCompanions && (
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-pink-600">
+                                <Info className="h-4 w-4" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-4">
+                            <div className="space-y-2">
+                                <h4 className="font-bold text-sm text-pink-900 flex items-center gap-2">
+                                    <Users className="h-4 w-4" /> Nomes das Acompanhantes
+                                </h4>
+                                <Input 
+                                    value={lead.companionNames || ''} 
+                                    onChange={e => handleInputChange(lead.id, 'companionNames', e.target.value)}
+                                    placeholder="Lista de nomes..."
+                                    className="text-xs"
+                                />
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                )}
+              </div>
             </TableCell>
             <TableCell className="text-right">
-              <div className="flex items-center justify-end gap-2">
+              <div className="flex items-center justify-end gap-1">
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   onClick={() => handleSave(lead)}
-                  className="h-8 w-8 text-blue-600 hover:text-blue-700"
+                  className="h-8 w-8 text-blue-600"
                 >
                   <Save className="h-4 w-4" />
                 </Button>
@@ -174,7 +218,7 @@ Estamos ansiosos para te receber no tatame! 👊`;
                     variant="ghost" 
                     size="icon" 
                     disabled={!lead.whatsapp}
-                    className="h-8 w-8 text-green-600 hover:text-green-700"
+                    className="h-8 w-8 text-green-600"
                   >
                     <MessageSquare className="h-4 w-4" />
                   </Button>
@@ -183,7 +227,7 @@ Estamos ansiosos para te receber no tatame! 👊`;
                   variant="ghost" 
                   size="icon" 
                   onClick={() => handleDelete(lead)}
-                  className="h-8 w-8 text-red-600 hover:text-red-700"
+                  className="h-8 w-8 text-red-600"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -193,8 +237,8 @@ Estamos ansiosos para te receber no tatame! 👊`;
         ))}
         {leads.length === 0 && (
           <TableRow>
-            <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-              Nenhuma interessada cadastrada para este ano.
+            <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+              Nenhuma inscrição cadastrada para este ano.
             </TableCell>
           </TableRow>
         )}
