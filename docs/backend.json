@@ -74,9 +74,26 @@
         "paymentMethod": { "type": "string", "enum": ["Pix", "Boleto"] },
         "status": { "type": "string", "enum": ["Pendente", "Pago"] },
         "createdAt": { "type": "string", "format": "date-time" },
-        "totalValue": { "type": "number" }
+        "totalValue": { "type": "number" },
+        "validationCode": { "type": "string" }
       },
-      "required": ["id", "buyerName", "buyerEmail", "buyerPhone", "buyerCpf", "recipientName", "paymentMethod", "status", "createdAt"]
+      "required": ["id", "buyerName", "buyerEmail", "buyerPhone", "buyerCpf", "recipientName", "paymentMethod", "status", "createdAt", "validationCode"]
+    },
+    "WomensMonthLead": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "WomensMonthLead",
+      "type": "object",
+      "description": "Represents an interested person for the March Women's Month campaign.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "chosenClass": { "type": "string" },
+        "year": { "type": "number" },
+        "attended": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "whatsapp", "chosenClass", "year", "attended", "createdAt"]
     }
   },
   "auth": {
@@ -105,6 +122,16 @@
             "$ref": "#/backend/entities/GiftCardOrder"
           },
           "description": "Stores gift card purchase orders."
+        }
+      },
+      {
+        "path": "/womensMonth/{leadId}",
+        "definition": {
+          "entityName": "WomensMonthLead",
+          "schema": {
+            "$ref": "#/backend/entities/WomensMonthLead"
+          },
+          "description": "Stores leads for the Women's Month campaign."
         }
       }
     ]

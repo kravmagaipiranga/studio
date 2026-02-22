@@ -25,6 +25,7 @@ import {
   UserPlus,
   CalendarX,
   Gift,
+  Star,
 } from "lucide-react";
 import {
   Sheet,
@@ -67,6 +68,7 @@ const protectedAdminRoutes = [
   "/indicadores",
   "/leads",
   "/planos-vencidos",
+  "/mes-das-mulheres",
 ];
 
 const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/gift-card"];
@@ -213,6 +215,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <CalendarX className="h-4 w-4" />
                 Planos Vencidos
               </NavItem>
+              <NavItem href="/mes-das-mulheres">
+                <Star className="h-4 w-4" />
+                Mês das Mulheres
+              </NavItem>
               <NavItem href="/creditos">
                 <Wallet className="h-4 w-4" />
                 Créditos
@@ -297,6 +303,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <NavItem href="/planos-vencidos" isMobile>
                   <CalendarX className="h-5 w-5" />
                   Planos Vencidos
+                </NavItem>
+                <NavItem href="/mes-das-mulheres" isMobile>
+                  <Star className="h-5 w-5" />
+                  Mês das Mulheres
                 </NavItem>
                  <NavItem href="/creditos" isMobile>
                   <Wallet className="h-5 w-5" />
