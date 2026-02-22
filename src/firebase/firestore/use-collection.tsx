@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -85,23 +86,28 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        // This logic extracts the path from either a ref or a query
-        const path: string =
-          memoizedTargetRefOrQuery.type === 'collection'
-            ? (memoizedTargetRefOrQuery as CollectionReference).path
-            : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
+        // Se for erro de permissão, emite o evento especial para o protótipo
+        if (error.code === 'permission-denied') {
+            const path: string =
+              memoizedTargetRefOrQuery.type === 'collection'
+                ? (memoizedTargetRefOrQuery as CollectionReference).path
+                : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
 
-        const contextualError = new FirestorePermissionError({
-          operation: 'list',
-          path,
-        })
+            const contextualError = new FirestorePermissionError({
+              operation: 'list',
+              path,
+            })
 
-        setError(contextualError)
+            setError(contextualError)
+            errorEmitter.emit('permission-error', contextualError);
+        } else {
+            // Para outros erros (como falta de índices), reporta o erro original para facilitar o debug
+            setError(error);
+            console.error("Firestore useCollection error:", error);
+        }
+        
         setData(null)
         setIsLoading(false)
-
-        // trigger global error propagation
-        errorEmitter.emit('permission-error', contextualError);
       }
     );
 

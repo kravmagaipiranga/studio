@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -12,16 +13,18 @@ service cloud.firestore {
 
     match /students/{studentId} {
       allow get, list: if isSignedIn();
-      allow create: if isAdmin() || (
-        request.resource.data.status == 'Pendente' &&
-        !('userId' in request.resource.data)
-      );
+      allow create: if true; // Public registration allowed
       allow update, delete: if isAdmin();
     }
     
     match /giftCardOrders/{orderId} {
-      allow create: if true; // Public creation allowed
-      allow read, write: if isAdmin();
+      allow create: if true;
+      allow read, write: if isSignedIn();
+    }
+    
+    match /womensMonth/{leadId} {
+      allow create: if true;
+      allow read, write: if isSignedIn();
     }
     
     match /payments/{paymentId} {

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { collection, query, where, orderBy } from "firebase/firestore";
+import { collection, query, where } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { WomensMonthLead } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -21,12 +21,12 @@ export default function WomensMonthAdminPage() {
   const [selectedYear, setSelectedYear] = useState<number>(2026);
   const [leads, setLeads] = useState<WomensMonthLead[]>([]);
 
+  // Removido o orderBy do Firestore para evitar a necessidade de índice composto
   const leadsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
       collection(firestore, 'womensMonth'),
-      where('year', '==', selectedYear),
-      orderBy('createdAt', 'desc')
+      where('year', '==', selectedYear)
     );
   }, [firestore, selectedYear]);
 
@@ -34,7 +34,11 @@ export default function WomensMonthAdminPage() {
 
   useEffect(() => {
     if (initialLeads) {
-      setLeads(initialLeads);
+      // Ordenação feita em memória para evitar erro de índice no Firestore
+      const sorted = [...initialLeads].sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setLeads(sorted);
     }
   }, [initialLeads]);
 
