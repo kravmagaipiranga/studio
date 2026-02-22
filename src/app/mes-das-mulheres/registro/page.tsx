@@ -17,7 +17,7 @@ export default function WomensMonthPublicPage() {
         
         <div className="mt-8 text-center text-pink-900/60 text-sm">
             <p>© 2025 CT Krav Magá Ipiranga. Todos os direitos reservados.</p>
-            <p className="mt-1">Rua Bom Pastor, 2100 - Ipiranga, São Paulo - SP</p>
+            <p className="mt-1">Rua Tabor, 482 - Ipiranga - São Paulo - SP</p>
         </div>
       </div>
     </div>
