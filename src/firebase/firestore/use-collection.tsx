@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -66,7 +65,7 @@ export function useCollection<T = any>(
         if (error.code === 'permission-denied') {
             const contextualError = new FirestorePermissionError({
               operation: 'list',
-              path: 'collection',
+              path: 'requested-collection',
             })
 
             setError(contextualError)
