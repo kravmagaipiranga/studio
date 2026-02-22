@@ -51,29 +51,63 @@ export function PublicWomensMonthForm() {
     if (!firestore) return;
     setIsSubmitting(true);
 
-    const newLeadId = doc(collection(firestore, "womensMonth")).id;
     const currentYear = new Date().getFullYear();
+    const targetYear = currentYear < 2026 ? 2026 : currentYear;
+    const createdAt = new Date().toISOString();
 
-    const leadData = {
-      id: newLeadId,
+    const registrations: any[] = [];
+
+    // 1. Registro da Principal
+    const mainId = doc(collection(firestore, "womensMonth")).id;
+    registrations.push({
+      id: mainId,
       name: values.name,
       whatsapp: values.whatsapp,
       chosenClass: values.chosenClass,
       hasCompanions: values.hasCompanions === "sim",
       companionNames: values.hasCompanions === "sim" ? values.companionNames : "",
-      year: currentYear < 2026 ? 2026 : currentYear, // Começa em 2026 conforme solicitado
+      year: targetYear,
       attended: false,
-      createdAt: new Date().toISOString(),
-    };
+      createdAt,
+    });
+
+    // 2. Registro das Acompanhantes (se houver)
+    if (values.hasCompanions === "sim" && values.companionNames) {
+      const names = values.companionNames
+        .split('\n')
+        .map(n => n.trim())
+        .filter(n => n.length > 0);
+
+      names.forEach(companionName => {
+        const compId = doc(collection(firestore, "womensMonth")).id;
+        registrations.push({
+          id: compId,
+          name: companionName,
+          whatsapp: values.whatsapp,
+          chosenClass: values.chosenClass,
+          hasCompanions: false,
+          companionNames: "",
+          year: targetYear,
+          attended: false,
+          createdAt,
+          isCompanion: true, // Tag interna opcional
+          invitedBy: values.name // Referência opcional
+        });
+      });
+    }
 
     try {
-      await addDocumentNonBlocking(collection(firestore, 'womensMonth'), leadData);
+      const promises = registrations.map(reg => 
+        addDocumentNonBlocking(collection(firestore, 'womensMonth'), reg)
+      );
+      
+      await Promise.all(promises);
       setIsSuccess(true);
     } catch (error) {
        toast({
         variant: "destructive",
         title: "Erro ao Enviar",
-        description: "Não foi possível processar seu cadastro. Tente novamente.",
+        description: "Não foi possível processar as inscrições. Tente novamente.",
       });
     } finally {
         setIsSubmitting(false);
@@ -91,7 +125,7 @@ export function PublicWomensMonthForm() {
                 <p className="text-pink-800 text-lg leading-relaxed max-w-md mx-auto">
                     Parabéns por dar esse passo rumo à sua segurança e confiança! 🛡️
                     <br/><br/>
-                    Sua vaga para o **Mês das Mulheres** está garantida. Em breve entraremos em contato via WhatsApp para confirmar os detalhes da sua primeira aula.
+                    As vagas para o **Mês das Mulheres** foram garantidas. Em breve entraremos em contato via WhatsApp para confirmar os detalhes da primeira aula.
                 </p>
                 <div className="mt-8 pt-6 border-t border-pink-200">
                     <p className="text-sm text-pink-700 font-medium">Nos vemos no tatame! Kida!</p>
@@ -120,9 +154,9 @@ export function PublicWomensMonthForm() {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-pink-900 font-bold">Nome Completo</FormLabel>
+                  <FormLabel className="text-pink-900 font-bold">Seu Nome Completo</FormLabel>
                   <FormControl>
-                    <Input placeholder="Seu nome" {...field} className="border-pink-200 focus-visible:ring-pink-500" />
+                    <Input placeholder="Escreva seu nome" {...field} className="border-pink-200 focus-visible:ring-pink-500" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -215,7 +249,7 @@ export function PublicWomensMonthForm() {
                         {...field} 
                       />
                     </FormControl>
-                    <FormDescription className="text-xs">Elas também terão direito à promoção!</FormDescription>
+                    <FormDescription className="text-xs">Elas também terão direito à promoção e serão cadastradas individualmente!</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
