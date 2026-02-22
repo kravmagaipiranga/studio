@@ -148,3 +148,34 @@ export type Task = {
     completed: boolean;
     createdAt: any; // Firestore timestamp
 };
+
+export type UniformOrder = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  orderDate: string;
+  items: OrderItem[];
+  totalValue: number;
+  paymentStatus: 'Pago' | 'Pendente';
+  paymentDate?: string;
+  materialPickedUp: boolean;
+  isNew?: boolean;
+};
+
+export type OrderItem = {
+  id: string;
+  name: string;
+  price: number;
+  size: string;
+  quantity: number;
+};
+
+export type Lead = {
+  id: string;
+  contactDate: string;
+  name: string;
+  phone: string;
+  contacted: boolean;
+  responded?: boolean;
+  isNew?: boolean;
+};

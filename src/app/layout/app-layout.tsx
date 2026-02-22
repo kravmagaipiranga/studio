@@ -68,7 +68,7 @@ const protectedAdminRoutes = [
   "/planos-vencidos",
 ];
 
-const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno"];
+const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/mes-das-mulheres/registro"];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -82,7 +82,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Only fetch students if the user is signed in to avoid permission errors
   const studentsCollection = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return collection(firestore, 'students');
