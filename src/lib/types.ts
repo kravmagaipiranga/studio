@@ -27,6 +27,7 @@ export type Student = {
   lastPaymentDate?: string;
   planExpirationDate?: string;
   paymentCredits?: string;
+  userId?: string;
 };
 
 export type Payment = {
@@ -52,6 +53,8 @@ export type WomensMonthLead = {
   attended: boolean;
   createdAt: string;
   isNew?: boolean;
+  isCompanion?: boolean;
+  invitedBy?: string;
 };
 
 export type MonthlyIndicator = {
@@ -177,4 +180,19 @@ export type Lead = {
   contacted: boolean;
   responded?: boolean;
   isNew?: boolean;
+};
+
+export type GiftCardOrder = {
+  id: string;
+  buyerName: string;
+  buyerEmail: string;
+  buyerPhone: string;
+  buyerCpf: string;
+  recipientName: string;
+  message?: string;
+  paymentMethod: 'Pix' | 'Boleto';
+  status: 'Pendente' | 'Pago' | 'Cancelado';
+  createdAt: string;
+  totalValue: number;
+  validationCode: string;
 };
