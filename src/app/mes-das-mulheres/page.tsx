@@ -38,7 +38,7 @@ export default function WomensMonthAdminPage() {
     useEffect(() => {
         if (initialLeads) {
             const sorted = [...initialLeads].sort((a, b) => 
-                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                a.name.localeCompare(b.name, 'pt-BR')
             );
             setLeads(sorted);
         }
