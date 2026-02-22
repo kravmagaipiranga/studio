@@ -41,7 +41,7 @@ service cloud.firestore {
     match /leads/{leadId} { allow read, write: if isAdmin(); }
     match /roles_admin/{userId} { allow read, write: if isAdmin(); }
     
-    // Regras para a campanha do Mês das Mulheres
+    // Regras para a campanha do Mês das Mulheres (Acesso para usuários logados)
     match /womensMonth/{leadId} { 
       allow read, write: if isSignedIn(); 
     }
