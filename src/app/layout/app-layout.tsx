@@ -45,7 +45,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUser, useCollection, useFirestore, useMemoFirebase, useAuth } from "@/firebase";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FirebaseErrorListener } from "@/components/FirebaseErrorListener";
 import { collection } from "firebase/firestore";
 import type { Student } from "@/lib/types";
@@ -72,13 +72,17 @@ const protectedAdminRoutes = [
 
 const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/gift-card", "/mes-das-mulheres/registro"];
 
-
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const firestore = useFirestore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const studentsCollection = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -97,9 +101,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       if (!student.dob) return false;
       try {
         const dob = new Date(student.dob + "T00:00:00");
-        const dobMonth = dob.getMonth() + 1;
-        const dobDay = dob.getDate();
-        return dobMonth === todayMonth && dobDay === todayDay;
+        return (dob.getMonth() + 1) === todayMonth && dob.getDate() === todayDay;
       } catch {
         return false;
       }
@@ -114,14 +116,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const totalNotifications = (birthdayStudents?.length || 0) + (pendingStudents?.length || 0);
 
   useEffect(() => {
-    if (isUserLoading || !pathname) return;
+    if (isUserLoading || !pathname || !mounted) return;
     
     const isProtectedRoute = protectedAdminRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));
 
     if (!user && isProtectedRoute) {
       router.push('/login');
     }
-  }, [isUserLoading, user, pathname, router]);
+  }, [isUserLoading, user, pathname, router, mounted]);
 
   const handleSignOut = async () => {
     if (auth) {
@@ -129,6 +131,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       router.push('/login');
     }
   };
+
+  if (!mounted) return null;
 
   if (pathname && publicRoutes.some(route => pathname === route || pathname.startsWith(route + "/"))) {
     return <>{children}</>;
@@ -158,7 +162,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   {totalNotifications > 0 && (
                     <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500" />
                   )}
-                  <span className="sr-only">Alternar notificações</span>
+                  <span className="sr-only">Notificações</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
@@ -196,67 +200,52 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <div className="flex-1">
-            <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+          <div className="flex-1 overflow-auto">
+            <nav className="grid items-start px-2 text-sm font-medium lg:px-4 py-4">
               <NavItem href="/alunos">
-                <Users className="h-4 w-4" />
-                Alunos
+                <Users className="h-4 w-4" /> Alunos
               </NavItem>
               <NavItem href="/agendamentos">
-                <CalendarPlus className="h-4 w-4" />
-                Agendamentos
+                <CalendarPlus className="h-4 w-4" /> Agendamentos
               </NavItem>
               <NavItem href="/pagamentos">
-                <CreditCard className="h-4 w-4" />
-                Pagamentos
+                <CreditCard className="h-4 w-4" /> Pagamentos
               </NavItem>
               <NavItem href="/planos-vencidos">
-                <CalendarX className="h-4 w-4" />
-                Planos Vencidos
+                <CalendarX className="h-4 w-4" /> Planos Vencidos
               </NavItem>
               <NavItem href="/creditos">
-                <Wallet className="h-4 w-4" />
-                Créditos
+                <Wallet className="h-4 w-4" /> Créditos
               </NavItem>
               <NavItem href="/exames">
-                <ShieldCheck className="h-4 w-4" />
-                Exames
+                <ShieldCheck className="h-4 w-4" /> Exames
               </NavItem>
               <NavItem href="/seminarios">
-                <BookCopy className="h-4 w-4" />
-                Seminários
+                <BookCopy className="h-4 w-4" /> Seminários
               </NavItem>
               <NavItem href="/aulas">
-                <ClipboardList className="h-4 w-4" />
-                Aulas Particulares
+                <ClipboardList className="h-4 w-4" /> Aulas Particulares
               </NavItem>
               <NavItem href="/vendas">
-                <ShoppingCart className="h-4 w-4" />
-                Vendas
+                <ShoppingCart className="h-4 w-4" /> Vendas
               </NavItem>
               <NavItem href="/uniformes">
-                <Shirt className="h-4 w-4" />
-                Uniformes
+                <Shirt className="h-4 w-4" /> Uniformes
               </NavItem>
               <NavItem href="/lista-de-tarefas">
-                <ListChecks className="h-4 w-4" />
-                Lista de Tarefas
+                <ListChecks className="h-4 w-4" /> Lista de Tarefas
               </NavItem>
               <NavItem href="/leads">
-                <Phone className="h-4 w-4" />
-                Leads CAT CPKM
+                <Phone className="h-4 w-4" /> Leads CAT CPKM
               </NavItem>
               <NavItem href="/mes-das-mulheres">
-                <Star className="h-4 w-4 text-pink-500" />
-                Mês das Mulheres
+                <Star className="h-4 w-4 text-pink-500" /> Mês das Mulheres
               </NavItem>
               <NavItem href="/register" target="_blank">
-                <UserPlus className="h-4 w-4" />
-                Cadastro Público
+                <UserPlus className="h-4 w-4" /> Cadastro Público
               </NavItem>
               <NavItem href="/gift-card" target="_blank">
-                <Gift className="h-4 w-4" />
-                Gift Card Público
+                <Gift className="h-4 w-4" /> Gift Card Público
               </NavItem>
             </nav>
           </div>
@@ -272,104 +261,42 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 className="shrink-0 md:hidden"
               >
                 <Menu className="h-5 w-5" />
-                <span className="sr-only">Alternar menu de navegação</span>
+                <span className="sr-only">Navegação</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
                <SheetHeader className="sr-only">
-                  <SheetTitle>Menu de Navegação</SheetTitle>
-                  <SheetDescription>Selecione uma página para navegar.</SheetDescription>
+                  <SheetTitle>Menu</SheetTitle>
+                  <SheetDescription>Navegação principal.</SheetDescription>
               </SheetHeader>
               <nav className="grid gap-2 text-lg font-medium">
-                <Link
-                  href="#"
-                  className="flex items-center gap-2 text-lg font-semibold mb-4"
-                >
+                <Link href="#" className="flex items-center gap-2 text-lg font-semibold mb-4">
                   <span>Krav Magá IPIRANGA</span>
                 </Link>
-                <NavItem href="/alunos" isMobile>
-                  <Users className="h-5 w-5" />
-                  Alunos
-                </NavItem>
-                <NavItem href="/agendamentos" isMobile>
-                  <CalendarPlus className="h-5 w-5" />
-                  Agendamentos
-                </NavItem>
-                <NavItem href="/pagamentos" isMobile>
-                  <CreditCard className="h-5 w-5" />
-                  Pagamentos
-                </NavItem>
-                <NavItem href="/planos-vencidos" isMobile>
-                  <CalendarX className="h-5 w-5" />
-                  Planos Vencidos
-                </NavItem>
-                 <NavItem href="/creditos" isMobile>
-                  <Wallet className="h-5 w-5" />
-                  Créditos
-                </NavItem>
-                 <NavItem href="/exames" isMobile>
-                  <ShieldCheck className="h-5 w-5" />
-                  Exames
-                </NavItem>
-                <NavItem href="/seminarios" isMobile>
-                  <BookCopy className="h-5 w-5" />
-                  Seminários
-                </NavItem>
-                <NavItem href="/aulas" isMobile>
-                  <ClipboardList className="h-5 w-5" />
-                  Aulas Particulares
-                </NavItem>
-                 <NavItem href="/vendas" isMobile>
-                  <ShoppingCart className="h-5 w-5" />
-                  Vendas
-                </NavItem>
-                <NavItem href="/uniformes" isMobile>
-                  <Shirt className="h-5 w-5" />
-                  Uniformes
-                </NavItem>
-                <NavItem href="/indicadores" isMobile>
-                  <BarChart className="h-5 w-5" />
-                  Indicadores
-                </NavItem>
-                 <NavItem href="/lista-de-tarefas" isMobile>
-                  <ListChecks className="h-5 w-5" />
-                  Lista de Tarefas
-                </NavItem>
-                <NavItem href="/leads" isMobile>
-                  <Phone className="h-5 w-5" />
-                  Leads CAT CPKM
-                </NavItem>
-                <NavItem href="/mes-das-mulheres" isMobile>
-                  <Star className="h-5 w-5 text-pink-500" />
-                  Mês das Mulheres
-                </NavItem>
-                <NavItem href="/register" isMobile target="_blank">
-                  <UserPlus className="h-5 w-5" />
-                  Cadastro Público
-                </NavItem>
-                <NavItem href="/gift-card" isMobile target="_blank">
-                  <Gift className="h-5 w-5" />
-                  Gift Card Público
-                </NavItem>
+                <NavItem href="/alunos" isMobile><Users className="h-5 w-5" /> Alunos</NavItem>
+                <NavItem href="/agendamentos" isMobile><CalendarPlus className="h-5 w-5" /> Agendamentos</NavItem>
+                <NavItem href="/pagamentos" isMobile><CreditCard className="h-5 w-5" /> Pagamentos</NavItem>
+                <NavItem href="/planos-vencidos" isMobile><CalendarX className="h-5 w-5" /> Planos Vencidos</NavItem>
+                <NavItem href="/exames" isMobile><ShieldCheck className="h-5 w-5" /> Exames</NavItem>
+                <NavItem href="/aulas" isMobile><ClipboardList className="h-5 w-5" /> Aulas Particulares</NavItem>
+                <NavItem href="/vendas" isMobile><ShoppingCart className="h-5 w-5" /> Vendas</NavItem>
+                <NavItem href="/mes-das-mulheres" isMobile><Star className="h-5 w-5 text-pink-500" /> Mês das Mulheres</NavItem>
               </nav>
             </SheetContent>
           </Sheet>
-          <div className="w-full flex-1">
-          </div>
+          <div className="w-full flex-1" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={user?.photoURL || undefined} />
-                      <AvatarFallback>
-                        <UserCircle className="h-6 w-6" />
-                      </AvatarFallback>
+                      <AvatarFallback><UserCircle className="h-6 w-6" /></AvatarFallback>
                     </Avatar>
-                    <span className="font-medium">Admin</span>
+                    <span className="font-medium hidden sm:inline">Admin</span>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Menu do Gestor</DropdownMenuLabel>
+                <DropdownMenuLabel>Gestão</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                     <Link href="/dashboard"><Home className="mr-2 h-4 w-4" />Painel</Link>
@@ -379,13 +306,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sair
+                    <LogOut className="mr-2 h-4 w-4" /> Sair
                 </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-auto">
           {children}
         </main>
       </div>
@@ -395,7 +321,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
 function NavItem({ href, children, isMobile = false, target }: { href: string; children: React.ReactNode; isMobile?: boolean; target?: string; }) {
   const pathname = usePathname();
-  const isActive = pathname ? pathname.startsWith(href) : false;
+  const isActive = pathname ? (href === "/" ? pathname === "/" : pathname.startsWith(href)) : false;
   
   const linkProps = {
     href: href,
@@ -403,28 +329,15 @@ function NavItem({ href, children, isMobile = false, target }: { href: string; c
     rel: target === '_blank' ? 'noopener noreferrer' : undefined,
   };
 
-  if (isMobile) {
-    return (
-       <Link
-        {...linkProps}
-        className={cn(
-            "mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground",
-            !target && isActive && "bg-muted text-foreground"
-        )}
-      >
-        {children}
-      </Link>
-    )
-  }
+  const className = cn(
+    isMobile 
+      ? "mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+      : "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+    !target && isActive && (isMobile ? "bg-muted text-foreground" : "text-primary bg-muted")
+  );
 
   return (
-    <Link
-      {...linkProps}
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-        !target && isActive && "text-primary bg-muted"
-      )}
-    >
+    <Link {...linkProps} className={className}>
       {children}
     </Link>
   );
