@@ -43,6 +43,7 @@ export type GiftCardOrder = {
   status: 'Pendente' | 'Pago';
   createdAt: string;
   totalValue: number;
+  validationCode: string;
 };
 
 export type Payment = {

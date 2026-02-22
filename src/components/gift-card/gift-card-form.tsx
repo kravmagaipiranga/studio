@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -25,7 +26,7 @@ import {
   RadioGroupItem,
 } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { CheckCircle, Loader2, ArrowRight, ArrowLeft, Copy, QrCode } from "lucide-react";
+import { CheckCircle, Loader2, ArrowRight, ArrowLeft, Copy, QrCode, Ticket } from "lucide-react";
 
 const formSchema = z.object({
   buyerName: z.string().min(3, "Nome completo é obrigatório."),
@@ -43,6 +44,7 @@ export function GiftCardForm() {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -59,6 +61,15 @@ export function GiftCardForm() {
     },
   });
 
+  const generateValidationCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `KM-${code}`;
+  };
+
   const nextStep = async () => {
     let fieldsToValidate: (keyof FormValues)[] = [];
     if (step === 1) fieldsToValidate = ["buyerName", "buyerEmail", "buyerPhone", "buyerCpf"];
@@ -74,15 +85,19 @@ export function GiftCardForm() {
     if (!firestore) return;
     setIsSubmitting(true);
 
+    const validationCode = generateValidationCode();
+
     const orderData: Omit<GiftCardOrder, 'id'> = {
       ...values,
       status: 'Pendente',
       createdAt: new Date().toISOString(),
       totalValue: 330.00,
+      validationCode,
     };
 
     try {
       await addDocumentNonBlocking(collection(firestore, "giftCardOrders"), orderData);
+      setGeneratedCode(validationCode);
       setIsSuccess(true);
     } catch (error) {
       toast({
@@ -103,6 +118,16 @@ export function GiftCardForm() {
     });
   };
 
+  const copyOrderCode = () => {
+    if (generatedCode) {
+      navigator.clipboard.writeText(generatedCode);
+      toast({
+        title: "Código Copiado!",
+        description: "O código do pedido foi copiado para sua área de transferência.",
+      });
+    }
+  };
+
   if (isSuccess) {
     const method = form.getValues('paymentMethod');
     return (
@@ -114,10 +139,23 @@ export function GiftCardForm() {
             <p className="text-muted-foreground">Seu pedido foi registrado com sucesso.</p>
           </div>
 
+          <div className="p-4 bg-white rounded-lg border border-primary/20 max-w-sm mx-auto shadow-sm">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Ticket className="h-4 w-4 text-primary" />
+              <p className="text-xs font-bold text-primary uppercase">Código do Pedido</p>
+            </div>
+            <div className="flex items-center justify-between gap-2 bg-muted p-3 rounded border">
+              <code className="text-xl font-black tracking-widest text-primary">{generatedCode}</code>
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={copyOrderCode}>
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-2 italic">Guarde este código para sua segurança.</p>
+          </div>
+
           {method === 'Pix' ? (
             <div className="space-y-6 animate-in fade-in zoom-in duration-500">
               <div className="bg-white p-4 rounded-xl shadow-sm border border-border inline-block mx-auto">
-                {/* QR Code Placeholder for the provided image logic */}
                 <img 
                   src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020126360014BR.GOV.BCB.PIX0114311161360001955204000053039865802BR5925Centro%20Treinamento%20Krav%20Maga6009Sao%20Paulo62070503***6304E2B1" 
                   alt="QR Code PIX" 
