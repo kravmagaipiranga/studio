@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -52,7 +51,8 @@ export function PublicWomensMonthForm() {
     setIsSubmitting(true);
 
     const currentYear = new Date().getFullYear();
-    const targetYear = currentYear < 2026 ? 2026 : currentYear;
+    // Campanha geralmente acontece em Março. Se for antes de 2025, salvamos para 2025.
+    const targetYear = currentYear < 2025 ? 2025 : currentYear;
     const createdAt = new Date().toISOString();
 
     const registrations: any[] = [];
@@ -71,7 +71,7 @@ export function PublicWomensMonthForm() {
       createdAt,
     });
 
-    // 2. Registro das Acompanhantes (se houver)
+    // 2. Registro das Acompanhantes (Cria um registro individual para cada nome)
     if (values.hasCompanions === "sim" && values.companionNames) {
       const names = values.companionNames
         .split('\n')
@@ -83,23 +83,25 @@ export function PublicWomensMonthForm() {
         registrations.push({
           id: compId,
           name: companionName,
-          whatsapp: values.whatsapp,
-          chosenClass: values.chosenClass,
+          whatsapp: values.whatsapp, // Herda o contato da principal para facilitar agendamento
+          chosenClass: values.chosenClass, // Herda a turma
           hasCompanions: false,
           companionNames: "",
           year: targetYear,
           attended: false,
           createdAt,
-          isCompanion: true, // Tag interna opcional
-          invitedBy: values.name // Referência opcional
+          isCompanion: true,
+          invitedBy: values.name
         });
       });
     }
 
     try {
-      const promises = registrations.map(reg => 
-        addDocumentNonBlocking(collection(firestore, 'womensMonth'), reg)
-      );
+      // Salva todos os registros de forma não-bloqueante
+      const promises = registrations.map(reg => {
+        const docRef = doc(firestore, 'womensMonth', reg.id);
+        return addDocumentNonBlocking(collection(firestore, 'womensMonth'), reg);
+      });
       
       await Promise.all(promises);
       setIsSuccess(true);
@@ -249,7 +251,7 @@ export function PublicWomensMonthForm() {
                         {...field} 
                       />
                     </FormControl>
-                    <FormDescription className="text-xs">Elas também terão direito à promoção e serão cadastradas individualmente!</FormDescription>
+                    <FormDescription className="text-xs">Elas também terão direito ao mês gratuito e serão cadastradas individualmente!</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

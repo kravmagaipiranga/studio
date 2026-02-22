@@ -7,7 +7,7 @@ import { Download, PlusCircle, Search, Star, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { WomensMonthLead } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, where, orderBy } from "firebase/firestore";
+import { collection, query, where } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,7 +27,6 @@ export default function WomensMonthAdminPage() {
 
     const leadsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
-        // Simplificamos a query para evitar problemas de índice no build inicial
         return query(
             collection(firestore, 'womensMonth'), 
             where('year', '==', Number(selectedYear))
@@ -38,7 +37,7 @@ export default function WomensMonthAdminPage() {
 
     useEffect(() => {
         if (initialLeads) {
-            // Ordenamos em memória para evitar a necessidade de índices compostos manuais
+            // Ordenamos em memória para evitar a necessidade de índices compostos no Firestore
             const sorted = [...initialLeads].sort((a, b) => 
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             );
