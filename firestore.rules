@@ -22,12 +22,12 @@ service cloud.firestore {
     
     match /giftCardOrders/{orderId} {
       allow create: if true;
-      allow read, write: if isAdmin();
+      allow read, write: if isSignedIn();
     }
     
     match /womensMonth/{leadId} {
       allow create: if true;
-      allow read, write: if isAdmin();
+      allow read, write: if isSignedIn();
     }
     
     match /payments/{paymentId} {
