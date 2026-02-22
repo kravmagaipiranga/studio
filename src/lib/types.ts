@@ -1,49 +1,40 @@
 
 export type Student = {
   id: string;
-  userId?: string;
   name: string;
   email: string;
   registrationDate: string;
   status: 'Ativo' | 'Inativo' | 'Pendente';
   paymentStatus: 'Pago' | 'Vencido' | 'Pendente';
   dueDate?: string;
+  
+  // Dados preenchidos pelo aluno
   dob: string;
   cpf: string;
   tshirtSize: string;
   pantsSize: string;
   phone: string;
-  emergencyContacts?: string;
+  emergencyContacts: string;
+  
+  // Dados de controle interno
   startDate?: string;
   lastExamDate?: string;
-  belt: string;
+  belt: string; // cor
   medicalHistory?: string;
   generalNotes?: string;
   fikmAnnuityPaid?: boolean;
   fikmAnnuityPaymentDate?: string;
   fikmAnnuityPaymentMethod?: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
   readyForReview?: boolean;
+
+
+  // Dados Financeiros
   planType?: 'Mensal' | 'Trimestral' | 'Bolsa 50%' | 'Bolsa 100%' | 'Outros' | 'Matrícula';
   planValue?: number;
   paymentPreference?: ('pix' | 'dinheiro' | 'boleto')[];
   lastPaymentDate?: string;
   planExpirationDate?: string;
   paymentCredits?: string;
-};
-
-export type GiftCardOrder = {
-  id: string;
-  buyerName: string;
-  buyerEmail: string;
-  buyerPhone: string;
-  buyerCpf: string;
-  recipientName: string;
-  message?: string;
-  paymentMethod: 'Pix' | 'Boleto';
-  status: 'Pendente' | 'Pago';
-  createdAt: string;
-  totalValue: number;
-  validationCode: string;
 };
 
 export type Payment = {
@@ -58,6 +49,11 @@ export type Payment = {
   notes?: string;
 };
 
+export type RevenueData = {
+  month: string;
+  revenue: number;
+}
+
 export type Exam = {
   id: string;
   studentId: string;
@@ -70,7 +66,7 @@ export type Exam = {
   paymentDate?: string;
   paymentAmount: number;
   paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
-  isNew?: boolean;
+  isNew?: boolean; // Flag for new rows in UI
 };
 
 export type Seminar = {
@@ -85,23 +81,22 @@ export type Seminar = {
   paymentDate?: string;
   paymentAmount: number;
   paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
-  isNew?: boolean;
+  isNew?: boolean; // Flag for new rows in UI
 };
 
 export type PrivateClass = {
   id: string;
-  studentId?: string;
+  studentId?: string; // Not linked to general students anymore, can be optional
   studentName: string;
   classDate: string;
-  classTime: string;
   numberOfClasses: number;
   pricePerClass: number;
-  paymentAmount: number;
+  paymentAmount: number; // This will be the calculated total
   paymentStatus: 'Pago' | 'Pendente';
   paymentDate?: string;
   paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
   notes?: string;
-  isNew?: boolean;
+  isNew?: boolean; // Flag for new rows in UI
 };
 
 export type Appointment = {
@@ -112,7 +107,7 @@ export type Appointment = {
   classDate: string;
   classTime: string;
   notes?: string;
-  isNew?: boolean;
+  isNew?: boolean; // Flag for new rows in UI
   enrolled?: boolean;
   attended?: boolean;
   missed?: boolean;
@@ -127,11 +122,11 @@ export type Sale = {
   date: string;
   paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
   paymentStatus: 'Pago' | 'Pendente';
-  isNew?: boolean;
+  isNew?: boolean; // Flag for new rows in UI
 };
 
 export type MonthlyIndicator = {
-  id: string;
+  id: string; // YYYY-MM
   year: number;
   month: number;
   previousMonthTotal?: number;
@@ -141,6 +136,7 @@ export type MonthlyIndicator = {
   reenrollments?: number;
   exits?: number;
   womensMonth?: number;
+  // Calculated fields (stored for convenience or calculated on the fly)
   totalStudents?: number;
   evolution?: number;
   conversionRate?: number;
@@ -150,49 +146,5 @@ export type Task = {
     id: string;
     text: string;
     completed: boolean;
-    createdAt: any;
-};
-
-export type OrderItem = {
-  id: string;
-  name: string;
-  size: string;
-  quantity: number;
-  price: number;
-};
-
-export type UniformOrder = {
-  id: string;
-  studentId: string;
-  studentName: string;
-  orderDate: string;
-  items: OrderItem[];
-  totalValue: number;
-  paymentStatus: 'Pago' | 'Pendente';
-  paymentDate?: string;
-  materialPickedUp: boolean;
-  isNew?: boolean;
-};
-
-export type Lead = {
-  id: string;
-  contactDate: string;
-  name: string;
-  phone: string;
-  contacted: boolean;
-  responded?: boolean;
-  isNew?: boolean;
-};
-
-export type WomensMonthLead = {
-  id: string;
-  name: string;
-  whatsapp: string;
-  chosenClass: string;
-  hasCompanions: boolean;
-  companionNames?: string;
-  year: number;
-  attended: boolean;
-  createdAt: string;
-  isNew?: boolean;
+    createdAt: any; // Firestore timestamp
 };

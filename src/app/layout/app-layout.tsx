@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -24,7 +25,6 @@ import {
   UserPlus,
   CalendarX,
   Gift,
-  Star,
 } from "lucide-react";
 import {
   Sheet,
@@ -67,10 +67,9 @@ const protectedAdminRoutes = [
   "/indicadores",
   "/leads",
   "/planos-vencidos",
-  "/mes-das-mulheres",
 ];
 
-const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/gift-card", "/mes-das-mulheres/registro"];
+const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/gift-card"];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -238,9 +237,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <NavItem href="/leads">
                 <Phone className="h-4 w-4" /> Leads CAT CPKM
               </NavItem>
-              <NavItem href="/mes-das-mulheres">
-                <Star className="h-4 w-4 text-pink-500" /> Mês das Mulheres
-              </NavItem>
               <NavItem href="/register" target="_blank">
                 <UserPlus className="h-4 w-4" /> Cadastro Público
               </NavItem>
@@ -280,7 +276,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <NavItem href="/exames" isMobile><ShieldCheck className="h-5 w-5" /> Exames</NavItem>
                 <NavItem href="/aulas" isMobile><ClipboardList className="h-5 w-5" /> Aulas Particulares</NavItem>
                 <NavItem href="/vendas" isMobile><ShoppingCart className="h-5 w-5" /> Vendas</NavItem>
-                <NavItem href="/mes-das-mulheres" isMobile><Star className="h-5 w-5 text-pink-500" /> Mês das Mulheres</NavItem>
               </nav>
             </SheetContent>
           </Sheet>
