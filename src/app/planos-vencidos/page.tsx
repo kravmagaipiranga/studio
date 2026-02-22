@@ -4,7 +4,7 @@
 import { useState, useMemo } from "react";
 import { collection, query, where } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { Student } from "@/lib/types";
+import { Student, Payment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Search, AlertTriangle, MessageSquare, Mail } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,33 +34,53 @@ export default function PlanosVencidosPage() {
 
     const studentsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        // We only care about active students whose plans might be expired.
         return query(collection(firestore, 'students'), where('status', '==', 'Ativo'));
     }, [firestore]);
 
-    const { data: activeStudents, isLoading } = useCollection<Student>(studentsQuery);
+    const paymentsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'payments');
+    }, [firestore]);
+
+    const { data: activeStudents, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
+    const { data: allPayments, isLoading: isLoadingPayments } = useCollection<Payment>(paymentsQuery);
+
+    const isLoading = isLoadingStudents || isLoadingPayments;
 
     const expiredStudents = useMemo(() => {
-        if (!activeStudents) return [];
+        if (!activeStudents || !allPayments) return [];
 
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+        today.setHours(0, 0, 0, 0);
 
         let students = activeStudents.filter(student => {
-            // A student's plan is considered expired if they don't have an expiration date
-            // or if the expiration date is in the past.
-            // We exclude students with 100% scholarship or whose plan type is just 'Matrícula'.
+            // Regra 1: Excluir Bolsas 100% e Matrículas (não são planos recorrentes de mensalidade)
             if (student.planType === 'Bolsa 100%' || student.planType === 'Matrícula') {
                 return false;
             }
-            if (!student.planExpirationDate) {
-                return true; // No expiration date means they are pending payment.
+
+            // Regra 2: Verificar se existe QUALQUER pagamento registrado para este aluno com validade futura
+            const hasValidPayment = allPayments.some(p => 
+                p.studentId === student.id && 
+                p.expirationDate && 
+                !isBefore(parseISO(p.expirationDate), today)
+            );
+
+            // Se ele tem um pagamento válido, ele não está vencido
+            if (hasValidPayment) {
+                return false;
             }
+
+            // Regra 3: Se não tem pagamento válido, checamos se a data no perfil já expirou
+            if (!student.planExpirationDate) {
+                return true; // Sem data de expiração em aluno ativo é considerado pendente
+            }
+
             try {
                 const expirationDate = parseISO(student.planExpirationDate);
                 return isBefore(expirationDate, today);
             } catch {
-                return true; // Treat invalid dates as expired for safety.
+                return true; 
             }
         });
         
@@ -76,7 +96,7 @@ export default function PlanosVencidosPage() {
             return dateA.getTime() - dateB.getTime();
         });
 
-    }, [activeStudents, searchQuery]);
+    }, [activeStudents, allPayments, searchQuery]);
 
     const handleSelectStudent = (studentId: string) => {
         router.push(`/alunos/${studentId}/editar`);
@@ -112,13 +132,11 @@ export default function PlanosVencidosPage() {
              const month3 = format(addMonths(paymentDate, 2), 'MMMM', { locale: ptBR });
              const monthsCovered = `${month1}, ${month2} e ${month3}`;
 
-             body = `Olá, ${student.name.split(' ')[0]}! Tudo bem?\n\n` +
-                    `Estamos entrando em contato para lembrar que o prazo referente ao seu último pagamento trimestral da sua mensalidade terminou.\n\n` +
-                    `Seu último pagamento registrado em nosso sistema foi realizado no dia ${paymentDay}, e ele cobre os meses de ${monthsCovered}.\n\n` +
+             body = `Olá, ${student.name.split(' ')[0]}! Estamos entrando em contato para lembrar que seu plano trimestral expirou. O pagamento referente aos meses ${monthsCovered} foi realizado em ${paymentDay}.\n\n` +
                     `Com isso, o prazo para pagamento da próxima mensalidade irá vencer nos próximos dias. O QR code para realizar seu próximo pagamento pode ser encontrado no link: https://kravmagaipiranga.com/pgto\n\n` +
                     `Caso prefira pagar diretamente por PIX, use a chave thiago@kravmaga.org.br ou o CNPJ 31116136000195.\n\n` +
-                    `Essa é uma mensagem automática. Se seu pagamento já foi realizado, desconsidere essa mensagem. Qualquer dúvida, estamos à disposição!\n\n`+
-                    `Até a aula! Kida!`;
+                    `Essa é uma mensagem automática de nosso sistema. Caso já tenha realizado o pagamento, desconsidere esse email.\n\n`+
+                    `Qualquer dúvida, estamos à disposição! Até a aula! Kida!`;
         } else {
              const expirationDate = student.planExpirationDate 
                 ? format(parseISO(student.planExpirationDate), 'dd/MM/yyyy') 
@@ -149,7 +167,7 @@ export default function PlanosVencidosPage() {
                         <div className="text-2xl font-bold text-rose-900 dark:text-rose-100">
                             {isLoading ? <Skeleton className="h-8 w-12"/> : expiredStudents.length}
                         </div>
-                        <p className="text-xs text-muted-foreground">Alunos ativos com mensalidade em atraso.</p>
+                        <p className="text-xs text-muted-foreground">Alunos ativos sem pagamento vigente.</p>
                     </CardContent>
                 </Card>
             </div>
@@ -179,7 +197,7 @@ export default function PlanosVencidosPage() {
                                 <TableHead className="w-[350px]">Aluno</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Tipo de Plano</TableHead>
-                                <TableHead>Data de Vencimento</TableHead>
+                                <TableHead>Último Vencimento</TableHead>
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -221,7 +239,7 @@ export default function PlanosVencidosPage() {
                                         <TableCell>
                                             {student.planExpirationDate 
                                                 ? format(parseISO(student.planExpirationDate), 'dd/MM/yyyy') 
-                                                : 'Sem data'}
+                                                : 'Pendente'}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
