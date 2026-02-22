@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -115,7 +114,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const totalNotifications = (birthdayStudents?.length || 0) + (pendingStudents?.length || 0);
 
   useEffect(() => {
-    if (isUserLoading) return;
+    if (isUserLoading || !pathname) return;
     
     const isProtectedRoute = protectedAdminRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));
 
@@ -131,7 +130,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
-  if (publicRoutes.some(route => pathname === route || pathname.startsWith(route + "/"))) {
+  if (pathname && publicRoutes.some(route => pathname === route || pathname.startsWith(route + "/"))) {
     return <>{children}</>;
   }
   
@@ -396,7 +395,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
 function NavItem({ href, children, isMobile = false, target }: { href: string; children: React.ReactNode; isMobile?: boolean; target?: string; }) {
   const pathname = usePathname();
-  const isActive = pathname.startsWith(href);
+  const isActive = pathname ? pathname.startsWith(href) : false;
   
   const linkProps = {
     href: href,
