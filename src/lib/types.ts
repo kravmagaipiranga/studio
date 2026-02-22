@@ -1,4 +1,3 @@
-
 export type Student = {
   id: string;
   userId?: string;
@@ -181,16 +180,5 @@ export type Lead = {
   phone: string;
   contacted: boolean;
   responded?: boolean;
-  isNew?: boolean;
-};
-
-export type WomensMonthLead = {
-  id: string;
-  name: string;
-  whatsapp: string;
-  chosenClass: string;
-  year: number;
-  attended: boolean;
-  createdAt: string;
   isNew?: boolean;
 };

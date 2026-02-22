@@ -1,4 +1,3 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -40,10 +39,5 @@ service cloud.firestore {
     match /uniformOrders/{orderId} { allow read, write: if isAdmin(); }
     match /leads/{leadId} { allow read, write: if isAdmin(); }
     match /roles_admin/{userId} { allow read, write: if isAdmin(); }
-    
-    // Regras para a campanha do Mês das Mulheres (Acesso para usuários logados)
-    match /womensMonth/{leadId} { 
-      allow read, write: if isSignedIn(); 
-    }
   }
 }

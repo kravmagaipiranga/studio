@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -14,7 +13,6 @@ import {
   ClipboardList,
   CalendarPlus,
   ShoppingCart,
-  Upload,
 } from "lucide-react";
 import {
   Sheet,
@@ -33,23 +31,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    // If auth is still loading, do nothing to prevent flickering.
     if (isUserLoading) return;
     
-    // If auth has loaded and there's no user, redirect to login page.
-    // We allow access to public pages like /register and the login page itself.
     if (!user && pathname !== '/login' && pathname !== '/register') {
       router.push('/login');
     }
   }, [isUserLoading, user, pathname, router]);
 
-  // For public-facing pages, we render children without the main app layout.
   if (pathname === '/register' || pathname === '/login') {
     return <>{children}</>;
   }
   
-  // While loading auth state for protected routes, show a simple loader.
-  // This prevents the layout from flashing before the redirect can happen.
   if (isUserLoading || !user) {
       return (
         <div className="flex items-center justify-center min-h-screen">
@@ -168,7 +160,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-            {/* Futuro campo de busca global */}
           </div>
           <div className="flex items-center font-medium">
             Admin

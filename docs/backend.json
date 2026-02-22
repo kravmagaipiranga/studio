@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Student": {
@@ -44,20 +43,6 @@
         "validationCode": { "type": "string" }
       },
       "required": ["id", "buyerName", "buyerEmail", "recipientName", "status", "validationCode"]
-    },
-    "WomensMonthLead": {
-      "title": "WomensMonthLead",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "whatsapp": { "type": "string" },
-        "chosenClass": { "type": "string" },
-        "year": { "type": "number" },
-        "attended": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "name", "whatsapp", "year", "attended", "createdAt"]
     }
   },
   "auth": {
@@ -87,14 +72,6 @@
           "entityName": "GiftCardOrder",
           "schema": { "$ref": "#/backend/entities/GiftCardOrder" },
           "description": "Stores gift card orders."
-        }
-      },
-      {
-        "path": "/womensMonth/{leadId}",
-        "definition": {
-          "entityName": "WomensMonthLead",
-          "schema": { "$ref": "#/backend/entities/WomensMonthLead" },
-          "description": "Stores leads for the Women's Month campaign."
         }
       }
     ]
