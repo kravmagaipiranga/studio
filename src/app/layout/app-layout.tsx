@@ -24,6 +24,7 @@ import {
   UserPlus,
   CalendarX,
   Star,
+  Sparkles,
 } from "lucide-react";
 import {
   Sheet,
@@ -47,9 +48,10 @@ import { useUser, useCollection, useFirestore, useMemoFirebase, useAuth } from "
 import { useEffect, useMemo, useState } from "react";
 import { FirebaseErrorListener } from "@/components/FirebaseErrorListener";
 import { collection } from "firebase/firestore";
-import type { Student } from "@/lib/types";
+import type { Student, WomensMonthLead } from "@/lib/types";
 import { signOut } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { subDays, isAfter, parseISO } from 'date-fns';
 
 const protectedAdminRoutes = [
   "/alunos",
@@ -88,7 +90,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     return collection(firestore, 'students');
   }, [firestore, user]);
 
+  const womensMonthCollection = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return collection(firestore, 'womensMonth');
+  }, [firestore, user]);
+
   const { data: students } = useCollection<Student>(studentsCollection);
+  const { data: womensLeads } = useCollection<WomensMonthLead>(womensMonthCollection);
 
   const birthdayStudents = useMemo(() => {
     if (!students) return [];
@@ -112,7 +120,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     return students.filter(student => student.status === 'Pendente');
   }, [students]);
 
-  const totalNotifications = (birthdayStudents?.length || 0) + (pendingStudents?.length || 0);
+  const recentWomensLeads = useMemo(() => {
+    if (!womensLeads) return [];
+    const twoDaysAgo = subDays(new Date(), 2);
+    return womensLeads.filter(lead => {
+      try {
+        return isAfter(parseISO(lead.createdAt), twoDaysAgo);
+      } catch {
+        return false;
+      }
+    });
+  }, [womensLeads]);
+
+  const totalNotifications = (birthdayStudents?.length || 0) + (pendingStudents?.length || 0) + (recentWomensLeads?.length || 0);
 
   useEffect(() => {
     if (isUserLoading || !pathname || !mounted) return;
@@ -120,7 +140,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));
     const isProtectedRoute = protectedAdminRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));
 
-    // Se for uma rota protegida e NÃO for uma exceção pública, redireciona se não houver usuário
     if (!user && isProtectedRoute && !isPublicRoute) {
       router.push('/login');
     }
@@ -135,7 +154,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (!mounted) return null;
 
-  // Renderiza apenas o conteúdo para rotas públicas (sem o layout administrativo)
   if (pathname && publicRoutes.some(route => pathname === route || pathname.startsWith(route + "/"))) {
     return <>{children}</>;
   }
@@ -157,50 +175,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Link href="/" className="flex items-center gap-2 font-semibold">
               <span className="">Krav Magá IPIRANGA</span>
             </Link>
-             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="ml-auto h-8 w-8 relative">
-                  <Bell className="h-4 w-4" />
-                  {totalNotifications > 0 && (
-                    <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500" />
-                  )}
-                  <span className="sr-only">Notificações</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                {pendingStudents.length > 0 && (
-                  <>
-                    <DropdownMenuLabel>Novos Cadastros</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {pendingStudents.map(student => (
-                      <DropdownMenuItem key={student.id} asChild>
-                        <Link href={`/alunos/${student.id}/editar`}>
-                          <UserPlus className="mr-2 h-4 w-4" />
-                          <span className="truncate">{student.name} aguarda ativação.</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </>
-                )}
-                
-                {birthdayStudents.length > 0 && (
-                    <>
-                      {pendingStudents.length > 0 && <DropdownMenuSeparator />}
-                      <DropdownMenuLabel>Aniversariantes de Hoje</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {birthdayStudents.map(student => (
-                        <DropdownMenuItem key={student.id}>
-                          <Cake className="mr-2 h-4 w-4" />
-                          <span>Parabéns, {student.name}!</span>
-                        </DropdownMenuItem>
-                      ))}
-                    </>
-                )}
-                {totalNotifications === 0 && (
-                  <DropdownMenuItem disabled>Nenhuma notificação hoje.</DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4 py-4">
@@ -290,6 +264,74 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1" />
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-9 w-9 relative">
+                <Bell className="h-4 w-4" />
+                {totalNotifications > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold">
+                    {totalNotifications}
+                  </span>
+                )}
+                <span className="sr-only">Notificações</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72">
+              {pendingStudents.length > 0 && (
+                <>
+                  <DropdownMenuLabel className="flex items-center gap-2">
+                    <UserPlus className="h-4 w-4" /> Novos Alunos
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {pendingStudents.map(student => (
+                    <DropdownMenuItem key={student.id} asChild>
+                      <Link href={`/alunos/${student.id}/editar`}>
+                        <span className="truncate">{student.name} aguarda ativação.</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+
+              {recentWomensLeads.length > 0 && (
+                <>
+                  {(pendingStudents.length > 0) && <DropdownMenuSeparator />}
+                  <DropdownMenuLabel className="flex items-center gap-2 text-pink-600">
+                    <Sparkles className="h-4 w-4" /> Mês das Mulheres
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {recentWomensLeads.map(lead => (
+                    <DropdownMenuItem key={lead.id} asChild>
+                      <Link href="/mes-das-mulheres">
+                        <span className="truncate">{lead.name} se inscreveu agora!</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+              
+              {birthdayStudents.length > 0 && (
+                  <>
+                    {(pendingStudents.length > 0 || recentWomensLeads.length > 0) && <DropdownMenuSeparator />}
+                    <DropdownMenuLabel className="flex items-center gap-2">
+                      <Cake className="h-4 w-4" /> Aniversariantes de Hoje
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {birthdayStudents.map(student => (
+                      <DropdownMenuItem key={student.id} disabled>
+                        <span className="truncate">Parabéns, {student.name}!</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+              )}
+              
+              {totalNotifications === 0 && (
+                <DropdownMenuItem disabled>Nenhuma notificação importante.</DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2">
