@@ -2,23 +2,33 @@
 "use client";
 
 import { PublicWomensMonthForm } from "@/components/womens-month/public-registration-form";
-import { Shield, MapPin, Star } from "lucide-react";
+import { Shield, MapPin } from "lucide-react";
+import Image from "next/image";
 
 export default function WomensMonthPublicPage() {
   return (
     <div className="min-h-screen bg-pink-50/20 pb-12">
       {/* Header Minimalista */}
       <header className="bg-white border-b border-pink-100 py-8 px-4 text-center">
-        <div className="max-w-2xl mx-auto space-y-2">
-          <div className="inline-flex items-center justify-center p-2 bg-pink-100 rounded-full mb-2">
-            <Star className="h-6 w-6 text-pink-600 fill-pink-600" />
+        <div className="max-w-2xl mx-auto space-y-4">
+          <div className="flex justify-center mb-2">
+            <Image 
+              src="https://yata-apix-c1ca31d6-cb5d-4e4c-94a2-7c6a7dc7c677.s3-object.locaweb.com.br/c6d53faa65104a2184f1b46b987eaa23.png"
+              alt="Logo Krav Magá Ipiranga"
+              width={200}
+              height={80}
+              className="h-auto w-auto max-h-20 object-contain"
+              priority
+            />
           </div>
-          <h1 className="text-3xl md:text-4xl font-black text-pink-900 tracking-tight uppercase">
-            Mês das Mulheres
-          </h1>
-          <p className="text-lg text-pink-700 font-medium">
-            Garanta sua vaga para um mês de aulas gratuitas de Krav Magá.
-          </p>
+          <div className="space-y-2">
+            <h1 className="text-3xl md:text-4xl font-black text-pink-900 tracking-tight uppercase">
+              Mês das Mulheres
+            </h1>
+            <p className="text-lg text-pink-700 font-medium">
+              Garanta sua vaga para um mês de aulas gratuitas de Krav Magá.
+            </p>
+          </div>
         </div>
       </header>
 
