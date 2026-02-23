@@ -4,8 +4,12 @@
 import { PublicWomensMonthForm } from "@/components/womens-month/public-registration-form";
 import { Shield, MapPin } from "lucide-react";
 import Image from "next/image";
+import { PlaceHolderImages } from "@/../lib/placeholder-images";
 
 export default function WomensMonthPublicPage() {
+  const headerLogo = PlaceHolderImages.find(img => img.id === 'logo-womens-month-header');
+  const footerLogo = PlaceHolderImages.find(img => img.id === 'logo-krav-maga-footer');
+
   return (
     <div className="min-h-screen bg-pink-50/20 pb-12">
       {/* Header Minimalista */}
@@ -13,12 +17,13 @@ export default function WomensMonthPublicPage() {
         <div className="max-w-2xl mx-auto space-y-4">
           <div className="flex justify-center mb-2">
             <Image 
-              src="https://yata-apix-c1ca31d6-cb5d-4e4c-94a2-7c6a7dc7c677.s3-object.locaweb.com.br/c6d53faa65104a2184f1b46b987eaa23.png"
-              alt="Logo Krav Magá Ipiranga"
-              width={200}
-              height={80}
-              className="h-auto w-auto max-h-20 object-contain"
+              src={headerLogo?.imageUrl || "https://picsum.photos/seed/header/400/150"}
+              alt="Mês das Mulheres - Logo"
+              width={400}
+              height={150}
+              className="h-auto w-full max-w-[400px] object-contain"
               priority
+              data-ai-hint={headerLogo?.imageHint || "womens logo"}
             />
           </div>
           <div className="space-y-2">
@@ -56,12 +61,24 @@ export default function WomensMonthPublicPage() {
         </div>
 
         {/* Footer Simples */}
-        <footer className="mt-12 text-center space-y-4">
-          <p className="text-pink-400 text-xs font-bold uppercase tracking-widest">
-            Centro de Treinamento Krav Magá Ipiranga
-          </p>
-          <div className="h-px w-12 bg-pink-200 mx-auto"></div>
-          <p className="text-pink-300 text-[10px]">© 2025 - Segurança e Empoderamento Feminino</p>
+        <footer className="mt-12 text-center space-y-8">
+          <div className="flex justify-center">
+            <Image 
+              src={footerLogo?.imageUrl || "https://picsum.photos/seed/footer/350/100"}
+              alt="Logo Krav Magá Ipiranga"
+              width={350}
+              height={100}
+              className="h-auto w-full max-w-[350px] object-contain opacity-90"
+              data-ai-hint={footerLogo?.imageHint || "school logo"}
+            />
+          </div>
+          <div className="space-y-4">
+            <p className="text-pink-400 text-xs font-bold uppercase tracking-widest">
+              Centro de Treinamento Krav Magá Ipiranga
+            </p>
+            <div className="h-px w-12 bg-pink-200 mx-auto"></div>
+            <p className="text-pink-300 text-[10px]">© 2025 - Segurança e Empoderamento Feminino</p>
+          </div>
         </footer>
       </main>
     </div>

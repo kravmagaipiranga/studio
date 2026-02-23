@@ -1,3 +1,4 @@
+
 {
   "placeholderImages": [
     {
@@ -35,6 +36,18 @@
       "description": "User avatar 6",
       "imageUrl": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwZXJzb24lMjBmYWNlfGVufDB8fHx8MTc2NDc1NDA5OHww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "person face"
+    },
+    {
+      "id": "logo-womens-month-header",
+      "description": "Header logo for Women's Month campaign",
+      "imageUrl": "https://yata-apix-c1ca31d6-cb5d-4e4c-94a2-7c6a7dc7c677.s3-object.locaweb.com.br/2eb38dd66b5b41d783090f2373d971f5.png",
+      "imageHint": "womens logo"
+    },
+    {
+      "id": "logo-krav-maga-footer",
+      "description": "Main school logo for footer",
+      "imageUrl": "https://yata-apix-c1ca31d6-cb5d-4e4c-94a2-7c6a7dc7c677.s3-object.locaweb.com.br/c6d53faa65104a2184f1b46b987eaa23.png",
+      "imageHint": "school logo"
     }
   ]
 }
