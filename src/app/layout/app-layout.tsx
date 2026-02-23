@@ -117,9 +117,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isUserLoading || !pathname || !mounted) return;
     
+    const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));
     const isProtectedRoute = protectedAdminRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));
 
-    if (!user && isProtectedRoute) {
+    // Se for uma rota protegida e NÃO for uma exceção pública, redireciona se não houver usuário
+    if (!user && isProtectedRoute && !isPublicRoute) {
       router.push('/login');
     }
   }, [isUserLoading, user, pathname, router, mounted]);
@@ -133,6 +135,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (!mounted) return null;
 
+  // Renderiza apenas o conteúdo para rotas públicas (sem o layout administrativo)
   if (pathname && publicRoutes.some(route => pathname === route || pathname.startsWith(route + "/"))) {
     return <>{children}</>;
   }
