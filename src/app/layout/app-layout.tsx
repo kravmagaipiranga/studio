@@ -122,14 +122,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const recentWomensLeads = useMemo(() => {
     if (!womensLeads) return [];
-    const twoDaysAgo = subDays(new Date(), 2);
-    return womensLeads.filter(lead => {
-      try {
-        return isAfter(parseISO(lead.createdAt), twoDaysAgo);
-      } catch {
-        return false;
-      }
-    });
+    const oneDayAgo = subDays(new Date(), 1);
+    return womensLeads
+      .filter(lead => {
+        try {
+          return isAfter(parseISO(lead.createdAt), oneDayAgo);
+        } catch {
+          return false;
+        }
+      })
+      .sort((a, b) => {
+        try {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        } catch {
+          return 0;
+        }
+      });
   }, [womensLeads]);
 
   const totalNotifications = (birthdayStudents?.length || 0) + (pendingStudents?.length || 0) + (recentWomensLeads?.length || 0);
@@ -298,7 +306,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <>
                   {(pendingStudents.length > 0) && <DropdownMenuSeparator />}
                   <DropdownMenuLabel className="flex items-center gap-2 text-pink-600">
-                    <Sparkles className="h-4 w-4" /> Mês das Mulheres
+                    <Sparkles className="h-4 w-4" /> Mês das Mulheres (24h)
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {recentWomensLeads.map(lead => (
