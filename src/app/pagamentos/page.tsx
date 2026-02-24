@@ -9,7 +9,7 @@ import { Download, PlusCircle, Search, CheckCircle, ClipboardCheck, AlertCircle,
 import { Input } from "@/components/ui/input";
 import { Student, Payment } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import Link from "link";
+import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DateRange } from "react-day-picker";
