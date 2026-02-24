@@ -97,13 +97,15 @@ export function PaymentsTable({ payments, allStudents, isLoading }: PaymentsTabl
 
     const cleanPhone = student.phone.replace(/\D/g, '');
     const date = format(parseISO(selectedPayment.paymentDate), 'dd/MM/yyyy');
-    const message = `*RECIBO DE PAGAMENTO - Krav Magá Ipiranga*\n\n` +
+    const message = `*RECIBO DE PAGAMENTO - CT KRAV MAGÁ IPIRANGA*\n\n` +
                     `Recebemos de: *${selectedPayment.studentName}*\n` +
                     `Valor: *R$ ${selectedPayment.amount.toFixed(2)}*\n` +
                     `Referente a: *${selectedPayment.planType}*\n` +
                     `Data do Pagamento: *${date}*\n` +
                     `Forma de Pagamento: *${selectedPayment.paymentMethod}*\n\n` +
-                    `Agradecemos a preferência! Kida! 👊`;
+                    `Agradecemos a preferência! Kida! 👊\n` +
+                    `Rua Tabor, 482 - Ipiranga\n` +
+                    `Tel: 11 2589-6049`;
 
     window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
   }
@@ -117,8 +119,8 @@ export function PaymentsTable({ payments, allStudents, isLoading }: PaymentsTabl
     }
 
     const date = format(parseISO(selectedPayment.paymentDate), 'dd/MM/yyyy');
-    const subject = `Recibo de Pagamento - Krav Magá Ipiranga`;
-    const body = `Olá, ${selectedPayment.studentName}!\n\nConfirmamos o recebimento do seu pagamento no valor de R$ ${selectedPayment.amount.toFixed(2)} referente ao plano ${selectedPayment.planType} em ${date}.\n\nObrigado por treinar conosco!\n\nKrav Magá Ipiranga\nKida!`;
+    const subject = `Recibo de Pagamento - CT KRAV MAGÁ IPIRANGA`;
+    const body = `Olá, ${selectedPayment.studentName}!\n\nConfirmamos o recebimento do seu pagamento no valor de R$ ${selectedPayment.amount.toFixed(2)} referente ao plano ${selectedPayment.planType} em ${date}.\n\nObrigado por treinar conosco!\n\nCT KRAV MAGÁ IPIRANGA\nRua Tabor, 482 - Ipiranga\nTel: 11 2589-6049\nKida!`;
 
     window.location.href = `mailto:${student.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
@@ -236,9 +238,9 @@ export function PaymentsTable({ payments, allStudents, isLoading }: PaymentsTabl
             {selectedPayment && (
                 <div id="receipt-content" className="p-6 border rounded-lg bg-white space-y-6 text-sm">
                     <div className="text-center border-b pb-4 space-y-1">
-                        <h2 className="text-lg font-bold uppercase tracking-tight">Krav Magá IPIRANGA</h2>
-                        <p className="text-xs text-muted-foreground">Centro de Treinamento de Defesa Pessoal</p>
-                        <p className="text-xs text-muted-foreground">CNPJ: 31.116.136/0001-95</p>
+                        <h2 className="text-lg font-bold uppercase tracking-tight">CT KRAV MAGÁ IPIRANGA</h2>
+                        <p className="text-xs text-muted-foreground">Rua Tabor, 482 - Ipiranga - São Paulo - SP</p>
+                        <p className="text-xs text-muted-foreground">Contato: 11 2589-6049 | CNPJ: 31.116.136/0001-95</p>
                     </div>
 
                     <div className="space-y-4">
