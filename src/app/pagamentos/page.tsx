@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useMemo } from "react";
@@ -10,7 +9,7 @@ import { Download, PlusCircle, Search, CheckCircle, ClipboardCheck, AlertCircle,
 import { Input } from "@/components/ui/input";
 import { Student, Payment } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import Link from "next/link";
+import Link from "link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DateRange } from "react-day-picker";
@@ -126,8 +125,6 @@ export default function PagamentosPage() {
             
             const activeStudentIds = new Set(students.filter(s => s.status === 'Ativo').map(s => s.id));
 
-            // This logic has an issue, it filters from all payments, not just active students' plans.
-            // But we will keep it as is, as it's not the user's current request to change it.
             filtered = payments.filter(p => {
                 if (!p.expirationDate || !activeStudentIds.has(p.studentId)) {
                     return false;
@@ -252,7 +249,7 @@ export default function PagamentosPage() {
             </div>
             <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-2">
-                     <div className="relative w-full max-w-sm sm:w-auto">
+                     <div className="relative w-full max-sm:w-full sm:w-auto">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="search"
@@ -333,6 +330,7 @@ export default function PagamentosPage() {
              <div className="flex flex-1 rounded-lg shadow-sm mt-4">
                 <PaymentsTable 
                     payments={filteredPayments}
+                    allStudents={students || []}
                     isLoading={isLoading}
                 />
             </div>
