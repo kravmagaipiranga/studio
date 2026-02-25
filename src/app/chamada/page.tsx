@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { collection, query, where, orderBy, doc, limit } from "firebase/firestore";
+import { collection, query, where, doc, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
 import { Student, Attendance } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,9 +13,9 @@ import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { format, parseISO, startOfDay, endOfDay, startOfMonth, endOfMonth, isSaturday, eachWeekOfInterval, getWeek } from "date-fns";
+import { format, parseISO, startOfMonth, endOfMonth, isSaturday, eachWeekOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckSquare, Trash2, Calendar as CalendarIcon, UserCheck, Search, Clock } from "lucide-react";
+import { CheckSquare, Trash2, UserCheck, Search, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -62,16 +62,22 @@ export default function ChamadaPage() {
 
   const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
 
+  // Removido orderBy("time") para evitar necessidade de índice composto
   const todayQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
       collection(firestore, "attendance"),
-      where("date", "==", classDate),
-      orderBy("time", "asc")
+      where("date", "==", classDate)
     );
   }, [firestore, classDate]);
 
-  const { data: todayAttendance, isLoading: isLoadingToday } = useCollection<Attendance>(todayQuery);
+  const { data: rawTodayAttendance, isLoading: isLoadingToday } = useCollection<Attendance>(todayQuery);
+
+  // Ordenação no lado do cliente
+  const todayAttendance = useMemo(() => {
+    if (!rawTodayAttendance) return [];
+    return [...rawTodayAttendance].sort((a, b) => a.time.localeCompare(b.time, undefined, { numeric: true }));
+  }, [rawTodayAttendance]);
 
   const reportQuery = useMemoFirebase(() => {
     if (!firestore) return null;
