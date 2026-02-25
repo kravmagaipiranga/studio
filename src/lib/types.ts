@@ -1,3 +1,4 @@
+
 export type Student = {
   id: string;
   name: string;
@@ -195,4 +196,14 @@ export type GiftCardOrder = {
   createdAt: string;
   totalValue: number;
   validationCode: string;
+};
+
+export type Attendance = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  date: string;
+  time: string;
+  type: 'Semanal' | 'Sábado';
+  createdAt: string;
 };

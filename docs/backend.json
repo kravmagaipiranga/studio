@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Student": {
@@ -31,6 +32,19 @@
       },
       "required": ["id", "studentId", "paymentDate", "amount"]
     },
+    "GiftCardOrder": {
+      "title": "GiftCardOrder",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "buyerName": { "type": "string" },
+        "buyerEmail": { "type": "string" },
+        "recipientName": { "type": "string" },
+        "status": { "type": "string" },
+        "validationCode": { "type": "string" }
+      },
+      "required": ["id", "buyerName", "buyerEmail", "recipientName", "status", "validationCode"]
+    },
     "WomensMonthLead": {
       "title": "WomensMonthLead",
       "type": "object",
@@ -45,7 +59,22 @@
         "attended": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "name", "whatsapp", "chosenClass", "year", "attended", "createdAt"]
+      "required": ["id", "name", "whatsapp", "chosenClass", "hasCompanions", "year", "attended", "createdAt"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "type": "object",
+      "description": "Records student class attendance.",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "time": { "type": "string" },
+        "type": { "type": "string", "enum": ["Semanal", "Sábado"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "studentId", "date", "time", "type"]
     }
   },
   "auth": {
@@ -59,7 +88,7 @@
           "entityName": "Student",
           "schema": { "$ref": "#/backend/entities/Student" },
           "description": "Stores student data."
-"        }
+        }
       },
       {
         "path": "/payments/{paymentId}",
@@ -70,11 +99,27 @@
         }
       },
       {
+        "path": "/giftCardOrders/{orderId}",
+        "definition": {
+          "entityName": "GiftCardOrder",
+          "schema": { "$ref": "#/backend/entities/GiftCardOrder" },
+          "description": "Stores gift card orders."
+        }
+      },
+      {
         "path": "/womensMonth/{leadId}",
         "definition": {
           "entityName": "WomensMonthLead",
           "schema": { "$ref": "#/backend/entities/WomensMonthLead" },
           "description": "Stores leads for the Women's Month campaign."
+        }
+      },
+      {
+        "path": "/attendance/{attendanceId}",
+        "definition": {
+          "entityName": "Attendance",
+          "schema": { "$ref": "#/backend/entities/Attendance" },
+          "description": "Stores student attendance records."
         }
       }
     ]
