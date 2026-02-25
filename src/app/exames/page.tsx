@@ -4,17 +4,24 @@
 import { useState, useMemo, useEffect } from "react";
 import { ExamsTable } from "@/components/exams/exams-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search, Award } from "lucide-react";
+import { Download, PlusCircle, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { Exam, Student } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, doc } from "firebase/firestore";
+import { collection } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const beltOrder: Record<string, number> = {
     'Amarela': 1,
@@ -34,11 +41,14 @@ const beltInfo: Record<string, { emoji: string; colorClass: string }> = {
     'Preta':   { emoji: '⚫', colorClass: 'bg-gray-800 hover:bg-gray-800 text-white' },
 };
 
-
 export default function ExamesPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
     const [exams, setExams] = useState<Exam[]>([]);
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(25);
     
     const examsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -59,6 +69,10 @@ export default function ExamesPage() {
         }
     }, [initialExams]);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
+
     const examCountsByBelt = useMemo(() => {
         const counts: Record<string, number> = {};
         if (!exams) return counts;
@@ -74,7 +88,6 @@ export default function ExamesPage() {
         });
         return counts;
     }, [exams]);
-
 
     const filteredAndSortedExams = useMemo(() => {
         if (!exams) return [];
@@ -94,12 +107,16 @@ export default function ExamesPage() {
 
     }, [exams, searchQuery]);
 
+    // Pagination logic
+    const totalPages = Math.ceil(filteredAndSortedExams.length / itemsPerPage);
+    const paginatedExams = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return filteredAndSortedExams.slice(start, start + itemsPerPage);
+    }, [filteredAndSortedExams, currentPage, itemsPerPage]);
 
     const handleAddNewExam = () => {
-       if (!firestore) return;
-
        const newExam: Exam = {
-         id: `new_${uuidv4()}`, // Temporary ID
+         id: `new_${uuidv4()}`,
          studentId: "",
          studentName: "",
          studentCpf: "",
@@ -110,7 +127,7 @@ export default function ExamesPage() {
          paymentDate: "",
          paymentAmount: 200,
          paymentMethod: "Pendente",
-         isNew: true, // Flag to identify new unsaved rows
+         isNew: true,
        };
        setExams(prevExams => [newExam, ...prevExams]);
     };
@@ -118,8 +135,8 @@ export default function ExamesPage() {
     const isLoading = isLoadingExams || isLoadingStudents;
 
     return (
-        <>
-            <div className="mb-4">
+        <div className="flex flex-col gap-4">
+            <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-2">Inscritos por Faixa</h3>
                 <div className="flex flex-wrap gap-2">
                     {Object.entries(beltInfo).map(([belt, { emoji, colorClass }]) => (
@@ -144,7 +161,7 @@ export default function ExamesPage() {
                     </Button>
                 </div>
             </div>
-            <div className="mt-4 flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4">
                 <div className="relative w-full max-w-sm">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -157,14 +174,68 @@ export default function ExamesPage() {
                 </div>
                 <DatePickerWithRange />
             </div>
-            <div className="flex flex-1 rounded-lg shadow-sm mt-4">
-                <ExamsTable 
-                    exams={filteredAndSortedExams}
-                    setExams={setExams}
-                    allStudents={students || []}
-                    isLoading={isLoading}
-                />
-            </div>
-        </>
+            <Card className="flex flex-col shadow-sm">
+                <CardContent className="p-0">
+                    <ExamsTable 
+                        exams={paginatedExams}
+                        setExams={setExams}
+                        allStudents={students || []}
+                        isLoading={isLoading}
+                    />
+                    
+                    {!isLoading && filteredAndSortedExams.length > 0 && (
+                        <div className="p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/10">
+                            <div className="text-sm text-muted-foreground">
+                                Mostrando <strong>{Math.min(filteredAndSortedExams.length, (currentPage - 1) * itemsPerPage + 1)}</strong> a <strong>{Math.min(filteredAndSortedExams.length, currentPage * itemsPerPage)}</strong> de <strong>{filteredAndSortedExams.length}</strong> exames
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Por página:</span>
+                                    <Select 
+                                        value={String(itemsPerPage)} 
+                                        onValueChange={(val) => {
+                                            setItemsPerPage(Number(val));
+                                            setCurrentPage(1);
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-8 w-20">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="25">25</SelectItem>
+                                            <SelectItem value="50">50</SelectItem>
+                                            <SelectItem value="100">100</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Button 
+                                        variant="outline" 
+                                        size="icon" 
+                                        className="h-8 w-8"
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    <div className="text-xs font-medium px-2">
+                                        Página {currentPage} de {totalPages}
+                                    </div>
+                                    <Button 
+                                        variant="outline" 
+                                        size="icon" 
+                                        className="h-8 w-8"
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
     );
 }

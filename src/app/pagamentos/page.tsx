@@ -1,11 +1,11 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { collection, query, orderBy } from "firebase/firestore";
 import { PaymentsTable } from "@/components/payments/payments-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search, CheckCircle, ClipboardCheck, AlertCircle, Calendar as CalendarIcon } from "lucide-react";
+import { Download, PlusCircle, Search, CheckCircle, ClipboardCheck, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Student, Payment } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
@@ -15,10 +15,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DateRange } from "react-day-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth, isWithinInterval, subMonths, format, startOfDay, endOfDay } from "date-fns";
+import { parseISO, isAfter, startOfMonth, endOfMonth, isWithinInterval, subMonths, format, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type FilterType = 'todos' | 'trimestrais' | 'mensais' | 'expirados';
 
@@ -31,7 +38,10 @@ export default function PagamentosPage() {
         from: startOfMonth(new Date()),
         to: endOfMonth(new Date()),
     });
-
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(25);
 
     const paymentsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -40,7 +50,6 @@ export default function PagamentosPage() {
 
     const { data: payments, isLoading: isLoadingPayments } = useCollection<Payment>(paymentsCollection);
     
-    // We still need students to calculate the metrics
     const studentsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
         return collection(firestore, 'students');
@@ -49,6 +58,11 @@ export default function PagamentosPage() {
 
     const isLoading = isLoadingPayments || isLoadingStudents;
 
+    // Reset pagination
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, activeFilter, dateRange]);
+
     const { 
         paidInMonthCount, 
         activeQuarterlyPlansCount,
@@ -56,14 +70,14 @@ export default function PagamentosPage() {
         if (!students || !payments) return { paidInMonthCount: 0, activeQuarterlyPlansCount: 0 };
         
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
+        today.setHours(0, 0, 0, 0);
         const currentMonthStart = startOfMonth(today);
         const currentMonthEnd = endOfMonth(today);
 
         const paidThisMonthIds = new Set(
           payments
             ?.filter(p => {
-              if (p.planType === 'Matrícula') return false; // Don't count enrollment as a plan payment
+              if (p.planType === 'Matrícula') return false;
               try {
                 const paymentDate = parseISO(p.paymentDate);
                 return isWithinInterval(paymentDate, { start: currentMonthStart, end: currentMonthEnd });
@@ -138,9 +152,8 @@ export default function PagamentosPage() {
             });
         }
 
-
         if(searchQuery) {
-            return filtered.filter(payment => 
+            filtered = filtered.filter(payment => 
                 payment.studentName.toLowerCase().includes(searchQuery.toLowerCase())
             );
         }
@@ -148,6 +161,13 @@ export default function PagamentosPage() {
         return filtered;
 
     }, [payments, students, searchQuery, activeFilter, dateRange]);
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
+    const paginatedPayments = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return filteredPayments.slice(start, start + itemsPerPage);
+    }, [filteredPayments, currentPage, itemsPerPage]);
 
     const handleExportData = () => {
         if (!filteredPayments || filteredPayments.length === 0) {
@@ -196,10 +216,9 @@ export default function PagamentosPage() {
         });
     };
 
-
     return (
-        <>
-            <div className="grid gap-4 md:grid-cols-2 mb-4">
+        <div className="flex flex-col gap-4">
+            <div className="grid gap-4 md:grid-cols-2">
                 <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
@@ -214,9 +233,7 @@ export default function PagamentosPage() {
                         <p className="text-xs text-muted-foreground">Alunos com planos pagos no mês corrente.</p>
                     </CardContent>
                 </Card>
-                 <Card 
-                     className={cn("bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800")}
-                 >
+                 <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
                             Planos Trimestrais Vigentes
@@ -247,7 +264,7 @@ export default function PagamentosPage() {
                     </Button>
                 </div>
             </div>
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                      <div className="relative w-full max-sm:w-full sm:w-auto">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -327,13 +344,68 @@ export default function PagamentosPage() {
                     </Popover>
                 </div>
             </div>
-             <div className="flex flex-1 rounded-lg shadow-sm mt-4">
-                <PaymentsTable 
-                    payments={filteredPayments}
-                    allStudents={students || []}
-                    isLoading={isLoading}
-                />
-            </div>
-        </>
+             <Card className="flex flex-col shadow-sm">
+                <CardContent className="p-0">
+                    <PaymentsTable 
+                        payments={paginatedPayments}
+                        allStudents={students || []}
+                        isLoading={isLoading}
+                    />
+                    
+                    {/* Pagination Controls */}
+                    {!isLoading && filteredPayments.length > 0 && (
+                        <div className="p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/10">
+                            <div className="text-sm text-muted-foreground">
+                                Mostrando <strong>{Math.min(filteredPayments.length, (currentPage - 1) * itemsPerPage + 1)}</strong> a <strong>{Math.min(filteredPayments.length, currentPage * itemsPerPage)}</strong> de <strong>{filteredPayments.length}</strong> registros
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Por página:</span>
+                                    <Select 
+                                        value={String(itemsPerPage)} 
+                                        onValueChange={(val) => {
+                                            setItemsPerPage(Number(val));
+                                            setCurrentPage(1);
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-8 w-20">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="25">25</SelectItem>
+                                            <SelectItem value="50">50</SelectItem>
+                                            <SelectItem value="100">100</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Button 
+                                        variant="outline" 
+                                        size="icon" 
+                                        className="h-8 w-8"
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    <div className="text-xs font-medium px-2">
+                                        Página {currentPage} de {totalPages}
+                                    </div>
+                                    <Button 
+                                        variant="outline" 
+                                        size="icon" 
+                                        className="h-8 w-8"
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
     );
 }

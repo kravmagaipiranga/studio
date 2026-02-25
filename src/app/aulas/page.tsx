@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { PrivateClassesTable } from "@/components/private-classes/private-classes-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search, CalendarCheck, ClipboardList, DollarSign } from "lucide-react";
+import { Download, PlusCircle, Search, CalendarCheck, ClipboardList, DollarSign, ChevronLeft, ChevronRight } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { PrivateClass } from "@/lib/types";
@@ -14,12 +14,22 @@ import { v4 as uuidv4 } from 'uuid';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
-
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function AulasPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
     const [privateClasses, setPrivateClasses] = useState<PrivateClass[]>([]);
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(25);
 
     const privateClassesCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -34,11 +44,15 @@ export default function AulasPage() {
         }
     }, [initialPrivateClasses]);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
+
      const { classesThisWeekCount, classesThisMonthCount, revenueThisMonth } = useMemo(() => {
         if (!privateClasses) return { classesThisWeekCount: 0, classesThisMonthCount: 0, revenueThisMonth: 0 };
     
         const today = new Date();
-        const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+        const weekStart = startOfWeek(today, { weekStartsOn: 1 });
         const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
         const monthStart = startOfMonth(today);
         const monthEnd = endOfMonth(today);
@@ -59,9 +73,7 @@ export default function AulasPage() {
                         monthlyRevenue += pc.paymentAmount || 0;
                     }
                 }
-            } catch (error) {
-                // Ignore invalid dates
-            }
+            } catch (error) { }
         });
         
         return { 
@@ -72,8 +84,6 @@ export default function AulasPage() {
     }, [privateClasses]);
     
     const handleAddNewPrivateClass = () => {
-       if (!firestore) return;
-
        const newClass: PrivateClass = {
          id: `new_${uuidv4()}`,
          studentName: "",
@@ -81,7 +91,7 @@ export default function AulasPage() {
          classTime: "12:00",
          numberOfClasses: 1,
          pricePerClass: 150,
-         paymentAmount: 150, // Calculated from numberOfClasses * pricePerClass
+         paymentAmount: 150,
          paymentStatus: "Pendente",
          paymentMethod: "Pendente",
          notes: "",
@@ -90,13 +100,22 @@ export default function AulasPage() {
        setPrivateClasses(prev => [newClass, ...prev]);
     };
     
-    const filteredClasses = (privateClasses || []).filter(pc =>
-        pc.studentName.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredClasses = useMemo(() => {
+        return (privateClasses || []).filter(pc =>
+            pc.studentName.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [privateClasses, searchQuery]);
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredClasses.length / itemsPerPage);
+    const paginatedClasses = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return filteredClasses.slice(start, start + itemsPerPage);
+    }, [filteredClasses, currentPage, itemsPerPage]);
 
     return (
-        <>
-            <div className="grid gap-4 md:grid-cols-3 mb-4">
+        <div className="flex flex-col gap-4">
+            <div className="grid gap-4 md:grid-cols-3">
                 <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
@@ -148,7 +167,7 @@ export default function AulasPage() {
                     </Button>
                 </div>
             </div>
-            <div className="mt-4 flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4">
                 <div className="relative w-full max-w-sm">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -161,13 +180,67 @@ export default function AulasPage() {
                 </div>
                 <DatePickerWithRange />
             </div>
-             <div className="flex flex-1 rounded-lg shadow-sm mt-4">
-                <PrivateClassesTable 
-                    privateClasses={filteredClasses}
-                    setPrivateClasses={setPrivateClasses}
-                    isLoading={isLoading}
-                />
-            </div>
-        </>
+             <Card className="flex flex-col shadow-sm">
+                <CardContent className="p-0">
+                    <PrivateClassesTable 
+                        privateClasses={paginatedClasses}
+                        setPrivateClasses={setPrivateClasses}
+                        isLoading={isLoading}
+                    />
+                    
+                    {!isLoading && filteredClasses.length > 0 && (
+                        <div className="p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/10">
+                            <div className="text-sm text-muted-foreground">
+                                Mostrando <strong>{Math.min(filteredClasses.length, (currentPage - 1) * itemsPerPage + 1)}</strong> a <strong>{Math.min(filteredClasses.length, currentPage * itemsPerPage)}</strong> de <strong>{filteredClasses.length}</strong> registros
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Por página:</span>
+                                    <Select 
+                                        value={String(itemsPerPage)} 
+                                        onValueChange={(val) => {
+                                            setItemsPerPage(Number(val));
+                                            setCurrentPage(1);
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-8 w-20">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="25">25</SelectItem>
+                                            <SelectItem value="50">50</SelectItem>
+                                            <SelectItem value="100">100</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Button 
+                                        variant="outline" 
+                                        size="icon" 
+                                        className="h-8 w-8"
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    <div className="text-xs font-medium px-2">
+                                        Página {currentPage} de {totalPages}
+                                    </div>
+                                    <Button 
+                                        variant="outline" 
+                                        size="icon" 
+                                        className="h-8 w-8"
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
     );
 }

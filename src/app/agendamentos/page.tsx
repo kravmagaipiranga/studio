@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { AppointmentsTable } from "@/components/appointments/appointments-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search, CalendarCheck } from "lucide-react";
+import { Download, PlusCircle, Search, CalendarCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { Appointment } from "@/lib/types";
@@ -14,11 +14,22 @@ import { v4 as uuidv4 } from 'uuid';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function AgendamentosPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
     const [appointments, setAppointments] = useState<Appointment[]>([]);
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(25);
 
     const appointmentsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -32,6 +43,11 @@ export default function AgendamentosPage() {
             setAppointments(initialAppointments);
         }
     }, [initialAppointments]);
+
+    // Reset pagination on search
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
 
     const appointmentsThisWeekCount = useMemo(() => {
         if (!appointments) return 0;
@@ -52,10 +68,19 @@ export default function AgendamentosPage() {
         }).length;
     }, [appointments]);
 
-    const filteredAppointments = (appointments || []).filter(appointment =>
-        appointment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (appointment.email && appointment.email.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const filteredAppointments = useMemo(() => {
+        return (appointments || []).filter(appointment =>
+            appointment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (appointment.email && appointment.email.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+    }, [appointments, searchQuery]);
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
+    const paginatedAppointments = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return filteredAppointments.slice(start, start + itemsPerPage);
+    }, [filteredAppointments, currentPage, itemsPerPage]);
 
     const handleAddNewAppointment = () => {
        const newAppointment: Appointment = {
@@ -75,8 +100,8 @@ export default function AgendamentosPage() {
     };
 
     return (
-        <>
-            <div className="grid gap-4 md:grid-cols-3 mb-4">
+        <div className="flex flex-col gap-4">
+            <div className="grid gap-4 md:grid-cols-3">
                 <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
@@ -105,7 +130,7 @@ export default function AgendamentosPage() {
                     </Button>
                 </div>
             </div>
-            <div className="mt-4 flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4">
                 <div className="relative w-full max-w-sm">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -118,13 +143,68 @@ export default function AgendamentosPage() {
                 </div>
                 <DatePickerWithRange />
             </div>
-             <div className="flex flex-1 rounded-lg shadow-sm mt-4">
-                <AppointmentsTable 
-                    appointments={filteredAppointments}
-                    setAppointments={setAppointments}
-                    isLoading={isLoading}
-                />
-            </div>
-        </>
+             <Card className="flex flex-col shadow-sm">
+                <CardContent className="p-0">
+                    <AppointmentsTable 
+                        appointments={paginatedAppointments}
+                        setAppointments={setAppointments}
+                        isLoading={isLoading}
+                    />
+                    
+                    {/* Pagination Controls */}
+                    {!isLoading && filteredAppointments.length > 0 && (
+                        <div className="p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/10">
+                            <div className="text-sm text-muted-foreground">
+                                Mostrando <strong>{Math.min(filteredAppointments.length, (currentPage - 1) * itemsPerPage + 1)}</strong> a <strong>{Math.min(filteredAppointments.length, currentPage * itemsPerPage)}</strong> de <strong>{filteredAppointments.length}</strong> agendamentos
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Por página:</span>
+                                    <Select 
+                                        value={String(itemsPerPage)} 
+                                        onValueChange={(val) => {
+                                            setItemsPerPage(Number(val));
+                                            setCurrentPage(1);
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-8 w-20">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="25">25</SelectItem>
+                                            <SelectItem value="50">50</SelectItem>
+                                            <SelectItem value="100">100</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Button 
+                                        variant="outline" 
+                                        size="icon" 
+                                        className="h-8 w-8"
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    <div className="text-xs font-medium px-2">
+                                        Página {currentPage} de {totalPages}
+                                    </div>
+                                    <Button 
+                                        variant="outline" 
+                                        size="icon" 
+                                        className="h-8 w-8"
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
     );
 }

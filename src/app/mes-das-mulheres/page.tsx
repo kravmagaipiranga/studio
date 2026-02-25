@@ -1,9 +1,10 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { WomensMonthTable } from "@/components/womens-month/womens-month-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search, Star, Users, Clock } from "lucide-react";
+import { Download, PlusCircle, Search, Star, Users, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { WomensMonthLead } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
@@ -24,6 +25,10 @@ export default function WomensMonthAdminPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
     const [leads, setLeads] = useState<WomensMonthLead[]>([]);
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(25);
 
     const leadsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -44,6 +49,10 @@ export default function WomensMonthAdminPage() {
         }
     }, [initialLeads]);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, selectedYear]);
+
     const metrics = useMemo(() => {
         const data = leads || [];
         const classes = {
@@ -52,24 +61,26 @@ export default function WomensMonthAdminPage() {
             "Segundas e Quartas 20h": 0,
             "Sábados 10h30": 0
         };
-        
         data.forEach(lead => {
             if (classes.hasOwnProperty(lead.chosenClass)) {
                 classes[lead.chosenClass as keyof typeof classes]++;
             }
         });
-
-        return {
-            total: data.length,
-            attended: data.filter(l => l.attended).length,
-            withCompanions: data.filter(l => l.hasCompanions).length,
-            byClass: classes
-        };
+        return { total: data.length, attended: data.filter(l => l.attended).length, byClass: classes };
     }, [leads]);
 
-    const filteredLeads = leads.filter(lead =>
-        lead.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredLeads = useMemo(() => {
+        return leads.filter(lead =>
+            lead.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [leads, searchQuery]);
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+    const paginatedLeads = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return filteredLeads.slice(start, start + itemsPerPage);
+    }, [filteredLeads, currentPage, itemsPerPage]);
 
     const handleAddNewLead = () => {
        const newLead: WomensMonthLead = {
@@ -91,7 +102,7 @@ export default function WomensMonthAdminPage() {
         <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-4">
                 <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Visão Geral</h3>
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2">
                     <Card className="bg-pink-600 text-white border-none shadow-md">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-bold uppercase">Total de Inscritas</CardTitle>
@@ -101,7 +112,6 @@ export default function WomensMonthAdminPage() {
                             <div className="text-3xl font-black">
                                 {isLoading ? <Skeleton className="h-9 w-12 bg-white/20"/> : metrics.total}
                             </div>
-                            <p className="text-xs text-white/70 mt-1">Inscrições acumuladas no ano</p>
                         </CardContent>
                     </Card>
                     <Card className="bg-emerald-600 text-white border-none shadow-md">
@@ -113,7 +123,6 @@ export default function WomensMonthAdminPage() {
                             <div className="text-3xl font-black">
                                 {isLoading ? <Skeleton className="h-9 w-12 bg-white/20"/> : metrics.attended}
                             </div>
-                            <p className="text-xs text-white/70 mt-1">Alunas que compareceram ao treino</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -123,18 +132,15 @@ export default function WomensMonthAdminPage() {
                 <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Inscritas por Turma</h3>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     {Object.entries(metrics.byClass).map(([className, count]) => (
-                        <Card key={className} className="bg-white border-pink-100 shadow-sm hover:border-pink-300 transition-colors">
+                        <Card key={className} className="bg-white border-pink-100 shadow-sm">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-[10px] font-black uppercase text-pink-900 leading-tight">
-                                    {className}
-                                </CardTitle>
+                                <CardTitle className="text-[10px] font-black uppercase text-pink-900 leading-tight">{className}</CardTitle>
                                 <Clock className="h-3 w-3 text-pink-400" />
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold text-pink-600">
                                     {isLoading ? <Skeleton className="h-8 w-10"/> : count}
                                 </div>
-                                <p className="text-[10px] text-muted-foreground">Vagas pré-reservadas</p>
                             </CardContent>
                         </Card>
                     ))}
@@ -161,26 +167,56 @@ export default function WomensMonthAdminPage() {
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-4">
-                    <div className="relative w-full max-w-sm">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            type="search"
-                            placeholder="Buscar por nome..."
-                            className="pl-8"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                </div>
-
-                <div className="flex flex-1 rounded-lg shadow-sm border bg-card">
-                    <WomensMonthTable 
-                        leads={filteredLeads}
-                        setLeads={setLeads}
-                        isLoading={isLoading}
+                <div className="relative w-full max-w-sm">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        type="search"
+                        placeholder="Buscar por nome..."
+                        className="pl-8"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
+
+                <Card className="flex flex-col shadow-sm border bg-card">
+                    <CardContent className="p-0">
+                        <WomensMonthTable 
+                            leads={paginatedLeads}
+                            setLeads={setLeads}
+                            isLoading={isLoading}
+                        />
+                        
+                        {!isLoading && filteredLeads.length > 0 && (
+                            <div className="p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/10">
+                                <div className="text-sm text-muted-foreground">
+                                    Mostrando <strong>{Math.min(filteredLeads.length, (currentPage - 1) * itemsPerPage + 1)}</strong> a <strong>{Math.min(filteredLeads.length, currentPage * itemsPerPage)}</strong> de <strong>{filteredLeads.length}</strong> inscritas
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Por página:</span>
+                                        <Select value={String(itemsPerPage)} onValueChange={(val) => { setItemsPerPage(Number(val)); setCurrentPage(1); }}>
+                                            <SelectTrigger className="h-8 w-20"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="25">25</SelectItem>
+                                                <SelectItem value="50">50</SelectItem>
+                                                <SelectItem value="100">100</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}>
+                                            <ChevronLeft className="h-4 w-4" />
+                                        </Button>
+                                        <div className="text-xs font-medium px-2">Página {currentPage} de {totalPages}</div>
+                                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages}>
+                                            <ChevronRight className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );

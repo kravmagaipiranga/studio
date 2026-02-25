@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { UniformsTable } from "@/components/uniforms/uniforms-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search, Shirt, PackageCheck, PackageX } from "lucide-react";
+import { Download, PlusCircle, Search, PackageCheck, PackageX, ChevronLeft, ChevronRight } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { UniformOrder, Student } from "@/lib/types";
@@ -13,11 +13,22 @@ import { collection, query, orderBy } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function UniformesPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
     const [uniformOrders, setUniformOrders] = useState<UniformOrder[]>([]);
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(25);
 
     const ordersCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -37,6 +48,10 @@ export default function UniformesPage() {
             setUniformOrders(initialOrders);
         }
     }, [initialOrders]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
     
     const { pendingPickup, pendingPayment } = useMemo(() => {
         if (!uniformOrders) return { pendingPickup: 0, pendingPayment: 0 };
@@ -46,6 +61,21 @@ export default function UniformesPage() {
         
         return { pendingPickup: pickup, pendingPayment: payment };
     }, [uniformOrders]);
+
+    const filteredOrders = useMemo(() => {
+       if (!uniformOrders) return [];
+       return uniformOrders.filter(order =>
+         order.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         order.items.some(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+       );
+    }, [uniformOrders, searchQuery]);
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+    const paginatedOrders = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return filteredOrders.slice(start, start + itemsPerPage);
+    }, [filteredOrders, currentPage, itemsPerPage]);
 
     const handleAddNewOrder = () => {
        const newOrder: UniformOrder = {
@@ -62,20 +92,12 @@ export default function UniformesPage() {
        };
        setUniformOrders(prev => [newOrder, ...prev]);
     };
-    
-    const filteredOrders = useMemo(() => {
-       if (!uniformOrders) return [];
-       return uniformOrders.filter(order =>
-         order.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         order.items.some(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
-       );
-    }, [uniformOrders, searchQuery]);
 
     const isLoading = isLoadingOrders || isLoadingStudents;
 
     return (
-        <>
-            <div className="grid gap-4 md:grid-cols-3 mb-4">
+        <div className="flex flex-col gap-4">
+            <div className="grid gap-4 md:grid-cols-3">
                 <Card className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-amber-800 dark:text-amber-200">
@@ -119,8 +141,8 @@ export default function UniformesPage() {
                     </Button>
                 </div>
             </div>
-            <div className="mt-4 flex items-center justify-between gap-4">
-                <div className="relative w-full max-w-sm">
+            <div className="flex items-center justify-between gap-4">
+                <div className="relative w-full max-sm:w-full sm:w-auto sm:min-w-[300px]">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         type="search"
@@ -132,14 +154,68 @@ export default function UniformesPage() {
                 </div>
                 <DatePickerWithRange />
             </div>
-             <div className="flex flex-1 rounded-lg shadow-sm mt-4">
-                <UniformsTable 
-                    orders={filteredOrders}
-                    setOrders={setUniformOrders}
-                    allStudents={students || []}
-                    isLoading={isLoading}
-                />
-            </div>
-        </>
+             <Card className="flex flex-col shadow-sm">
+                <CardContent className="p-0">
+                    <UniformsTable 
+                        orders={paginatedOrders}
+                        setOrders={setUniformOrders}
+                        allStudents={students || []}
+                        isLoading={isLoading}
+                    />
+                    
+                    {!isLoading && filteredOrders.length > 0 && (
+                        <div className="p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/10">
+                            <div className="text-sm text-muted-foreground">
+                                Mostrando <strong>{Math.min(filteredOrders.length, (currentPage - 1) * itemsPerPage + 1)}</strong> a <strong>{Math.min(filteredOrders.length, currentPage * itemsPerPage)}</strong> de <strong>{filteredOrders.length}</strong> pedidos
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Por página:</span>
+                                    <Select 
+                                        value={String(itemsPerPage)} 
+                                        onValueChange={(val) => {
+                                            setItemsPerPage(Number(val));
+                                            setCurrentPage(1);
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-8 w-20">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="25">25</SelectItem>
+                                            <SelectItem value="50">50</SelectItem>
+                                            <SelectItem value="100">100</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Button 
+                                        variant="outline" 
+                                        size="icon" 
+                                        className="h-8 w-8"
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    <div className="text-xs font-medium px-2">
+                                        Página {currentPage} de {totalPages}
+                                    </div>
+                                    <Button 
+                                        variant="outline" 
+                                        size="icon" 
+                                        className="h-8 w-8"
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
     );
 }
