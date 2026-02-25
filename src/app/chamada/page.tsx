@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { collection, query, where, orderBy, doc, limit } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
 import { Student, Attendance } from "@/lib/types";
@@ -15,8 +15,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, parseISO, startOfDay, endOfDay, startOfMonth, endOfMonth, isSaturday, eachWeekOfInterval, getWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckSquare, Trash2, Calendar as CalendarIcon, UserCheck, Search } from "lucide-react";
+import { CheckSquare, Trash2, Calendar as CalendarIcon, UserCheck, Search, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 export default function ChamadaPage() {
   const firestore = useFirestore();
@@ -25,13 +26,33 @@ export default function ChamadaPage() {
   // State for form
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [classDate, setClassDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [classTime, setClassTime] = useState(format(new Date(), "HH:mm"));
+  const [classTime, setClassTime] = useState(""); // This will store the "Turma"
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // State for report filter
   const [reportMonth, setReportMonth] = useState(format(new Date(), "MM"));
   const [reportYear, setReportYear] = useState(format(new Date(), "yyyy"));
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Determine class options based on date
+  const classOptions = useMemo(() => {
+    try {
+      const dateObj = parseISO(classDate);
+      if (isSaturday(dateObj)) {
+        return ["9h", "10h30"];
+      }
+      return ["18h", "19h", "20h"];
+    } catch {
+      return ["18h", "19h", "20h"];
+    }
+  }, [classDate]);
+
+  // Sync selected class if it becomes invalid after date change
+  useEffect(() => {
+    if (!classOptions.includes(classTime)) {
+      setClassTime(classOptions[0]);
+    }
+  }, [classOptions, classTime]);
 
   // Data fetching
   const studentsQuery = useMemoFirebase(() => {
@@ -43,14 +64,12 @@ export default function ChamadaPage() {
 
   const todayQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    const start = startOfDay(new Date());
-    const end = endOfDay(new Date());
     return query(
       collection(firestore, "attendance"),
-      where("date", "==", format(new Date(), "yyyy-MM-dd")),
-      orderBy("time", "desc")
+      where("date", "==", classDate),
+      orderBy("time", "asc")
     );
-  }, [firestore]);
+  }, [firestore, classDate]);
 
   const { data: todayAttendance, isLoading: isLoadingToday } = useCollection<Attendance>(todayQuery);
 
@@ -59,7 +78,6 @@ export default function ChamadaPage() {
     const monthStart = format(startOfMonth(new Date(Number(reportYear), Number(reportMonth) - 1)), "yyyy-MM-dd");
     const monthEnd = format(endOfMonth(new Date(Number(reportYear), Number(reportMonth) - 1)), "yyyy-MM-dd");
     
-    // We fetch everything from that month. For large datasets, we'd need to paginate.
     return query(
       collection(firestore, "attendance"),
       where("date", ">=", monthStart),
@@ -98,7 +116,7 @@ export default function ChamadaPage() {
 
     try {
       await addDocumentNonBlocking(collection(firestore, "attendance"), attendanceData);
-      toast({ title: "Presença Registrada!", description: `${student.name} marcado como presente.` });
+      toast({ title: "Presença Registrada!", description: `${student.name} marcado na turma das ${classTime}.` });
       setSelectedStudentId("");
     } catch (error) {
       toast({ variant: "destructive", title: "Erro ao registrar", description: "Tente novamente." });
@@ -125,7 +143,6 @@ export default function ChamadaPage() {
       const attendances = monthAttendance.filter(a => a.studentId === student.id);
       const count = attendances.length;
       
-      // Determine dominant type based on presence or default to Weekly
       const hasSaturday = attendances.some(a => a.type === "Sábado");
       const target = hasSaturday ? weeksInMonth : (weeksInMonth * 2);
       
@@ -167,7 +184,7 @@ export default function ChamadaPage() {
           <Card>
             <CardHeader>
               <CardTitle>Marcar Presença</CardTitle>
-              <CardDescription>Registre a presença dos alunos nas aulas de hoje.</CardDescription>
+              <CardDescription>Selecione o aluno e a turma para registrar a aula.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -186,8 +203,17 @@ export default function ChamadaPage() {
                   <Input type="date" value={classDate} onChange={e => setClassDate(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Hora</label>
-                  <Input type="time" value={classTime} onChange={e => setClassTime(e.target.value)} />
+                  <label className="text-sm font-medium">Turma</label>
+                  <Select value={classTime} onValueChange={setClassTime}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classOptions.map(opt => (
+                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button className="w-full" onClick={handleRecordAttendance} disabled={isSubmitting}>
                   <UserCheck className="mr-2 h-4 w-4" />
@@ -199,14 +225,17 @@ export default function ChamadaPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Presenças de Hoje ({format(new Date(), "dd/MM/yyyy")})</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Clock className="h-5 w-5 text-muted-foreground" />
+                Presenças de {format(parseISO(classDate), "dd/MM/yyyy")}
+              </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Aluno</TableHead>
-                    <TableHead>Horário</TableHead>
+                    <TableHead>Turma</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -230,7 +259,7 @@ export default function ChamadaPage() {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
-                        Nenhuma presença registrada para hoje ainda.
+                        Nenhuma presença registrada para esta data ainda.
                       </TableCell>
                     </TableRow>
                   )}
