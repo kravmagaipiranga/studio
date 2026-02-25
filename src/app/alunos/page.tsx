@@ -1,13 +1,13 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { collection, query, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student, Payment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck, UserX, MoreHorizontal, UserPlus, GraduationCap, ChevronDown } from "lucide-react";
+import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck, UserX, MoreHorizontal, UserPlus, GraduationCap, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,6 +27,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 
 type FilterType = 'Todos' | 'Ativo' | 'Inativo' | 'Vencido' | 'Aptos para Revisão' | 'Branca' | 'Amarela' | 'Laranja' | 'Verde' | 'Azul' | 'Marrom' | 'Preta';
@@ -101,6 +108,10 @@ export default function AlunosPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
     
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(25);
+    
     const studentsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
         return query(collection(firestore, 'students'), orderBy('name', 'asc'));
@@ -115,6 +126,11 @@ export default function AlunosPage() {
     const { data: allPayments, isLoading: isLoadingPayments } = useCollection<Payment>(paymentsQuery);
     
     const isLoading = isLoadingStudents || isLoadingPayments;
+
+    // Reset pagination on filter or search change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, activeFilter]);
 
     const { activeStudentsCount, newEnrollmentsCount } = useMemo(() => {
         if (!allStudents || !allPayments) return { activeStudentsCount: 0, newEnrollmentsCount: 0 };
@@ -142,8 +158,6 @@ export default function AlunosPage() {
         if (!allStudents) return [];
 
         return allStudents.map(student => {
-            // Prioritize lastExamDate for the calculation.
-            // Use startDate as the first fallback, and registrationDate as the final fallback.
             const dateToCalculateFrom = student.lastExamDate || student.startDate || student.registrationDate;
             const timeInBelt = calculateTimeSince(dateToCalculateFrom);
             
@@ -167,7 +181,7 @@ export default function AlunosPage() {
                 try {
                     return isBefore(parseISO(student.planExpirationDate), today);
                 } catch { 
-                    return false; // Treat invalid dates as not overdue
+                    return false; 
                 }
             });
         } else if (activeFilter === 'Aptos para Revisão') {
@@ -189,9 +203,9 @@ export default function AlunosPage() {
                     const monthsSinceExam = differenceInMonths(now, lastExamDate);
         
                     if (belt === 'amarela') return monthsSinceExam > 12;
-                    if (belt === 'laranja') return monthsSinceExam > 18; // 1 ano e 6 meses
-                    if (belt === 'verde' || belt === 'azul') return monthsSinceExam > 24; // 2 anos
-                    if (belt === 'marrom') return monthsSinceExam > 36; // 3 anos
+                    if (belt === 'laranja') return monthsSinceExam > 18; 
+                    if (belt === 'verde' || belt === 'azul') return monthsSinceExam > 24; 
+                    if (belt === 'marrom') return monthsSinceExam > 36; 
         
                 } catch {
                     return false;
@@ -213,6 +227,13 @@ export default function AlunosPage() {
         return students;
 
     }, [studentsWithTimeInBelt, activeFilter, searchQuery]);
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+    const paginatedStudents = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return filteredStudents.slice(start, start + itemsPerPage);
+    }, [filteredStudents, currentPage, itemsPerPage]);
     
     const handleSelectStudent = (studentId: string) => {
         router.push(`/alunos/${studentId}/editar`);
@@ -359,7 +380,7 @@ export default function AlunosPage() {
                         <div className="flex flex-wrap items-center gap-2">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="outline">
+                                    <Button variant="outline" size="sm">
                                         Filtro: {activeFilter}
                                         <ChevronDown className="ml-2 h-4 w-4" />
                                     </Button>
@@ -375,7 +396,7 @@ export default function AlunosPage() {
 
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="outline">
+                                    <Button variant="outline" size="sm">
                                         Faixa: {beltFilters.includes(activeFilter) ? activeFilter : 'Selecione'}
                                         <ChevronDown className="ml-2 h-4 w-4" />
                                     </Button>
@@ -395,6 +416,7 @@ export default function AlunosPage() {
                              <Button 
                                 variant={activeFilter === 'Aptos para Revisão' ? 'default' : 'outline'}
                                 onClick={() => setActiveFilter('Aptos para Revisão')}
+                                size="sm"
                                 className={cn(activeFilter === 'Aptos para Revisão' && "bg-blue-600 text-white hover:bg-blue-700")}
                              >
                                 <GraduationCap className="mr-2 h-4 w-4" />
@@ -433,7 +455,7 @@ export default function AlunosPage() {
                                         <TableCell><Skeleton className="h-8 w-8"/></TableCell>
                                     </TableRow>
                                 ))}
-                                {!isLoading && filteredStudents.map((student) => (
+                                {!isLoading && paginatedStudents.map((student) => (
                                     <TableRow key={student.id} className="cursor-pointer" onClick={() => handleSelectStudent(student.id)}>
                                         <TableCell className="font-medium">
                                             <div className="flex items-center gap-3">
@@ -504,14 +526,61 @@ export default function AlunosPage() {
                             </div>
                          )}
                     </div>
+                    
+                    {/* Pagination Controls */}
+                    {!isLoading && filteredStudents.length > 0 && (
+                        <div className="p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/10">
+                            <div className="text-sm text-muted-foreground">
+                                Mostrando <strong>{Math.min(filteredStudents.length, (currentPage - 1) * itemsPerPage + 1)}</strong> a <strong>{Math.min(filteredStudents.length, currentPage * itemsPerPage)}</strong> de <strong>{filteredStudents.length}</strong> alunos
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Por página:</span>
+                                    <Select 
+                                        value={String(itemsPerPage)} 
+                                        onValueChange={(val) => {
+                                            setItemsPerPage(Number(val));
+                                            setCurrentPage(1);
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-8 w-20">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="25">25</SelectItem>
+                                            <SelectItem value="50">50</SelectItem>
+                                            <SelectItem value="100">100</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Button 
+                                        variant="outline" 
+                                        size="icon" 
+                                        className="h-8 w-8"
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    <div className="text-xs font-medium px-2">
+                                        Página {currentPage} de {totalPages}
+                                    </div>
+                                    <Button 
+                                        variant="outline" 
+                                        size="icon" 
+                                        className="h-8 w-8"
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>
     );
 }
-
-    
-
-    
-
-    
