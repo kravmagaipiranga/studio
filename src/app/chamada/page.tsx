@@ -26,7 +26,7 @@ export default function ChamadaPage() {
   // State for form
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [classDate, setClassDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [classTime, setClassTime] = useState(""); // This will store the "Turma"
+  const [classTime, setClassTime] = useState(""); 
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // State for report filter
@@ -57,12 +57,18 @@ export default function ChamadaPage() {
   // Data fetching
   const studentsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "students"), where("status", "==", "Ativo"), orderBy("name", "asc"));
+    // Removido orderBy("name") para evitar necessidade de índice composto
+    return query(collection(firestore, "students"), where("status", "==", "Ativo"));
   }, [firestore]);
 
-  const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
+  const { data: rawStudents, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
 
-  // Removido orderBy("time") para evitar necessidade de índice composto
+  // Ordenação de alunos no lado do cliente
+  const students = useMemo(() => {
+    if (!rawStudents) return [];
+    return [...rawStudents].sort((a, b) => a.name.localeCompare(b.name));
+  }, [rawStudents]);
+
   const todayQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
@@ -73,7 +79,7 @@ export default function ChamadaPage() {
 
   const { data: rawTodayAttendance, isLoading: isLoadingToday } = useCollection<Attendance>(todayQuery);
 
-  // Ordenação no lado do cliente
+  // Ordenação de presenças no lado do cliente
   const todayAttendance = useMemo(() => {
     if (!rawTodayAttendance) return [];
     return [...rawTodayAttendance].sort((a, b) => a.time.localeCompare(b.time, undefined, { numeric: true }));
@@ -137,7 +143,6 @@ export default function ChamadaPage() {
     toast({ title: "Registro Removido" });
   };
 
-  // Logic for counting absences
   const reportData = useMemo(() => {
     if (!students || !monthAttendance) return [];
 
