@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, parseISO, startOfMonth, endOfMonth, isSaturday, eachWeekOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckSquare, Trash2, UserCheck, Search, Clock } from "lucide-react";
+import { CheckSquare, Trash2, UserCheck, Search, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +33,10 @@ export default function ChamadaPage() {
   const [reportMonth, setReportMonth] = useState(format(new Date(), "MM"));
   const [reportYear, setReportYear] = useState(format(new Date(), "yyyy"));
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
   // Determine class options based on date
   const classOptions = useMemo(() => {
@@ -54,16 +58,19 @@ export default function ChamadaPage() {
     }
   }, [classOptions, classTime]);
 
+  // Reset pagination on filter or search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, reportMonth, reportYear]);
+
   // Data fetching
   const studentsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // Removido orderBy("name") para evitar necessidade de índice composto
     return query(collection(firestore, "students"), where("status", "==", "Ativo"));
   }, [firestore]);
 
   const { data: rawStudents, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
 
-  // Ordenação de alunos no lado do cliente
   const students = useMemo(() => {
     if (!rawStudents) return [];
     return [...rawStudents].sort((a, b) => a.name.localeCompare(b.name));
@@ -79,7 +86,6 @@ export default function ChamadaPage() {
 
   const { data: rawTodayAttendance, isLoading: isLoadingToday } = useCollection<Attendance>(todayQuery);
 
-  // Ordenação de presenças no lado do cliente
   const todayAttendance = useMemo(() => {
     if (!rawTodayAttendance) return [];
     return [...rawTodayAttendance].sort((a, b) => a.time.localeCompare(b.time, undefined, { numeric: true }));
@@ -143,7 +149,7 @@ export default function ChamadaPage() {
     toast({ title: "Registro Removido" });
   };
 
-  const reportData = useMemo(() => {
+  const fullReportData = useMemo(() => {
     if (!students || !monthAttendance) return [];
 
     const start = startOfMonth(new Date(Number(reportYear), Number(reportMonth) - 1));
@@ -169,12 +175,20 @@ export default function ChamadaPage() {
       };
     });
 
+    let filtered = data;
     if (searchQuery) {
-      return data.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      filtered = data.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()));
     }
 
-    return data.sort((a, b) => a.name.localeCompare(b.name));
+    return filtered.sort((a, b) => a.name.localeCompare(b.name));
   }, [students, monthAttendance, reportMonth, reportYear, searchQuery]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(fullReportData.length / itemsPerPage);
+  const paginatedReportData = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return fullReportData.slice(start, start + itemsPerPage);
+  }, [fullReportData, currentPage, itemsPerPage]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -314,9 +328,9 @@ export default function ChamadaPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="relative w-full max-w-sm">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <CardContent className="space-y-4 p-0">
+              <div className="p-4 relative w-full max-w-sm">
+                <Search className="absolute left-6.5 top-6.5 h-4 w-4 text-muted-foreground ml-2 mt-0.5" />
                 <Input
                   type="search"
                   placeholder="Buscar aluno no relatório..."
@@ -326,7 +340,7 @@ export default function ChamadaPage() {
                 />
               </div>
 
-              <div className="border rounded-md">
+              <div className="border-t">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -342,8 +356,8 @@ export default function ChamadaPage() {
                       Array.from({ length: 5 }).map((_, i) => (
                         <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-10 w-full" /></TableCell></TableRow>
                       ))
-                    ) : reportData.length > 0 ? (
-                      reportData.map((d) => (
+                    ) : paginatedReportData.length > 0 ? (
+                      paginatedReportData.map((d) => (
                         <TableRow key={d.id}>
                           <TableCell className="font-medium">{d.name}</TableCell>
                           <TableCell>{d.belt}</TableCell>
@@ -369,9 +383,65 @@ export default function ChamadaPage() {
                   </TableBody>
                 </Table>
               </div>
-              <p className="text-xs text-muted-foreground italic">
-                * A meta mensal é baseada em 2 aulas/semana ou 1 aula/sábado (detectado automaticamente pelas presenças registradas).
-              </p>
+
+              {/* Pagination Controls */}
+              {!isLoadingReport && !isLoadingStudents && fullReportData.length > 0 && (
+                <div className="p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/10">
+                    <div className="text-sm text-muted-foreground">
+                        Mostrando <strong>{Math.min(fullReportData.length, (currentPage - 1) * itemsPerPage + 1)}</strong> a <strong>{Math.min(fullReportData.length, currentPage * itemsPerPage)}</strong> de <strong>{fullReportData.length}</strong> alunos
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Por página:</span>
+                            <Select 
+                                value={String(itemsPerPage)} 
+                                onValueChange={(val) => {
+                                    setItemsPerPage(Number(val));
+                                    setCurrentPage(1);
+                                }}
+                            >
+                                <SelectTrigger className="h-8 w-20">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="25">25</SelectItem>
+                                    <SelectItem value="50">50</SelectItem>
+                                    <SelectItem value="100">100</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-8 w-8"
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <div className="text-xs font-medium px-2">
+                                Página {currentPage} de {totalPages}
+                            </div>
+                            <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-8 w-8"
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+              )}
+
+              <div className="px-4 pb-4">
+                <p className="text-xs text-muted-foreground italic">
+                  * A meta mensal é baseada em 2 aulas/semana ou 1 aula/sábado (detectado automaticamente pelas presenças registradas).
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
