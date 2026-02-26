@@ -9,11 +9,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Trash2, MessageSquare, Save } from "lucide-react"
+import { Trash2, MessageSquare, Save, CalendarPlus } from "lucide-react"
 import { Lead } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
-import { useFirestore, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
-import { doc } from "firebase/firestore"
+import { useFirestore, deleteDocumentNonBlocking, updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase"
+import { doc, collection } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { Checkbox } from "../ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card";
@@ -61,6 +61,37 @@ export function LeadsTable({
     });
   };
 
+  const handleScheduleClass = async (lead: Lead) => {
+    if (!firestore) return;
+    
+    const appointmentData = {
+      name: lead.name,
+      whatsapp: lead.phone,
+      email: "",
+      classDate: new Date().toISOString().split('T')[0],
+      classTime: "19:00",
+      notes: "Agendamento vindo do Lead CAT",
+      enrolled: false,
+      attended: false,
+      missed: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      await addDocumentNonBlocking(collection(firestore, "appointments"), appointmentData);
+      toast({
+        title: "Agendamento Criado!",
+        description: `O agendamento de ${lead.name} foi enviado para a lista de Agendamentos.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao agendar",
+        description: "Não foi possível criar o agendamento.",
+      });
+    }
+  };
+
   const handleDelete = (lead: Lead) => {
     if (!firestore) return;
     const docRef = doc(firestore, 'leads', lead.id);
@@ -86,7 +117,6 @@ export function LeadsTable({
   };
 
   const cleanPhoneNumber = (phone: string) => {
-    // Return empty if phone is not a valid string
     if (typeof phone !== 'string') return '';
     return phone.replace(/\D/g, '');
   };
@@ -210,6 +240,15 @@ kravmagaipiranga.com`;
                     </TableCell>
                     <TableCell className="text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="hover:bg-transparent text-blue-600 hover:text-blue-700" 
+                                onClick={() => handleScheduleClass(lead)}
+                                title="Agendar Aula"
+                            >
+                                <CalendarPlus className="h-4 w-4" />
+                            </Button>
                             <Button variant="ghost" size="icon" className="hover:bg-transparent text-muted-foreground hover:text-foreground" onClick={() => handleSave(lead)}>
                                 <Save className="h-4 w-4" />
                             </Button>
