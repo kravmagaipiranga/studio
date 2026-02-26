@@ -8,7 +8,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
-import { Save, Trash2, UserCheck, UserX, CheckSquare, MessageSquare } from "lucide-react"
+import { Save, Trash2, UserCheck, UserX, CheckSquare, MessageSquare, ClipboardList } from "lucide-react"
 import { Appointment } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
 import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
@@ -19,6 +19,9 @@ import { Textarea } from "../ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils"
+import { format, parseISO, isTomorrow } from "date-fns"
+import { ptBR } from "date-fns/locale"
+import { v4 as uuidv4 } from "uuid";
 
 interface AppointmentsTableProps {
   appointments: Appointment[];
@@ -133,10 +136,43 @@ Pronto para o próximo nível? Faça sua matrícula no link abaixo:
 Nos vemos no tatame!
 Professor Thiago R. Pedro`;
 
+    // Pre-Class Instructions Message
+    let instructionsMessage = "";
+    if (appointment.classDate) {
+        try {
+            const appointmentDate = parseISO(appointment.classDate);
+            const dayOfWeek = format(appointmentDate, 'EEEE', { locale: ptBR });
+            const formattedDate = format(appointmentDate, 'dd/MM/yyyy');
+
+            instructionsMessage = `Olá, ${appointment.name}! Tudo bem? 
+Na próxima ${dayOfWeek}, dia ${formattedDate}, você fará sua aulas de experiência gratuita no Centro de Treinamento de Krav Magá Ipiranga!
+
+Para sua aula, utilize uma roupa confortável, a mesma que usaria para um passeio ao parque, ou para a prática de uma atividade física (como a musculação, por exemplo). Recomendamos o uso de uma calça (pode ser um moletom, legging ou uma calça de kimono) e camiseta.
+
+📋 Abaixo, listamos algumas Informações Importantes para Suas Aulas de Krav Magá:
+
+📍 Estrutura do Centro:
+- Nossa academia possui vestiários e armários, disponíveis para que você possa guardar pertences e trocar de roupa, antes ou depois das aulas.
+- Retire todos os acessórios (relógios, pulseiras, colares, anéis) antes do treino para evitar acidentes.  
+
+🗣️ Durante a Aula:  
+- Comunique-se com o instrutor ao entrar/sair do tatame.  
+- Respeite seu corpo: evite exageros para prevenir lesões.  
+- Informe ao instrutor qualquer dor ou condição médica (tratamento de coluna, problemas de glicemia ou pressão, problemas cardíacos, limitação de movimentos em membros, etc) 
+- Siga as orientações do instrutor à risca –a experiência dele é seu guia!  
+- Priorize a técnica, não a velocidade. A evolução vem com consistência.  
+- Concentre-se e absorva cada detalhe.  
+- Pergunte sempre se tiver dúvidas – todos estão ali para aprender juntos!
+
+Nos vemos na aula! Kida!`;
+        } catch (e) {}
+    }
+
     const baseUrl = "https://wa.me/55";
     return {
         missed: phone ? `${baseUrl}${phone}?text=${encodeURIComponent(missedMessage)}` : "#",
-        thanks: phone ? `${baseUrl}${phone}?text=${encodeURIComponent(thankYouMessage)}` : "#"
+        thanks: phone ? `${baseUrl}${phone}?text=${encodeURIComponent(thankYouMessage)}` : "#",
+        instructions: phone && instructionsMessage ? `${baseUrl}${phone}?text=${encodeURIComponent(instructionsMessage)}` : "#"
     };
   };
 
@@ -156,11 +192,20 @@ Professor Thiago R. Pedro`;
           <Accordion type="single" collapsible className="w-full">
             {appointments.map((appointment: Appointment) => {
               const waLinks = generateWhatsAppLinks(appointment);
+              const classIsTomorrow = appointment.classDate ? isTomorrow(parseISO(appointment.classDate)) : false;
+
               return (
                 <AccordionItem value={appointment.id} key={appointment.id} className={cn("px-4", appointment.isNew && "bg-muted/50")}>
                   <AccordionTrigger className="hover:no-underline">
                     <div className="flex items-center justify-between w-full">
-                          <div className="flex-1 text-left font-medium">{appointment.name || "Novo Agendamento"}</div>
+                          <div className="flex-1 text-left font-medium flex items-center gap-2">
+                            {appointment.name || "Novo Agendamento"}
+                            {classIsTomorrow && (
+                                <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200 animate-pulse">
+                                    Aula Amanhã
+                                </Badge>
+                            )}
+                          </div>
                           <div className="flex-1 text-left text-muted-foreground">
                               {new Date(appointment.classDate + 'T00:00:00').toLocaleDateString('pt-BR')} às {appointment.classTime}
                           </div>
@@ -227,6 +272,12 @@ Professor Thiago R. Pedro`;
 
                       <div className="flex flex-wrap items-center gap-2 mt-6 pt-4 border-t">
                           <span className="text-xs font-bold text-muted-foreground w-full mb-1">NOTIFICAÇÕES WHATSAPP</span>
+                          <a href={waLinks.instructions} target="_blank" rel="noopener noreferrer">
+                              <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50" disabled={!appointment.whatsapp || waLinks.instructions === '#'}>
+                                  <ClipboardList className="h-4 w-4 mr-2" />
+                                  Instruções Pré-Treino
+                              </Button>
+                          </a>
                           <a href={waLinks.missed} target="_blank" rel="noopener noreferrer">
                               <Button variant="outline" size="sm" className="text-orange-600 border-orange-200 hover:bg-orange-50" disabled={!appointment.whatsapp}>
                                   <MessageSquare className="h-4 w-4 mr-2" />
