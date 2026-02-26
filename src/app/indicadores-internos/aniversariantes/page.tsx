@@ -15,6 +15,7 @@ import { ArrowLeft, Search, MessageSquare, Cake, Phone } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 function BirthdayListContent() {
   const firestore = useFirestore();
@@ -42,7 +43,7 @@ function BirthdayListContent() {
     if (!students) return [];
     
     let filtered = students.filter(s => {
-      if (!s.dob || s.status !== 'Ativo') return false;
+      if (!s.dob) return false;
       const dobMonth = s.dob.split('-')[1];
       return dobMonth === month;
     });
@@ -87,7 +88,7 @@ Aproveite seu dia! Kida!`;
           <Cake className="h-6 w-6 text-pink-500" />
           Aniversariantes de {monthName}
         </h1>
-        <p className="text-muted-foreground">Lista de alunos ativos que celebram aniversário no mês selecionado.</p>
+        <p className="text-muted-foreground">Lista completa de alunos que celebram aniversário no mês selecionado.</p>
       </div>
 
       <Card>
@@ -108,6 +109,7 @@ Aproveite seu dia! Kida!`;
               <TableRow>
                 <TableHead className="w-[100px]">Dia</TableHead>
                 <TableHead>Aluno</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Faixa</TableHead>
                 <TableHead>WhatsApp</TableHead>
                 <TableHead className="text-right">Ação</TableHead>
@@ -119,6 +121,7 @@ Aproveite seu dia! Kida!`;
                   <TableRow key={i}>
                     <TableCell><Skeleton className="h-5 w-8" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
@@ -132,6 +135,11 @@ Aproveite seu dia! Kida!`;
                     </TableCell>
                     <TableCell className="font-medium">
                       {student.name}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={student.status === 'Ativo' ? 'default' : 'secondary'}>
+                        {student.status}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       {student.belt}
@@ -157,7 +165,7 @@ Aproveite seu dia! Kida!`;
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                     Nenhum aniversariante encontrado para {monthName}.
                   </TableCell>
                 </TableRow>

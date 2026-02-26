@@ -164,10 +164,10 @@ export default function IndicadoresInternosPage() {
     };
   }, [attendance]);
 
-  // 6. Aniversariantes do mês count
+  // 6. Aniversariantes do mês count (Apenas Ativos)
   const birthdaysCount = useMemo(() => {
     if (!students || !selectedMonth) return 0;
-    return students.filter(s => s.dob && s.dob.split('-')[1] === selectedMonth).length;
+    return students.filter(s => s.status === 'Ativo' && s.dob && s.dob.split('-')[1] === selectedMonth).length;
   }, [students, selectedMonth]);
 
   // 7. Alunos Aptos a Revision e Frequência
@@ -293,7 +293,7 @@ export default function IndicadoresInternosPage() {
           onClick={() => router.push(`/indicadores-internos/aniversariantes?month=${selectedMonth}&year=${selectedYear}`)}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Aniversariantes</CardTitle>
+            <CardTitle className="text-sm font-medium">Aniversariantes (Ativos)</CardTitle>
             <Cake className="h-4 w-4 text-pink-500" />
           </CardHeader>
           <CardContent>
