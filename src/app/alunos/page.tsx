@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BulkImportDialog } from "@/components/students/bulk-import-dialog";
 import { Badge } from "@/components/ui/badge";
 import { differenceInMonths, isBefore, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
@@ -104,6 +104,7 @@ function getInitials(name: string) {
 export default function AlunosPage() {
     const firestore = useFirestore();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState("");
     const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
@@ -111,6 +112,21 @@ export default function AlunosPage() {
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(25);
+
+    // Initial filter from URL
+    useEffect(() => {
+        const filterParam = searchParams.get('filter');
+        if (filterParam === 'aptos') {
+            setActiveFilter('Aptos para Revisão');
+        } else if (filterParam === 'aniversariantes') {
+            // No direct filter for birthdays yet, but could be handled here
+        }
+        
+        const searchParam = searchParams.get('search');
+        if (searchParam) {
+            setSearchQuery(searchParam);
+        }
+    }, [searchParams]);
     
     const studentsQuery = useMemoFirebase(() => {
         if (!firestore) return null;

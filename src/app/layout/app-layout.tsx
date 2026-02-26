@@ -27,6 +27,7 @@ import {
   Star,
   Sparkles,
   CheckSquare,
+  PieChart,
 } from "lucide-react";
 import {
   Sheet,
@@ -68,6 +69,7 @@ const protectedAdminRoutes = [
   "/lista-de-tarefas",
   "/dashboard",
   "/indicadores",
+  "/indicadores-internos",
   "/leads",
   "/planos-vencidos",
   "/mes-das-mulheres",
@@ -195,6 +197,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <NavItem href="/chamada">
                 <CheckSquare className="h-4 w-4" /> Controle de Presença
               </NavItem>
+              <NavItem href="/indicadores-internos">
+                <PieChart className="h-4 w-4" /> Indicadores Internos
+              </NavItem>
               <NavItem href="/mes-das-mulheres">
                 <Star className="h-4 w-4 text-pink-600" /> Mês das Mulheres
               </NavItem>
@@ -262,6 +267,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </Link>
                 <NavItem href="/alunos" isMobile><Users className="h-5 w-5" /> Alunos</NavItem>
                 <NavItem href="/chamada" isMobile><CheckSquare className="h-5 w-5" /> Controle de Presença</NavItem>
+                <NavItem href="/indicadores-internos" isMobile><PieChart className="h-5 w-5" /> Indicadores Internos</NavItem>
                 <NavItem href="/mes-das-mulheres" isMobile><Star className="h-5 w-5 text-pink-600" /> Mês das Mulheres</NavItem>
                 <NavItem href="/agendamentos" isMobile><CalendarPlus className="h-5 w-5" /> Agendamentos</NavItem>
                 <NavItem href="/pagamentos" isMobile><CreditCard className="h-5 w-5" /> Pagamentos</NavItem>
