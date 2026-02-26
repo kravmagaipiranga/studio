@@ -19,7 +19,8 @@ import {
   startOfMonth, 
   endOfMonth, 
   eachWeekOfInterval, 
-  differenceInMonths 
+  differenceInMonths,
+  getDay
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { 
@@ -76,15 +77,38 @@ export default function IndicadoresInternosPage() {
 
   const isLoading = isLoadingStudents || isLoadingAttendance;
 
-  // 1. & 2. Turmas com mais/menos alunos
+  // 1. & 2. Turmas com mais/menos alunos (Agrupado por Dia e Horário)
   const classRanking = useMemo(() => {
     if (!attendance) return [];
     const counts: Record<string, number> = {};
+    
     attendance.forEach(a => {
-      if (a.time) {
-        counts[a.time] = (counts[a.time] || 0) + 1;
+      if (a.time && a.date) {
+        try {
+            const date = parseISO(a.date);
+            const dayOfWeek = getDay(date);
+            let dayLabel = "";
+
+            if (dayOfWeek === 1 || dayOfWeek === 3) {
+                dayLabel = "Seg/Qua";
+            } else if (dayOfWeek === 2 || dayOfWeek === 4) {
+                dayLabel = "Ter/Qui";
+            } else if (dayOfWeek === 6) {
+                dayLabel = "Sábado";
+            } else if (dayOfWeek === 5) {
+                dayLabel = "Sexta";
+            } else {
+                dayLabel = "Domingo";
+            }
+
+            const fullLabel = `${dayLabel} ${a.time}`;
+            counts[fullLabel] = (counts[fullLabel] || 0) + 1;
+        } catch (e) {
+            counts[a.time] = (counts[a.time] || 0) + 1;
+        }
       }
     });
+
     return Object.entries(counts)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
@@ -269,7 +293,7 @@ export default function IndicadoresInternosPage() {
         <Card>
           <CardHeader>
             <CardTitle>Engajamento por Turma</CardTitle>
-            <CardDescription>Presenças registradas em cada horário.</CardDescription>
+            <CardDescription>Presenças registradas por ciclo de dia e horário.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
@@ -280,7 +304,7 @@ export default function IndicadoresInternosPage() {
                   <BarChart data={classRanking} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                     <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" width={100} />
+                    <YAxis dataKey="name" type="category" width={120} fontSize={10} />
                     <Tooltip 
                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                         formatter={(val) => [val, "Presenças"]}
@@ -301,7 +325,7 @@ export default function IndicadoresInternosPage() {
                 <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-50 border border-blue-100">
                   <TrendingUp className="h-4 w-4 text-blue-600" />
                   <div className="text-xs">
-                    <p className="text-muted-foreground font-medium">Turma mais cheia</p>
+                    <p className="text-muted-foreground font-medium">Mais cheia</p>
                     <p className="font-bold text-blue-900">{mostPopularClass.name}</p>
                   </div>
                 </div>
@@ -310,7 +334,7 @@ export default function IndicadoresInternosPage() {
                 <div className="flex items-center gap-2 p-2 rounded-lg bg-rose-50 border border-rose-100">
                   <TrendingDown className="h-4 w-4 text-rose-600" />
                   <div className="text-xs">
-                    <p className="text-muted-foreground font-medium">Turma menos cheia</p>
+                    <p className="text-muted-foreground font-medium">Menos cheia</p>
                     <p className="font-bold text-rose-900">{leastPopularClass.name}</p>
                   </div>
                 </div>
