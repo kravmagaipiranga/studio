@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from "react";
@@ -46,6 +45,7 @@ import {
   Cell
 } from "recharts";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 export default function IndicadoresInternosPage() {
   const firestore = useFirestore();
@@ -133,7 +133,7 @@ export default function IndicadoresInternosPage() {
     }).length;
   }, [students, selectedMonth]);
 
-  // 7. Alunos Aptos a Revisão e Frequência
+  // 7. Alunos Aptos a Revision e Frequência
   const reviewMetrics = useMemo(() => {
     if (!students || !attendance) return [];
     const now = new Date();
