@@ -31,8 +31,7 @@ import {
   TrendingDown,
   Info,
   ChevronRight,
-  UserPlus,
-  MessageSquare
+  UserPlus
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
@@ -47,15 +46,6 @@ import {
 } from "recharts";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 const beltColors: Record<string, { border: string; bg: string; text: string }> = {
   'Branca': { border: 'border-slate-200', bg: 'bg-white', text: 'text-slate-900' },
@@ -74,7 +64,6 @@ export default function IndicadoresInternosPage() {
   
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
-  const [isBirthdayDialogOpen, setIsBirthdayDialogOpen] = useState(false);
 
   useEffect(() => {
     const now = new Date();
@@ -175,23 +164,11 @@ export default function IndicadoresInternosPage() {
     };
   }, [attendance]);
 
-  // 6. Aniversariantes do mês
-  const monthlyBirthdays = useMemo(() => {
-    if (!students || !selectedMonth) return [];
-    return students
-      .filter(s => {
-        if (!s.dob) return false;
-        const dobMonth = s.dob.split('-')[1];
-        return dobMonth === selectedMonth;
-      })
-      .sort((a, b) => {
-        const dayA = Number(a.dob.split('-')[2]);
-        const dayB = Number(b.dob.split('-')[2]);
-        return dayA - dayB;
-      });
+  // 6. Aniversariantes do mês count
+  const birthdaysCount = useMemo(() => {
+    if (!students || !selectedMonth) return 0;
+    return students.filter(s => s.dob && s.dob.split('-')[1] === selectedMonth).length;
   }, [students, selectedMonth]);
-
-  const birthdaysCount = monthlyBirthdays.length;
 
   // 7. Alunos Aptos a Revision e Frequência
   const reviewMetrics = useMemo(() => {
@@ -254,17 +231,6 @@ export default function IndicadoresInternosPage() {
     return format(new Date(2024, Number(m) - 1, 1), "MMMM", { locale: ptBR });
   };
 
-  const getBirthdayWhatsAppLink = (student: Student) => {
-    const phone = student.phone?.replace(/\D/g, '');
-    const firstName = student.name.split(' ')[0];
-    const message = `Parabéns, ${firstName}! Feliz aniversário! 🎂🥳
-
-Desejamos que seu novo ciclo seja repleto de força, saúde, superação e muito Krav Magá. Estamos muito felizes em ter você treinando conosco no Centro de Treinamento Krav Magá Ipiranga! 🛡️👊
-
-Aproveite seu dia! Kida!`;
-    return `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
-  };
-
   if (!isMounted) return null;
 
   return (
@@ -322,7 +288,10 @@ Aproveite seu dia! Kida!`;
             <p className="text-xs text-muted-foreground">Realizadas neste mês</p>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setIsBirthdayDialogOpen(true)}>
+        <Card 
+          className="cursor-pointer hover:bg-muted/50 transition-colors" 
+          onClick={() => router.push(`/indicadores-internos/aniversariantes?month=${selectedMonth}&year=${selectedYear}`)}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Aniversariantes</CardTitle>
             <Cake className="h-4 w-4 text-pink-500" />
@@ -525,56 +494,6 @@ Aproveite seu dia! Kida!`;
           </div>
         </CardContent>
       </Card>
-
-      {/* Birthday Modal */}
-      <Dialog open={isBirthdayDialogOpen} onOpenChange={setIsBirthdayDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Cake className="h-5 w-5 text-pink-500" />
-              Aniversariantes de {formatMonth(selectedMonth)}
-            </DialogTitle>
-            <DialogDescription>
-              Lista de alunos ativos que celebram aniversário neste mês.
-            </DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="max-h-[400px] mt-4">
-            <div className="space-y-3">
-              {monthlyBirthdays.length > 0 ? (
-                monthlyBirthdays.map((student) => (
-                  <div 
-                    key={student.id} 
-                    className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="space-y-0.5">
-                      <p className="text-sm font-bold">{student.name}</p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Cake className="h-3 w-3" />
-                        Dia {student.dob.split('-')[2]}
-                      </p>
-                    </div>
-                    <a 
-                      href={getBirthdayWhatsAppLink(student)} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className={cn(!student.phone && "pointer-events-none opacity-50")}
-                    >
-                      <Button size="sm" variant="outline" className="text-green-600 border-green-200 hover:bg-green-50">
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Parabéns
-                      </Button>
-                    </a>
-                  </div>
-                ))
-              ) : (
-                <p className="text-center py-10 text-sm text-muted-foreground">
-                  Nenhum aniversariante encontrado para este mês.
-                </p>
-              )}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
