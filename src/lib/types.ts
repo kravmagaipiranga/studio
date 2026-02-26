@@ -200,10 +200,11 @@ export type GiftCardOrder = {
 
 export type Attendance = {
   id: string;
-  studentId: string;
+  studentId?: string;
   studentName: string;
   date: string;
   time: string;
   type: 'Semanal' | 'Sábado';
+  category?: 'Aluno' | 'Visita' | 'Experiência';
   createdAt: string;
 };

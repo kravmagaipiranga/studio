@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { collection, query, where, doc, orderBy } from "firebase/firestore";
+import { collection, query, where, doc } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
 import { Student, Attendance } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, parseISO, startOfMonth, endOfMonth, isSaturday, eachWeekOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckSquare, Trash2, UserCheck, Search, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckSquare, Trash2, UserCheck, Search, Clock, ChevronLeft, ChevronRight, UserPlus, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -99,8 +99,7 @@ export default function ChamadaPage() {
     return query(
       collection(firestore, "attendance"),
       where("date", ">=", monthStart),
-      where("date", "<=", monthEnd),
-      orderBy("date", "desc")
+      where("date", "<=", monthEnd)
     );
   }, [firestore, reportMonth, reportYear]);
 
@@ -110,32 +109,45 @@ export default function ChamadaPage() {
     (students || []).map(s => ({ value: s.id, label: s.name })), 
   [students]);
 
-  const handleRecordAttendance = async () => {
-    if (!firestore || !selectedStudentId) {
+  const handleRecordAttendance = async (category: 'Aluno' | 'Visita' | 'Experiência' = 'Aluno') => {
+    if (!firestore) return;
+
+    if (category === 'Aluno' && !selectedStudentId) {
       toast({ variant: "destructive", title: "Erro", description: "Selecione um aluno." });
       return;
     }
-
-    const student = students?.find(s => s.id === selectedStudentId);
-    if (!student) return;
 
     setIsSubmitting(true);
     const dateObj = parseISO(classDate);
     const type = isSaturday(dateObj) ? "Sábado" : "Semanal";
 
+    let studentName = "";
+    let studentId = "";
+
+    if (category === 'Aluno') {
+        const student = students?.find(s => s.id === selectedStudentId);
+        if (!student) return;
+        studentName = student.name;
+        studentId = student.id;
+    } else {
+        studentName = category === 'Visita' ? "Visita" : "Aula Experimental";
+        studentId = category.toUpperCase(); // Placeholder ID
+    }
+
     const attendanceData: Omit<Attendance, 'id'> = {
-      studentId: student.id,
-      studentName: student.name,
+      studentId,
+      studentName,
       date: classDate,
       time: classTime,
       type,
+      category,
       createdAt: new Date().toISOString(),
     };
 
     try {
       await addDocumentNonBlocking(collection(firestore, "attendance"), attendanceData);
-      toast({ title: "Presença Registrada!", description: `${student.name} marcado na turma das ${classTime}.` });
-      setSelectedStudentId("");
+      toast({ title: "Registro Realizado!", description: `${studentName} na turma das ${classTime}.` });
+      if (category === 'Aluno') setSelectedStudentId("");
     } catch (error) {
       toast({ variant: "destructive", title: "Erro ao registrar", description: "Tente novamente." });
     } finally {
@@ -158,7 +170,9 @@ export default function ChamadaPage() {
 
     const data = students.map(student => {
       const attendances = monthAttendance.filter(a => a.studentId === student.id);
-      const count = attendances.length;
+      
+      // Peso 2 para aulas de Sábado, peso 1 para as demais
+      const count = attendances.reduce((acc, a) => acc + (a.type === "Sábado" ? 2 : 1), 0);
       
       const hasSaturday = attendances.some(a => a.type === "Sábado");
       const target = hasSaturday ? weeksInMonth : (weeksInMonth * 2);
@@ -209,9 +223,9 @@ export default function ChamadaPage() {
           <Card>
             <CardHeader>
               <CardTitle>Marcar Presença</CardTitle>
-              <CardDescription>Selecione o aluno e a turma para registrar a aula.</CardDescription>
+              <CardDescription>Selecione o aluno ou registre um interessado na turma.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <div className="md:col-span-2 space-y-2">
                   <label className="text-sm font-medium">Aluno</label>
@@ -240,9 +254,24 @@ export default function ChamadaPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button className="w-full" onClick={handleRecordAttendance} disabled={isSubmitting}>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <Button onClick={() => handleRecordAttendance('Aluno')} disabled={isSubmitting || !selectedStudentId}>
                   <UserCheck className="mr-2 h-4 w-4" />
                   Registrar Presença
+                </Button>
+                
+                <div className="h-8 w-px bg-border mx-2 hidden sm:block" />
+                
+                <Button variant="outline" onClick={() => handleRecordAttendance('Experiência')} disabled={isSubmitting} className="border-blue-200 hover:bg-blue-50 text-blue-700">
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  + Aula Experimental
+                </Button>
+                
+                <Button variant="outline" onClick={() => handleRecordAttendance('Visita')} disabled={isSubmitting} className="border-orange-200 hover:bg-orange-50 text-orange-700">
+                  <Info className="mr-2 h-4 w-4" />
+                  + Visita
                 </Button>
               </div>
             </CardContent>
@@ -252,16 +281,16 @@ export default function ChamadaPage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Clock className="h-5 w-5 text-muted-foreground" />
-                Presenças de {format(parseISO(classDate), "dd/MM/yyyy")}
+                Registros de {format(parseISO(classDate), "dd/MM/yyyy")}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Aluno</TableHead>
+                    <TableHead>Pessoa / Aluno</TableHead>
                     <TableHead>Turma</TableHead>
-                    <TableHead>Tipo</TableHead>
+                    <TableHead>Categoria</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -273,7 +302,16 @@ export default function ChamadaPage() {
                       <TableRow key={a.id}>
                         <TableCell className="font-medium">{a.studentName}</TableCell>
                         <TableCell>{a.time}</TableCell>
-                        <TableCell>{a.type}</TableCell>
+                        <TableCell>
+                            <span className={cn(
+                                "text-[10px] uppercase font-bold px-2 py-0.5 rounded-full",
+                                a.category === 'Visita' ? "bg-orange-100 text-orange-700" :
+                                a.category === 'Experiência' ? "bg-blue-100 text-blue-700" :
+                                "bg-muted text-muted-foreground"
+                            )}>
+                                {a.category || 'Aluno'}
+                            </span>
+                        </TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="icon" onClick={() => handleDeleteAttendance(a.id)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
@@ -284,7 +322,7 @@ export default function ChamadaPage() {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
-                        Nenhuma presença registrada para esta data ainda.
+                        Nenhum registro para esta data ainda.
                       </TableCell>
                     </TableRow>
                   )}
@@ -300,7 +338,7 @@ export default function ChamadaPage() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <CardTitle>Frequência Mensal</CardTitle>
-                  <CardDescription>Resumo de aulas feitas e faltas por aluno.</CardDescription>
+                  <CardDescription>Resumo de aulas e faltas por aluno matriculado.</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
                   <Select value={reportMonth} onValueChange={setReportMonth}>
@@ -346,7 +384,7 @@ export default function ChamadaPage() {
                     <TableRow>
                       <TableHead>Aluno</TableHead>
                       <TableHead>Faixa</TableHead>
-                      <TableHead className="text-center">Aulas Feitas</TableHead>
+                      <TableHead className="text-center">Aulas (Peso Sáb.)</TableHead>
                       <TableHead className="text-center">Meta Mensal</TableHead>
                       <TableHead className="text-center">Faltas Est.</TableHead>
                     </TableRow>
@@ -437,9 +475,12 @@ export default function ChamadaPage() {
                 </div>
               )}
 
-              <div className="px-4 pb-4">
-                <p className="text-xs text-muted-foreground italic">
-                  * A meta mensal é baseada em 2 aulas/semana ou 1 aula/sábado (detectado automaticamente pelas presenças registradas).
+              <div className="px-4 pb-4 space-y-1">
+                <p className="text-[10px] text-muted-foreground italic">
+                  * A meta mensal é baseada em 2 aulas/semana ou 1 aula/sábado.
+                </p>
+                <p className="text-[10px] text-blue-600 font-bold italic">
+                  * Aulas de Sábado possuem peso 2 no total de aulas realizadas.
                 </p>
               </div>
             </CardContent>

@@ -64,17 +64,18 @@
     "Attendance": {
       "title": "Attendance",
       "type": "object",
-      "description": "Records student class attendance.",
+      "description": "Records student class attendance or visitor interaction.",
       "properties": {
         "id": { "type": "string" },
-        "studentId": { "type": "string" },
+        "studentId": { "type": "string", "description": "Optional for visitors/trial classes" },
         "studentName": { "type": "string" },
         "date": { "type": "string", "format": "date" },
         "time": { "type": "string" },
         "type": { "type": "string", "enum": ["Semanal", "Sábado"] },
+        "category": { "type": "string", "enum": ["Aluno", "Visita", "Experiência"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "studentId", "date", "time", "type"]
+      "required": ["id", "studentName", "date", "time", "type"]
     }
   },
   "auth": {
@@ -119,7 +120,7 @@
         "definition": {
           "entityName": "Attendance",
           "schema": { "$ref": "#/backend/entities/Attendance" },
-          "description": "Stores student attendance records."
+          "description": "Stores student attendance and visitor records."
         }
       }
     ]
