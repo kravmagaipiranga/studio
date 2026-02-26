@@ -26,17 +26,24 @@ export default function AgendamentosPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
     const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [isMounted, setIsMounted] = useState(false);
     
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(25);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const appointmentsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
         return query(collection(firestore, 'appointments'), orderBy('classDate', 'desc'));
     }, [firestore]);
 
-    const { data: initialAppointments, isLoading } = useCollection<Appointment>(appointmentsCollection);
+    const { data: initialAppointments, isLoading: isLoadingCollection } = useCollection<Appointment>(appointmentsCollection);
+
+    const isLoading = isLoadingCollection || !isMounted;
 
     useEffect(() => {
         if (initialAppointments) {
@@ -50,7 +57,7 @@ export default function AgendamentosPage() {
     }, [searchQuery]);
 
     const appointmentsThisWeekCount = useMemo(() => {
-        if (!appointments) return 0;
+        if (!appointments || !isMounted) return 0;
     
         const today = new Date();
         const start = startOfWeek(today, { weekStartsOn: 1 }); // Monday
@@ -60,13 +67,14 @@ export default function AgendamentosPage() {
         
         return appointments.filter(appointment => {
             try {
+                if (!appointment.classDate) return false;
                 const classDate = parseISO(appointment.classDate);
                 return isWithinInterval(classDate, { start, end: endOfSaturday });
             } catch (error) {
                 return false;
             }
         }).length;
-    }, [appointments]);
+    }, [appointments, isMounted]);
 
     const filteredAppointments = useMemo(() => {
         return (appointments || []).filter(appointment =>

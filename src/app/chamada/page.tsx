@@ -18,12 +18,15 @@ import { ptBR } from "date-fns/locale";
 import { CheckSquare, Trash2, UserCheck, Search, Clock, ChevronLeft, ChevronRight, UserPlus, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useSearchParams } from "next/navigation";
 
 export default function ChamadaPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
   
-  // State for form
+  // State for tabs and initial filters
+  const [activeTab, setActiveTab] = useState("diario");
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [classDate, setClassDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [classTime, setClassTime] = useState(""); 
@@ -37,6 +40,21 @@ export default function ChamadaPage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
+
+  // Sync from URL
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'relatorio') setActiveTab('relatorio');
+    
+    const searchParam = searchParams.get('search');
+    if (searchParam) setSearchQuery(searchParam);
+
+    const monthParam = searchParams.get('month');
+    if (monthParam) setReportMonth(monthParam);
+
+    const yearParam = searchParams.get('year');
+    if (yearParam) setReportYear(yearParam);
+  }, [searchParams]);
 
   // Determine class options based on date
   const classOptions = useMemo(() => {
@@ -213,7 +231,7 @@ export default function ChamadaPage() {
         </h1>
       </div>
 
-      <Tabs defaultValue="diario" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 max-w-md">
           <TabsTrigger value="diario">Registro Diário</TabsTrigger>
           <TabsTrigger value="relatorio">Relatório de Faltas</TabsTrigger>

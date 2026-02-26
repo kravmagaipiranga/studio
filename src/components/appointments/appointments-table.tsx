@@ -1,6 +1,7 @@
 
 "use client"
 
+import { useState, useEffect } from "react"
 import {
   Accordion,
   AccordionContent,
@@ -21,7 +22,6 @@ import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils"
 import { format, parseISO, isTomorrow } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { v4 as uuidv4 } from "uuid";
 
 interface AppointmentsTableProps {
   appointments: Appointment[];
@@ -32,6 +32,11 @@ interface AppointmentsTableProps {
 export function AppointmentsTable({ appointments, setAppointments, isLoading }: AppointmentsTableProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleInputChange = (appointmentId: string, field: keyof Appointment, value: any) => {
     setAppointments(prev =>
@@ -176,7 +181,7 @@ Nos vemos na aula! Kida!`;
     };
   };
 
-  if (isLoading) {
+  if (isLoading || !mounted) {
       return (
           <div className="space-y-2 w-full">
               <Skeleton className="h-14 w-full" />
@@ -192,7 +197,12 @@ Nos vemos na aula! Kida!`;
           <Accordion type="single" collapsible className="w-full">
             {appointments.map((appointment: Appointment) => {
               const waLinks = generateWhatsAppLinks(appointment);
-              const classIsTomorrow = appointment.classDate ? isTomorrow(parseISO(appointment.classDate)) : false;
+              let classIsTomorrow = false;
+              if (appointment.classDate) {
+                  try {
+                      classIsTomorrow = isTomorrow(parseISO(appointment.classDate));
+                  } catch (e) {}
+              }
 
               return (
                 <AccordionItem value={appointment.id} key={appointment.id} className={cn("px-4", appointment.isNew && "bg-muted/50")}>
@@ -207,7 +217,7 @@ Nos vemos na aula! Kida!`;
                             )}
                           </div>
                           <div className="flex-1 text-left text-muted-foreground">
-                              {new Date(appointment.classDate + 'T00:00:00').toLocaleDateString('pt-BR')} às {appointment.classTime}
+                              {appointment.classDate ? new Date(appointment.classDate + 'T00:00:00').toLocaleDateString('pt-BR') : '...'} às {appointment.classTime}
                           </div>
                           <div className="flex-1 text-left">
                               <Badge variant={getStatusVariant(appointment)}>{getStatus(appointment)}</Badge>
@@ -217,7 +227,7 @@ Nos vemos na aula! Kida!`;
                   <AccordionContent className="pt-4 pb-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           <div className="space-y-2">
-                              <label className="text-xs font-semibold text-muted-foreground">Nome</label>
+                              <label className="text-sm font-medium">Nome</label>
                               <Input 
                                   placeholder="Nome do interessado" 
                                   value={appointment.name} 
@@ -225,7 +235,7 @@ Nos vemos na aula! Kida!`;
                               />
                           </div>
                           <div className="space-y-2">
-                            <label className="text-xs font-semibold text-muted-foreground">WhatsApp</label>
+                            <label className="text-sm font-medium">WhatsApp</label>
                               <Input 
                                   placeholder="(11) 99999-9999" 
                                   value={appointment.whatsapp} 
@@ -233,7 +243,7 @@ Nos vemos na aula! Kida!`;
                               />
                           </div>
                           <div className="space-y-2">
-                            <label className="text-xs font-semibold text-muted-foreground">Email</label>
+                            <label className="text-sm font-medium">Email</label>
                               <Input 
                                   type="email" 
                                   placeholder="email@exemplo.com" 
@@ -244,7 +254,7 @@ Nos vemos na aula! Kida!`;
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 items-end">
                           <div className="space-y-2">
-                            <label className="text-xs font-semibold text-muted-foreground">Data da Aula</label>
+                            <label className="text-sm font-medium">Data da Aula</label>
                               <Input 
                                   type="date" 
                                   value={appointment.classDate} 
@@ -252,7 +262,7 @@ Nos vemos na aula! Kida!`;
                               />
                           </div>
                           <div className="space-y-2">
-                            <label className="text-xs font-semibold text-muted-foreground">Horário</label>
+                            <label className="text-sm font-medium">Horário</label>
                               <Input 
                                   type="time" 
                                   value={appointment.classTime} 
@@ -262,7 +272,7 @@ Nos vemos na aula! Kida!`;
                       </div>
 
                       <div className="space-y-2 mt-4">
-                          <label className="text-xs font-semibold text-muted-foreground">Anotações / Feedback</label>
+                          <label className="text-sm font-medium">Anotações / Feedback</label>
                           <Textarea 
                               placeholder="Observações sobre a aula experimental, interesse do aluno, etc."
                               value={appointment.notes || ''}
@@ -271,7 +281,7 @@ Nos vemos na aula! Kida!`;
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 mt-6 pt-4 border-t">
-                          <span className="text-xs font-bold text-muted-foreground w-full mb-1">NOTIFICAÇÕES WHATSAPP</span>
+                          <span className="text-xs font-bold text-muted-foreground w-full mb-1 uppercase">Notificações WhatsApp</span>
                           <a href={waLinks.instructions} target="_blank" rel="noopener noreferrer">
                               <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50" disabled={!appointment.whatsapp || waLinks.instructions === '#'}>
                                   <ClipboardList className="h-4 w-4 mr-2" />

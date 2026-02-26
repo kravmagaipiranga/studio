@@ -91,20 +91,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   const studentsCollection = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user || !mounted) return null;
     return collection(firestore, 'students');
-  }, [firestore, user]);
+  }, [firestore, user, mounted]);
 
   const womensMonthCollection = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user || !mounted) return null;
     return collection(firestore, 'womensMonth');
-  }, [firestore, user]);
+  }, [firestore, user, mounted]);
 
   const { data: students } = useCollection<Student>(studentsCollection);
   const { data: womensLeads } = useCollection<WomensMonthLead>(womensMonthCollection);
 
   const birthdayStudents = useMemo(() => {
-    if (!students) return [];
+    if (!students || !mounted) return [];
     const today = new Date();
     const todayMonth = today.getMonth() + 1;
     const todayDay = today.getDate();
@@ -118,15 +118,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         return false;
       }
     });
-  }, [students]);
+  }, [students, mounted]);
 
   const pendingStudents = useMemo(() => {
-    if (!students) return [];
+    if (!students || !mounted) return [];
     return students.filter(student => student.status === 'Pendente');
-  }, [students]);
+  }, [students, mounted]);
 
   const recentWomensLeads = useMemo(() => {
-    if (!womensLeads) return [];
+    if (!womensLeads || !mounted) return [];
     const oneDayAgo = subDays(new Date(), 1);
     return womensLeads
       .filter(lead => {
@@ -143,9 +143,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           return 0;
         }
       });
-  }, [womensLeads]);
+  }, [womensLeads, mounted]);
 
-  const totalNotifications = (birthdayStudents?.length || 0) + (pendingStudents?.length || 0) + (recentWomensLeads?.length || 0);
+  const totalNotifications = mounted ? (birthdayStudents?.length || 0) + (pendingStudents?.length || 0) + (recentWomensLeads?.length || 0) : 0;
 
   useEffect(() => {
     if (isUserLoading || !pathname || !mounted) return;

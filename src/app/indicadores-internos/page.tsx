@@ -1,11 +1,11 @@
+
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { collection, query, where } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student, Attendance } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { 
   Select, 
   SelectContent, 
@@ -25,7 +25,6 @@ import {
 import { ptBR } from "date-fns/locale";
 import { 
   Users, 
-  UserMinus, 
   Cake, 
   GraduationCap, 
   TrendingUp, 
@@ -61,18 +60,26 @@ const beltColors: Record<string, { border: string; bg: string; text: string }> =
 export default function IndicadoresInternosPage() {
   const firestore = useFirestore();
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
   
-  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "MM"));
-  const [selectedYear, setSelectedYear] = useState(format(new Date(), "yyyy"));
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+
+  useEffect(() => {
+    const now = new Date();
+    setSelectedMonth(format(now, "MM"));
+    setSelectedYear(format(now, "yyyy"));
+    setIsMounted(true);
+  }, []);
 
   // Fetch data
   const studentsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !isMounted) return null;
     return collection(firestore, "students");
-  }, [firestore]);
+  }, [firestore, isMounted]);
 
   const attendanceQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !selectedMonth || !selectedYear) return null;
     const start = format(startOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1)), "yyyy-MM-dd");
     const end = format(endOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1)), "yyyy-MM-dd");
     return query(
@@ -85,11 +92,11 @@ export default function IndicadoresInternosPage() {
   const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
   const { data: attendance, isLoading: isLoadingAttendance } = useCollection<Attendance>(attendanceQuery);
 
-  const isLoading = isLoadingStudents || isLoadingAttendance;
+  const isLoading = isLoadingStudents || isLoadingAttendance || !isMounted;
 
   // 1. & 2. Turmas com mais/menos alunos (Agrupado por Dia e Horário)
   const classRanking = useMemo(() => {
-    if (!attendance) return [];
+    if (!attendance || !isMounted) return [];
     const counts: Record<string, number> = {};
     
     attendance.forEach(a => {
@@ -122,14 +129,14 @@ export default function IndicadoresInternosPage() {
     return Object.entries(counts)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
-  }, [attendance]);
+  }, [attendance, isMounted]);
 
   const mostPopularClass = classRanking[0] || null;
   const leastPopularClass = classRanking[classRanking.length - 1] || null;
 
   // 3. Alunos com mais faltas (Top 10)
   const absenceRanking = useMemo(() => {
-    if (!students || !attendance) return [];
+    if (!students || !attendance || !selectedMonth || !selectedYear) return [];
     
     const start = startOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1));
     const end = endOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1));
@@ -159,7 +166,7 @@ export default function IndicadoresInternosPage() {
 
   // 6. Aniversariantes do mês
   const birthdaysCount = useMemo(() => {
-    if (!students) return 0;
+    if (!students || !selectedMonth) return 0;
     return students.filter(s => {
       if (!s.dob) return false;
       const dobMonth = s.dob.split('-')[1];
@@ -169,7 +176,7 @@ export default function IndicadoresInternosPage() {
 
   // 7. Alunos Aptos a Revision e Frequência
   const reviewMetrics = useMemo(() => {
-    if (!students || !attendance) return [];
+    if (!students || !attendance || !selectedMonth || !selectedYear) return [];
     const now = new Date();
     const weeksInMonth = eachWeekOfInterval({ 
         start: startOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1)), 
@@ -224,8 +231,11 @@ export default function IndicadoresInternosPage() {
   }, [students, attendance, selectedMonth, selectedYear]);
 
   const formatMonth = (m: string) => {
+    if (!m) return "";
     return format(new Date(2024, Number(m) - 1, 1), "MMMM", { locale: ptBR });
   };
+
+  if (!isMounted) return null;
 
   return (
     <div className="flex flex-col gap-8 pb-10">
@@ -378,7 +388,7 @@ export default function IndicadoresInternosPage() {
                   <div 
                     key={student.id} 
                     className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer group"
-                    onClick={() => router.push(`/chamada?tab=relatorio&search=${student.name}`)}
+                    onClick={() => router.push(`/chamada?tab=relatorio&search=${student.name}&month=${selectedMonth}&year=${selectedYear}`)}
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-xs font-bold text-muted-foreground w-4">{i + 1}</span>
@@ -455,7 +465,11 @@ export default function IndicadoresInternosPage() {
                     <div className="flex-1 p-2 bg-card">
                       <div className="space-y-1">
                         {m.students.map((student: any, idx: number) => (
-                          <div key={idx} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors text-xs">
+                          <div 
+                            key={idx} 
+                            className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors text-xs cursor-pointer"
+                            onClick={() => router.push(`/chamada?tab=relatorio&search=${student.name}&month=${selectedMonth}&year=${selectedYear}`)}
+                          >
                             <span className="font-medium truncate pr-2">{student.name}</span>
                             <span className={cn(
                               "font-bold tabular-nums shrink-0",
