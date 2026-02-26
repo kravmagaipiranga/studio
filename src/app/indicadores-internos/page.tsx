@@ -48,6 +48,16 @@ import {
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
+const beltColors: Record<string, { border: string; bg: string; text: string }> = {
+  'Branca': { border: 'border-slate-200', bg: 'bg-white', text: 'text-slate-900' },
+  'Amarela': { border: 'border-yellow-400', bg: 'bg-yellow-50', text: 'text-yellow-900' },
+  'Laranja': { border: 'border-orange-500', bg: 'bg-orange-50', text: 'text-orange-900' },
+  'Verde': { border: 'border-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-900' },
+  'Azul': { border: 'border-blue-500', bg: 'bg-blue-50', text: 'text-blue-900' },
+  'Marrom': { border: 'border-amber-800', bg: 'bg-amber-50', text: 'text-amber-900' },
+  'Preta': { border: 'border-slate-900', bg: 'bg-slate-100', text: 'text-slate-900' },
+};
+
 export default function IndicadoresInternosPage() {
   const firestore = useFirestore();
   const router = useRouter();
@@ -189,6 +199,13 @@ export default function IndicadoresInternosPage() {
         const aptosInBelt = aptos.filter(s => s.belt === belt);
         if (aptosInBelt.length === 0) return null;
 
+        const studentsDetails = aptosInBelt.map(s => {
+            const sAttendance = attendance.filter(a => a.studentId === s.id);
+            const count = sAttendance.reduce((sum, a) => sum + (a.type === 'Sábado' ? 2 : 1), 0);
+            const perf = Math.round((count / meta) * 100);
+            return { name: s.name, performance: perf };
+        }).sort((a, b) => b.performance - a.performance);
+
         const totalPresences = aptosInBelt.reduce((acc, s) => {
             const sAttendance = attendance.filter(a => a.studentId === s.id);
             return acc + sAttendance.reduce((sum, a) => sum + (a.type === 'Sábado' ? 2 : 1), 0);
@@ -200,7 +217,8 @@ export default function IndicadoresInternosPage() {
         return {
             belt,
             count: aptosInBelt.length,
-            performance: Math.round(performance)
+            performance: Math.round(performance),
+            students: studentsDetails
         };
     }).filter(Boolean);
   }, [students, attendance, selectedMonth, selectedYear]);
@@ -390,42 +408,71 @@ export default function IndicadoresInternosPage() {
         <CardHeader>
           <CardTitle>Aptos para Revisão - Frequência Média</CardTitle>
           <CardDescription>
-            Relação entre alunos aptos por faixa e sua frequência média no mês (Meta: 2 aulas/semana).
+            Alunos que cumprem o tempo mínimo de faixa e seu engajamento no mês selecionado.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {isLoading ? (
-              Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 w-full" />)
+              Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-48 w-full" />)
             ) : reviewMetrics.length > 0 ? (
-              reviewMetrics.map((m: any) => (
-                <div key={m.belt} className="p-4 rounded-xl border bg-card shadow-sm space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{m.belt}</span>
-                    <span className="text-lg font-black text-primary">{m.count}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-bold">
-                      <span className="uppercase text-muted-foreground">Engajamento</span>
-                      <span className={cn(
-                        m.performance >= 80 ? "text-emerald-600" : m.performance >= 50 ? "text-orange-600" : "text-red-600"
-                      )}>{m.performance}%</span>
+              reviewMetrics.map((m: any) => {
+                const styles = beltColors[m.belt] || beltColors['Branca'];
+                return (
+                  <div key={m.belt} className={cn(
+                    "flex flex-col rounded-xl border shadow-sm overflow-hidden",
+                    styles.border
+                  )}>
+                    {/* Header do Card */}
+                    <div className={cn("p-4 border-b", styles.bg)}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={cn("text-xs font-black uppercase tracking-wider", styles.text)}>{m.belt}</span>
+                        <div className="flex items-center gap-1 bg-white/80 px-2 py-0.5 rounded-full border shadow-sm">
+                          <Users className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs font-bold">{m.count}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[10px] font-bold uppercase text-muted-foreground">
+                          <span>Média do Grupo</span>
+                          <span className={cn(
+                            m.performance >= 80 ? "text-emerald-600" : m.performance >= 50 ? "text-orange-600" : "text-red-600"
+                          )}>{m.performance}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className={cn(
+                                "h-full rounded-full transition-all duration-500",
+                                m.performance >= 80 ? "bg-emerald-500" : m.performance >= 50 ? "bg-orange-500" : "bg-red-500"
+                            )}
+                            style={{ width: `${Math.min(100, m.performance)}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className={cn(
-                            "h-full rounded-full transition-all duration-500",
-                            m.performance >= 80 ? "bg-emerald-500" : m.performance >= 50 ? "bg-orange-500" : "bg-red-500"
-                        )}
-                        style={{ width: `${Math.min(100, m.performance)}%` }}
-                      />
+
+                    {/* Lista de Alunos */}
+                    <div className="flex-1 p-2 bg-card">
+                      <div className="space-y-1">
+                        {m.students.map((student: any, idx: number) => (
+                          <div key={idx} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors text-xs">
+                            <span className="font-medium truncate pr-2">{student.name}</span>
+                            <span className={cn(
+                              "font-bold tabular-nums shrink-0",
+                              student.performance >= 80 ? "text-emerald-600" : student.performance >= 50 ? "text-orange-600" : "text-red-600"
+                            )}>{student.performance}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="p-2 border-t bg-muted/30">
+                       <p className="text-[9px] text-muted-foreground text-center italic flex items-center justify-center gap-1">
+                        <Info className="h-2.5 w-2.5" /> Meta: 2 aulas/semana
+                      </p>
                     </div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground italic flex items-center gap-1">
-                    <Info className="h-3 w-3" /> Alunos cumprem tempo mínimo de faixa.
-                  </p>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="col-span-full py-10 text-center text-muted-foreground">
                 Nenhum aluno apto para revisão neste período.
