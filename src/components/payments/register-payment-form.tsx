@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -66,7 +67,7 @@ export function RegisterPaymentForm({
   
   const [selectedStudent, setSelectedStudent] = useState<Student | undefined>(undefined);
   
-  const studentOptions = allStudents.slice().sort((a, b) => a.name.localeCompare(b.name)).map(s => ({ value: s.id, label: s.name }));
+  const studentOptions = allStudents.slice().sort((a, b) => a.name.localeCompare(b.name)).map(s => ({ value: s.id, label: s.label || s.name }));
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -151,7 +152,7 @@ export function RegisterPaymentForm({
           planType: studentPlanType as any,
           amount: studentToLoad.planValue ?? 330,
           paymentDate: format(new Date(), 'yyyy-MM-dd'),
-          expirationDate: '',
+          expirationDate: studentToLoad.planExpirationDate || '',
           paymentMethod: "Pix",
           notes: "",
       });
@@ -168,6 +169,7 @@ export function RegisterPaymentForm({
                 const studentPlanType = foundStudent.planType || 'Mensal';
                 form.setValue('planType', studentPlanType as any);
                 form.setValue('amount', foundStudent.planValue ?? 330);
+                form.setValue('expirationDate', foundStudent.planExpirationDate || '');
             }
         }
     });
