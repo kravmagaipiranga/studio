@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -172,21 +171,23 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
 
               return (
                 <AccordionItem value={appointment.id} key={appointment.id} className={cn("px-4", appointment.isNew && "bg-muted/50")}>
-                  <AccordionTrigger className="hover:no-underline">
-                    <div className="flex items-center justify-between w-full">
-                          <div className="flex-1 text-left font-medium flex items-center gap-2">
-                            {appointment.name || "Novo Agendamento"}
+                  <AccordionTrigger className="hover:no-underline py-3">
+                    <div className="grid grid-cols-[1fr_auto] sm:grid-cols-3 gap-2 w-full pr-4 items-center">
+                          <div className="text-left font-medium flex items-center gap-2 truncate">
+                            <span className="truncate">{appointment.name || "Novo Agendamento"}</span>
                             {classIsTomorrow && (
-                                <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200 animate-pulse">
-                                    Aula Amanhã
+                                <Badge variant="outline" className="text-[9px] bg-blue-50 text-blue-700 border-blue-200 animate-pulse shrink-0">
+                                    Amanhã
                                 </Badge>
                             )}
                           </div>
-                          <div className="flex-1 text-left text-muted-foreground">
+                          <div className="hidden sm:block text-left text-muted-foreground truncate text-xs">
                               {appointment.classDate ? new Date(appointment.classDate + 'T00:00:00').toLocaleDateString('pt-BR') : '...'} às {appointment.classTime}
                           </div>
-                          <div className="flex-1 text-left">
-                              <Badge variant={getStatusVariant(appointment)}>{getStatus(appointment)}</Badge>
+                          <div className="text-right sm:text-left">
+                              <Badge variant={getStatusVariant(appointment)} className="text-[10px] px-2 py-0">
+                                {getStatus(appointment)}
+                              </Badge>
                           </div>
                       </div>
                   </AccordionTrigger>
@@ -251,7 +252,7 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
                           <a href={waLinks.instructions} target="_blank" rel="noopener noreferrer">
                               <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50" disabled={!appointment.whatsapp || waLinks.instructions === '#'}>
                                   <ClipboardList className="h-4 w-4 mr-2" />
-                                  Instruções Pré-Treino
+                                  Instruções
                               </Button>
                           </a>
                           <a href={waLinks.missed} target="_blank" rel="noopener noreferrer">
@@ -263,34 +264,31 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
                           <a href={waLinks.thanks} target="_blank" rel="noopener noreferrer">
                               <Button variant="outline" size="sm" className="text-green-600 border-green-200 hover:bg-green-50" disabled={!appointment.whatsapp}>
                                   <MessageSquare className="h-4 w-4 mr-2" />
-                                  Agradecer Presença
+                                  Agradecer
                               </Button>
                           </a>
                       </div>
 
-                      <div className="flex justify-between items-center mt-6">
-                          <ToggleGroup type="single" size="sm" value={getStatus(appointment)} onValueChange={(value) => { if(value) handleStatusChange(appointment.id, value as any)}}>
-                              <ToggleGroupItem value="attended" aria-label="Marcar como compareceu">
-                                  <UserCheck className="h-4 w-4 mr-2"/>
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-6 gap-4">
+                          <ToggleGroup type="single" size="sm" className="flex-wrap justify-start" value={getStatus(appointment)} onValueChange={(value) => { if(value) handleStatusChange(appointment.id, value as any)}}>
+                              <ToggleGroupItem value="attended" className="text-[10px] px-2">
                                   Compareceu
                               </ToggleGroupItem>
-                              <ToggleGroupItem value="missed" aria-label="Marcar como faltou">
-                                  <UserX className="h-4 w-4 mr-2"/>
+                              <ToggleGroupItem value="missed" className="text-[10px] px-2">
                                   Faltou
                               </ToggleGroupItem>
-                              <ToggleGroupItem value="enrolled" aria-label="Marcar como matriculado">
-                                  <CheckSquare className="h-4 w-4 mr-2"/>
-                                  Fez Matrícula
+                              <ToggleGroupItem value="enrolled" className="text-[10px] px-2">
+                                  Matrícula
                               </ToggleGroupItem>
                           </ToggleGroup>
-                          <div className="flex items-center gap-2">
-                              <Button variant="destructive" onClick={(e) => handleDeleteAppointment(e, appointment.id, appointment.name)}>
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                              <Button variant="destructive" size="sm" className="flex-1 sm:flex-none" onClick={(e) => handleDeleteAppointment(e, appointment.id, appointment.name)}>
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Excluir
                               </Button>
-                              <Button onClick={() => handleSaveAppointment(appointment)}>
+                              <Button size="sm" className="flex-1 sm:flex-none" onClick={() => handleSaveAppointment(appointment)}>
                                   <Save className="h-4 w-4 mr-2" />
-                                  Salvar Agendamento
+                                  Salvar
                               </Button>
                           </div>
                       </div>

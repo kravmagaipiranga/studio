@@ -1,4 +1,3 @@
-
 "use client"
 
 import {
@@ -17,7 +16,7 @@ import {
 } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Save, Trash2, ChevronsUpDown } from "lucide-react"
+import { Save, Trash2 } from "lucide-react"
 import { Sale, Student } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
 import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
@@ -124,13 +123,13 @@ export function SalesTable({ sales, setSales, allStudents, isLoading }: SalesTab
           <Accordion type="single" collapsible className="w-full">
             {sales.map((sale: Sale) => (
                 <AccordionItem value={sale.id} key={sale.id} className={cn("px-4", sale.isNew && "bg-muted/50")}>
-                    <AccordionTrigger className="hover:no-underline">
-                        <div className="flex items-center justify-between w-full">
-                            <div className="flex-1 text-left font-medium">{sale.studentName || "Novo Registro"}</div>
-                            <div className="flex-1 text-left text-muted-foreground">{sale.item || "..."}</div>
-                            <div className="flex-1 text-left font-semibold">R$ {sale.value.toFixed(2)}</div>
-                            <div className="flex-1 text-left">
-                                <Badge variant={getStatusVariant(sale.paymentStatus)}>{sale.paymentStatus}</Badge>
+                    <AccordionTrigger className="hover:no-underline py-3 text-sm">
+                        <div className="grid grid-cols-[1fr_auto] sm:grid-cols-4 gap-2 w-full pr-4 items-center">
+                            <div className="text-left font-medium truncate">{sale.studentName || "Novo Registro"}</div>
+                            <div className="hidden sm:block text-left text-muted-foreground truncate text-xs">{sale.item || "..."}</div>
+                            <div className="text-left font-semibold text-blue-600">R$ {sale.value.toFixed(2)}</div>
+                            <div className="text-right sm:text-left">
+                                <Badge variant={getStatusVariant(sale.paymentStatus)} className="text-[10px] px-2 py-0">{sale.paymentStatus}</Badge>
                             </div>
                         </div>
                     </AccordionTrigger>
@@ -160,7 +159,7 @@ export function SalesTable({ sales, setSales, allStudents, isLoading }: SalesTab
                             <label className="text-xs font-semibold text-muted-foreground">Item / Descrição</label>
                             <Textarea placeholder="Ex: Uniforme completo, Faixa, etc." value={sale.item} onChange={e => handleInputChange(sale.id, 'item', e.target.value)} />
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-muted-foreground">Valor (R$)</label>
                                 <Input type="number" value={sale.value} onChange={e => handleInputChange(sale.id, 'value', parseFloat(e.target.value) || 0)} />
@@ -188,12 +187,12 @@ export function SalesTable({ sales, setSales, allStudents, isLoading }: SalesTab
                                 </Select>
                             </div>
                         </div>
-                        <div className="flex justify-end gap-2 mt-6">
-                            <Button variant="destructive" onClick={(e) => handleDeleteSale(e, sale.id, sale.item)}>
+                        <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+                            <Button variant="destructive" size="sm" className="w-full sm:w-auto" onClick={(e) => handleDeleteSale(e, sale.id, sale.item)}>
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Excluir
                             </Button>
-                            <Button onClick={() => handleSaveSale(sale)}>
+                            <Button size="sm" className="w-full sm:w-auto" onClick={() => handleSaveSale(sale)}>
                                 <Save className="h-4 w-4 mr-2" />
                                 Salvar Venda
                             </Button>

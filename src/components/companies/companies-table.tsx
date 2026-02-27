@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -104,20 +103,20 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
           <Accordion type="single" collapsible className="w-full">
             {companies.map((company: Company) => (
                 <AccordionItem value={company.id} key={company.id} className={cn("px-4", company.isNew && "bg-muted/50")}>
-                  <AccordionTrigger className="hover:no-underline">
-                    <div className="flex items-center justify-between w-full">
-                          <div className="flex-1 text-left font-medium flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-muted-foreground" />
-                            {company.name || "Novo Cliente Empresa"}
+                  <AccordionTrigger className="hover:no-underline py-3">
+                    <div className="grid grid-cols-[1fr_auto] sm:grid-cols-4 gap-2 w-full pr-4 items-center">
+                          <div className="text-left font-medium flex items-center gap-2 truncate">
+                            <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <span className="truncate">{company.name || "Novo Cliente Empresa"}</span>
                           </div>
-                          <div className="flex-1 text-left text-muted-foreground">
+                          <div className="hidden sm:block text-left text-muted-foreground truncate text-xs">
                               {company.workType}
                           </div>
-                          <div className="flex-1 text-left font-bold text-blue-600">
+                          <div className="text-left font-bold text-blue-600 text-sm sm:text-base">
                               R$ {company.value.toFixed(2)}
                           </div>
-                          <div className="flex-1 text-left">
-                              <Badge variant={company.paymentStatus === 'Pago' ? 'default' : 'destructive'}>
+                          <div className="text-right sm:text-left">
+                              <Badge variant={company.paymentStatus === 'Pago' ? 'default' : 'destructive'} className="text-[10px] px-2 py-0">
                                 {company.paymentStatus}
                               </Badge>
                           </div>
@@ -128,7 +127,7 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                           <div className="space-y-4">
                               <h4 className="text-xs font-black uppercase text-muted-foreground tracking-widest border-b pb-1">Identificação</h4>
                               <div className="space-y-2">
-                                  <label className="text-sm font-medium">Nome da Empresa (Razão Social/Nome Fantasia)</label>
+                                  <label className="text-sm font-medium">Nome da Empresa</label>
                                   <Input 
                                       placeholder="Ex: ACME Corporation" 
                                       value={company.name} 
@@ -144,7 +143,7 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                                   />
                               </div>
                               <div className="space-y-2">
-                                <label className="text-sm font-medium">Tipo de Trabalho Realizado</label>
+                                <label className="text-sm font-medium">Tipo de Trabalho</label>
                                 <Select value={company.workType} onValueChange={val => handleInputChange(company.id, 'workType', val)}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Selecione..." />
@@ -171,7 +170,7 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                                     onChange={e => handleInputChange(company.id, 'contactName', e.target.value)} 
                                 />
                               </div>
-                              <div className="grid grid-cols-2 gap-4">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium flex items-center gap-2"><Phone className="h-3 w-3" /> WhatsApp/Tel</label>
                                     <Input 
@@ -195,7 +194,7 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
 
                       <div className="mt-8 space-y-4">
                           <h4 className="text-xs font-black uppercase text-muted-foreground tracking-widest border-b pb-1">Financeiro</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                               <div className="space-y-2">
                                 <label className="text-sm font-medium">Valor do Contrato (R$)</label>
                                 <Input 
@@ -251,14 +250,14 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                           />
                       </div>
 
-                      <div className="flex justify-end items-center mt-8 gap-2 pt-4 border-t">
-                          <Button variant="destructive" size="sm" onClick={(e) => handleDeleteCompany(e, company.id, company.name)}>
+                      <div className="flex flex-col sm:flex-row justify-end items-center mt-8 gap-2 pt-4 border-t">
+                          <Button variant="destructive" size="sm" className="w-full sm:w-auto" onClick={(e) => handleDeleteCompany(e, company.id, company.name)}>
                               <Trash2 className="h-4 w-4 mr-2" />
-                              Excluir Registro
+                              Excluir
                           </Button>
-                          <Button size="sm" onClick={() => handleSaveCompany(company)}>
+                          <Button size="sm" className="w-full sm:w-auto" onClick={() => handleSaveCompany(company)}>
                               <Save className="h-4 w-4 mr-2" />
-                              Salvar Informações
+                              Salvar Alterações
                           </Button>
                       </div>
                   </AccordionContent>

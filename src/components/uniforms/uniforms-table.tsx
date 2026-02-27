@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react";
@@ -174,19 +173,19 @@ export function UniformsTable({ orders, setOrders, allStudents, isLoading }: Uni
           <Accordion type="single" collapsible className="w-full">
             {orders.map((order: UniformOrder) => (
               <AccordionItem value={order.id} key={order.id} className={cn("px-4", order.isNew && "bg-muted/50")}>
-                <AccordionTrigger className="hover:no-underline">
-                   <div className="flex items-center justify-between w-full">
-                        <div className="flex-1 text-left font-medium">{order.studentName || "Novo Pedido"}</div>
-                        <div className="flex-1 text-left text-muted-foreground">
+                <AccordionTrigger className="hover:no-underline py-3 text-sm">
+                   <div className="grid grid-cols-[1fr_auto] sm:grid-cols-4 gap-2 w-full pr-4 items-center">
+                        <div className="text-left font-medium truncate">{order.studentName || "Novo Pedido"}</div>
+                        <div className="hidden sm:block text-left text-muted-foreground text-xs truncate">
                             {new Date(order.orderDate + 'T00:00:00').toLocaleDateString('pt-BR')}
                         </div>
-                        <div className="flex-1 text-left font-semibold">R$ {order.totalValue.toFixed(2)}</div>
-                        <div className="flex-1 text-left flex items-center gap-2">
-                            <Badge variant={getStatusVariant(order.paymentStatus)}>{order.paymentStatus}</Badge>
+                        <div className="text-left font-semibold text-blue-600">R$ {order.totalValue.toFixed(2)}</div>
+                        <div className="text-right sm:text-left flex items-center justify-end sm:justify-start gap-2">
+                            <Badge variant={getStatusVariant(order.paymentStatus)} className="text-[10px] px-2 py-0">{order.paymentStatus}</Badge>
                             {order.materialPickedUp && (
-                                <Badge variant="secondary" className="flex items-center gap-1">
+                                <Badge variant="secondary" className="hidden lg:flex items-center gap-1 text-[10px] px-2 py-0">
                                     <PackageCheck className="h-3 w-3" />
-                                    Retirado
+                                    OK
                                 </Badge>
                             )}
                         </div>
@@ -219,39 +218,41 @@ export function UniformsTable({ orders, setOrders, allStudents, isLoading }: Uni
                         </div>
                     </div>
                      
-                     <div className="space-y-4 mt-4 p-4 border rounded-lg bg-muted/30">
+                     <div className="space-y-4 mt-4 p-4 border rounded-lg bg-muted/30 overflow-x-auto">
                         <h4 className="font-semibold text-sm">Itens do Pedido</h4>
-                        {order.items.map((item) => (
-                            <div key={item.id} className="grid grid-cols-[1fr,100px,100px,80px,auto] gap-2 items-center">
-                                <Input value={item.name} onChange={e => handleItemChange(order.id, item.id, 'name', e.target.value)} placeholder="Nome do Item"/>
-                                
-                                <Select value={item.size} onValueChange={value => handleItemChange(order.id, item.id, 'size', value)}>
-                                    <SelectTrigger><SelectValue/></SelectTrigger>
-                                    <SelectContent>
-                                        {(UNIFORM_ITEMS.find(ui => ui.name === item.name)?.sizes || ['Único']).map(s => (
-                                            <SelectItem key={s} value={s}>{s}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                        <div className="min-w-[500px] space-y-2">
+                            {order.items.map((item) => (
+                                <div key={item.id} className="grid grid-cols-[1fr,100px,100px,80px,auto] gap-2 items-center">
+                                    <Input value={item.name} className="h-8" onChange={e => handleItemChange(order.id, item.id, 'name', e.target.value)} placeholder="Item"/>
+                                    
+                                    <Select value={item.size} onValueChange={value => handleItemChange(order.id, item.id, 'size', value)}>
+                                        <SelectTrigger className="h-8"><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            {(UNIFORM_ITEMS.find(ui => ui.name === item.name)?.sizes || ['Único']).map(s => (
+                                                <SelectItem key={s} value={s}>{s}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
 
-                                <Input type="number" value={item.price} onChange={e => handleItemChange(order.id, item.id, 'price', parseFloat(e.target.value) || 0)} placeholder="Preço"/>
-                                
-                                <Select value={String(item.quantity)} onValueChange={value => handleItemChange(order.id, item.id, 'quantity', parseInt(value, 10))}>
-                                    <SelectTrigger><SelectValue/></SelectTrigger>
-                                    <SelectContent>
-                                        {[1,2,3,4,5].map(q => <SelectItem key={q} value={String(q)}>{q}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                
-                                <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(order.id, item.id)}>
-                                    <X className="h-4 w-4 text-destructive"/>
-                                </Button>
-                            </div>
-                        ))}
-                         <div className="flex gap-2">
+                                    <Input type="number" className="h-8" value={item.price} onChange={e => handleItemChange(order.id, item.id, 'price', parseFloat(e.target.value) || 0)} placeholder="Preço"/>
+                                    
+                                    <Select value={String(item.quantity)} onValueChange={value => handleItemChange(order.id, item.id, 'quantity', parseInt(value, 10))}>
+                                        <SelectTrigger className="h-8"><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            {[1,2,3,4,5].map(q => <SelectItem key={q} value={String(q)}>{q}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                    
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveItem(order.id, item.id)}>
+                                        <X className="h-4 w-4 text-destructive"/>
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                         <div className="flex flex-col sm:flex-row gap-2">
                             <Popover>
                                 <PopoverTrigger asChild>
-                                    <Button variant="outline" size="sm"><PlusCircle className="h-4 w-4 mr-2"/>Adicionar Item</Button>
+                                    <Button variant="outline" size="sm"><PlusCircle className="h-4 w-4 mr-2"/>Sugestões</Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="p-0">
                                     <ScrollArea className="h-72">
@@ -265,19 +266,19 @@ export function UniformsTable({ orders, setOrders, allStudents, isLoading }: Uni
                                     </ScrollArea>
                                 </PopoverContent>
                             </Popover>
-                             <Button variant="outline" size="sm" onClick={() => handleAddCustomItem(order.id)}>Adicionar Item Personalizado</Button>
+                             <Button variant="outline" size="sm" onClick={() => handleAddCustomItem(order.id)}>Item Personalizado</Button>
                         </div>
                      </div>
 
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 items-end">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 items-end">
                         <div className="space-y-2">
                             <label className="text-xs font-semibold text-muted-foreground">Valor Total (R$)</label>
-                            <Input type="number" value={order.totalValue} disabled className="font-bold text-lg h-12"/>
+                            <Input type="number" value={order.totalValue} disabled className="font-bold text-lg h-10 bg-muted" />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold text-muted-foreground">Status do Pagamento</label>
+                            <label className="text-xs font-semibold text-muted-foreground">Pagamento</label>
                             <Select value={order.paymentStatus} onValueChange={(value) => updateOrder(order.id, { paymentStatus: value as 'Pago' | 'Pendente' })}>
-                                <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
+                                <SelectTrigger className="h-10"><SelectValue placeholder="..." /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="Pago">Pago</SelectItem>
                                     <SelectItem value="Pendente">Pendente</SelectItem>
@@ -285,9 +286,10 @@ export function UniformsTable({ orders, setOrders, allStudents, isLoading }: Uni
                             </Select>
                         </div>
                          <div className="space-y-2">
-                           <label className="text-xs font-semibold text-muted-foreground">Data do Pagamento</label>
+                           <label className="text-xs font-semibold text-muted-foreground">Data Pgto.</label>
                             <Input 
                                 type="date"
+                                className="h-10"
                                 value={order.paymentDate || ''} 
                                 onChange={e => updateOrder(order.id, { paymentDate: e.target.value })} 
                                 disabled={order.paymentStatus !== 'Pago'}
@@ -299,18 +301,18 @@ export function UniformsTable({ orders, setOrders, allStudents, isLoading }: Uni
                                 checked={order.materialPickedUp}
                                 onCheckedChange={checked => updateOrder(order.id, { materialPickedUp: checked })}
                             />
-                            <Label htmlFor={`picked-up-${order.id}`}>Material Retirado</Label>
+                            <Label htmlFor={`picked-up-${order.id}`} className="text-xs">Retirado</Label>
                         </div>
                     </div>
 
-                    <div className="flex justify-end items-center mt-6 gap-2">
-                        <Button variant="destructive" onClick={(e) => handleDeleteOrder(e, order.id, order.studentName)}>
+                    <div className="flex flex-col sm:flex-row justify-end items-center mt-6 gap-2">
+                        <Button variant="destructive" size="sm" className="w-full sm:w-auto" onClick={(e) => handleDeleteOrder(e, order.id, order.studentName)}>
                             <Trash2 className="h-4 w-4 mr-2" />
                             Excluir
                         </Button>
-                        <Button onClick={() => handleSaveOrder(order)}>
+                        <Button size="sm" className="w-full sm:w-auto" onClick={() => handleSaveOrder(order)}>
                             <Save className="h-4 w-4 mr-2" />
-                            Salvar Pedido
+                            Salvar
                         </Button>
                     </div>
 

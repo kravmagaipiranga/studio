@@ -1,4 +1,3 @@
-
 "use client"
 
 import {
@@ -134,13 +133,19 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, isLoadi
         <Accordion type="single" collapsible className="w-full">
             {privateClasses.map((pc: PrivateClass) => (
                 <AccordionItem value={pc.id} key={pc.id} className={cn("px-4", pc.isNew && "bg-muted/50")}>
-                    <AccordionTrigger className="hover:no-underline">
-                        <div className="flex items-center justify-between w-full">
-                            <div className="flex-1 text-left font-medium">{pc.studentName || "Novo Registro"}</div>
-                            <div className="flex-1 text-left text-muted-foreground">{new Date(pc.classDate + 'T00:00:00').toLocaleDateString('pt-BR')} às {pc.classTime}</div>
-                            <div className="flex-1 text-left font-semibold">R$ {pc.paymentAmount.toFixed(2)}</div>
-                            <div className="flex-1 text-left">
-                                <Badge variant={getStatusVariant(pc.paymentStatus)}>{pc.paymentStatus}</Badge>
+                    <AccordionTrigger className="hover:no-underline py-3">
+                        <div className="grid grid-cols-[1fr_auto] sm:grid-cols-4 gap-2 w-full pr-4 items-center">
+                            <div className="text-left font-medium truncate">{pc.studentName || "Novo Registro"}</div>
+                            <div className="hidden sm:block text-left text-muted-foreground truncate text-xs">
+                              {new Date(pc.classDate + 'T00:00:00').toLocaleDateString('pt-BR')} às {pc.classTime}
+                            </div>
+                            <div className="text-left font-semibold text-blue-600 text-sm sm:text-base">
+                              R$ {pc.paymentAmount.toFixed(2)}
+                            </div>
+                            <div className="text-right sm:text-left">
+                                <Badge variant={getStatusVariant(pc.paymentStatus)} className="text-[10px] px-2 py-0">
+                                  {pc.paymentStatus}
+                                </Badge>
                             </div>
                         </div>
                     </AccordionTrigger>
@@ -176,7 +181,7 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, isLoadi
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-muted-foreground">Valor Total (R$)</label>
-                                <Input type="number" value={pc.paymentAmount} disabled className="font-bold" />
+                                <Input type="number" value={pc.paymentAmount} disabled className="font-bold bg-muted" />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -211,18 +216,18 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, isLoadi
                                 onChange={e => handleInputChange(pc.id, 'notes', e.target.value)}
                             />
                         </div>
-                        <div className="flex justify-end gap-2 mt-6">
-                            <Button variant="outline" size="sm" onClick={(e) => handleDuplicateClass(e, pc)}>
+                        <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+                            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={(e) => handleDuplicateClass(e, pc)}>
                                 <Copy className="h-4 w-4 mr-2" />
                                 Duplicar
                             </Button>
-                            <Button variant="destructive" onClick={(e) => handleDeleteClass(e, pc.id, pc.studentName)}>
+                            <Button variant="destructive" size="sm" className="w-full sm:w-auto" onClick={(e) => handleDeleteClass(e, pc.id, pc.studentName)}>
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Excluir
                             </Button>
-                            <Button onClick={() => handleSaveClass(pc)}>
+                            <Button size="sm" className="w-full sm:w-auto" onClick={() => handleSaveClass(pc)}>
                                 <Save className="h-4 w-4 mr-2" />
-                                Salvar Aula
+                                Salvar
                             </Button>
                         </div>
                     </AccordionContent>

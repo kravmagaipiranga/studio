@@ -1,4 +1,3 @@
-
 "use client"
 
 import {
@@ -131,16 +130,16 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
           <Accordion type="single" collapsible className="w-full">
             {exams.map((exam: Exam) => (
                 <AccordionItem value={exam.id} key={exam.id} className={cn("px-4", exam.isNew && "bg-muted/50")}>
-                    <AccordionTrigger className="hover:no-underline">
-                        <div className="flex items-center justify-between w-full">
-                            <div className="flex-1 text-left font-medium">{exam.studentName || "Novo Registro"}</div>
-                            <div className="flex-1 text-left text-muted-foreground flex items-center gap-2">
+                    <AccordionTrigger className="hover:no-underline py-3 text-sm">
+                        <div className="grid grid-cols-[1fr_auto] sm:grid-cols-4 gap-2 w-full pr-4 items-center">
+                            <div className="text-left font-medium truncate">{exam.studentName || "Novo Registro"}</div>
+                            <div className="hidden sm:flex text-left text-muted-foreground items-center gap-2 truncate text-xs">
                                 {beltEmojis[exam.targetBelt] && <span>{beltEmojis[exam.targetBelt]}</span>}
                                 {exam.targetBelt || "Faixa..."}
                             </div>
-                            <div className="flex-1 text-left font-semibold">R$ {exam.paymentAmount.toFixed(2)}</div>
-                            <div className="flex-1 text-left">
-                                <Badge variant={getStatusVariant(exam.paymentStatus)}>{exam.paymentStatus}</Badge>
+                            <div className="text-left font-semibold text-blue-600">R$ {exam.paymentAmount.toFixed(2)}</div>
+                            <div className="text-right sm:text-left">
+                                <Badge variant={getStatusVariant(exam.paymentStatus)} className="text-[10px] px-2 py-0">{exam.paymentStatus}</Badge>
                             </div>
                         </div>
                     </AccordionTrigger>
@@ -167,8 +166,8 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
                             </div>
                         </div>
 
-                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-                            <div className="space-y-2 md:col-span-2">
+                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                            <div className="space-y-2 sm:col-span-2">
                                 <label className="text-xs font-semibold text-muted-foreground">Faixa Alvo</label>
                                 <Select value={exam.targetBelt} onValueChange={(value) => handleInputChange(exam.id, 'targetBelt', value)}>
                                   <SelectTrigger>
@@ -194,7 +193,7 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
                                 <Input type="number" value={exam.paymentAmount} onChange={e => handleInputChange(exam.id, 'paymentAmount', parseFloat(e.target.value) || 0)} />
                             </div>
                              <div className="space-y-2">
-                                <label className="text-xs font-semibold text-muted-foreground">Status do Pagamento</label>
+                                <label className="text-xs font-semibold text-muted-foreground">Pagamento</label>
                                 <Select value={exam.paymentStatus} onValueChange={(value) => handleInputChange(exam.id, 'paymentStatus', value)}>
                                     <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
                                     <SelectContent>
@@ -228,14 +227,14 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
                                 </Select>
                             </div>
                         </div>
-                        <div className="flex justify-end gap-2 mt-6">
-                            <Button variant="destructive" onClick={(e) => handleDeleteExam(e, exam.id, exam.studentName)}>
+                        <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+                            <Button variant="destructive" size="sm" className="w-full sm:w-auto" onClick={(e) => handleDeleteExam(e, exam.id, exam.studentName)}>
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Excluir
                             </Button>
-                            <Button onClick={() => handleSaveExam(exam)}>
+                            <Button size="sm" className="w-full sm:w-auto" onClick={() => handleSaveExam(exam)}>
                                 <Save className="h-4 w-4 mr-2" />
-                                Salvar Inscrição
+                                Salvar
                             </Button>
                         </div>
                     </AccordionContent>

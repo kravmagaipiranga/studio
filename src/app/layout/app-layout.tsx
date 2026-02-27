@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -58,26 +57,23 @@ import { signOut } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { subDays, isAfter, parseISO } from 'date-fns';
 
-const protectedAdminRoutes = [
-  "/alunos",
-  "/agendamentos",
-  "/pagamentos",
-  "/creditos",
-  "/exames",
-  "/seminarios",
-  "/aulas",
-  "/vendas",
-  "/uniformes",
-  "/lista-de-tarefas",
-  "/dashboard",
-  "/indicadores",
-  "/indicadores-internos",
-  "/leads",
-  "/planos-vencidos",
-  "/mes-das-mulheres",
-  "/chamada",
-  "/configuracoes",
-  "/empresas",
+const MENU_ITEMS = [
+  { href: "/alunos", label: "Alunos", icon: Users },
+  { href: "/chamada", label: "Controle de Presença", icon: CheckSquare },
+  { href: "/mes-das-mulheres", label: "Mês das Mulheres", icon: Star, color: "text-pink-600" },
+  { href: "/empresas", label: "Empresas", icon: Building2 },
+  { href: "/agendamentos", label: "Agendamentos", icon: CalendarPlus },
+  { href: "/pagamentos", label: "Pagamentos", icon: CreditCard },
+  { href: "/planos-vencidos", label: "Planos Vencidos", icon: CalendarX },
+  { href: "/creditos", label: "Créditos", icon: Wallet },
+  { href: "/exames", label: "Exames", icon: ShieldCheck },
+  { href: "/seminarios", label: "Seminários", icon: BookCopy },
+  { href: "/aulas", label: "Aulas Particulares", icon: ClipboardList },
+  { href: "/vendas", label: "Vendas", icon: ShoppingCart },
+  { href: "/uniformes", label: "Uniformes", icon: Shirt },
+  { href: "/lista-de-tarefas", label: "Lista de Tarefas", icon: ListChecks },
+  { href: "/leads", label: "Leads CAT CPKM", icon: Phone },
+  { href: "/register", label: "Cadastro Público", icon: UserPlus, target: "_blank" },
 ];
 
 const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/mes-das-mulheres/registro", "/gift-card"];
@@ -155,9 +151,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     if (isUserLoading || !pathname || !mounted) return;
     
     const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));
-    const isProtectedRoute = protectedAdminRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));
-
-    if (!user && isProtectedRoute && !isPublicRoute) {
+    
+    if (!user && !isPublicRoute) {
       router.push('/login');
     }
   }, [isUserLoading, user, pathname, router, mounted]);
@@ -184,115 +179,66 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] overflow-hidden">
        <FirebaseErrorListener />
-      <div className="hidden border-r bg-muted/40 md:block h-fit min-h-screen">
+      
+      {/* Desktop Sidebar */}
+      <div className="hidden border-r bg-muted/40 md:block h-screen">
         <div className="flex h-full flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6 shrink-0">
             <Link href="/" className="flex items-center gap-2 font-semibold">
-              <span className="">Krav Magá IPIRANGA</span>
+              <span className="truncate">Krav Magá IPIRANGA</span>
             </Link>
           </div>
-          <div className="flex-1">
-            <nav className="grid items-start px-2 text-sm font-medium lg:px-4 py-4">
-              <NavItem href="/alunos">
-                <Users className="h-4 w-4" /> Alunos
-              </NavItem>
-              <NavItem href="/chamada">
-                <CheckSquare className="h-4 w-4" /> Controle de Presença
-              </NavItem>
-              <NavItem href="/mes-das-mulheres">
-                <Star className="h-4 w-4 text-pink-600" /> Mês das Mulheres
-              </NavItem>
-              <NavItem href="/empresas">
-                <Building2 className="h-4 w-4" /> Empresas
-              </NavItem>
-              <NavItem href="/agendamentos">
-                <CalendarPlus className="h-4 w-4" /> Agendamentos
-              </NavItem>
-              <NavItem href="/pagamentos">
-                <CreditCard className="h-4 w-4" /> Pagamentos
-              </NavItem>
-              <NavItem href="/planos-vencidos">
-                <CalendarX className="h-4 w-4" /> Planos Vencidos
-              </NavItem>
-              <NavItem href="/creditos">
-                <Wallet className="h-4 w-4" /> Créditos
-              </NavItem>
-              <NavItem href="/exames">
-                <ShieldCheck className="h-4 w-4" /> Exames
-              </NavItem>
-              <NavItem href="/seminarios">
-                <BookCopy className="h-4 w-4" /> Seminários
-              </NavItem>
-              <NavItem href="/aulas">
-                <ClipboardList className="h-4 w-4" /> Aulas Particulares
-              </NavItem>
-              <NavItem href="/vendas">
-                <ShoppingCart className="h-4 w-4" /> Vendas
-              </NavItem>
-              <NavItem href="/uniformes">
-                <Shirt className="h-4 w-4" /> Uniformes
-              </NavItem>
-              <NavItem href="/lista-de-tarefas">
-                <ListChecks className="h-4 w-4" /> Lista de Tarefas
-              </NavItem>
-              <NavItem href="/leads">
-                <Phone className="h-4 w-4" /> Leads CAT CPKM
-              </NavItem>
-              <NavItem href="/register" target="_blank">
-                <UserPlus className="h-4 w-4" /> Cadastro Público
-              </NavItem>
+          <div className="flex-1 overflow-y-auto">
+            <nav className="grid items-start px-2 text-sm font-medium lg:px-4 py-4 gap-1">
+              {MENU_ITEMS.map((item) => (
+                <NavItem key={item.href} href={item.href} target={item.target}>
+                  <item.icon className={cn("h-4 w-4", item.color)} /> {item.label}
+                </NavItem>
+              ))}
             </nav>
           </div>
         </div>
       </div>
-      <div className="flex flex-col">
-        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+
+      <div className="flex flex-col h-screen overflow-hidden">
+        <header className="flex h-14 shrink-0 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           <Sheet>
             <SheetTrigger asChild>
               <Button
                 variant="outline"
                 size="icon"
-                className="shrink-0 md:hidden"
+                className="shrink-0 md:hidden h-9 w-9"
               >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Navegação</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col overflow-y-auto">
-               <SheetHeader className="sr-only">
-                  <SheetTitle>Menu</SheetTitle>
-                  <SheetDescription>Navegação principal.</SheetDescription>
+            <SheetContent side="left" className="flex flex-col p-0 w-72">
+               <SheetHeader className="p-6 border-b">
+                  <SheetTitle className="text-left">Gestão Krav Magá</SheetTitle>
+                  <SheetDescription className="text-left">Navegação do sistema</SheetDescription>
               </SheetHeader>
-              <nav className="grid gap-2 text-lg font-medium py-4">
-                <Link href="#" className="flex items-center gap-2 text-lg font-semibold mb-4">
-                  <span>Krav Magá IPIRANGA</span>
-                </Link>
-                <NavItem href="/alunos" isMobile><Users className="h-5 w-5" /> Alunos</NavItem>
-                <NavItem href="/chamada" isMobile><CheckSquare className="h-5 w-5" /> Controle de Presença</NavItem>
-                <NavItem href="/mes-das-mulheres" isMobile><Star className="h-5 w-5 text-pink-600" /> Mês das Mulheres</NavItem>
-                <NavItem href="/empresas" isMobile><Building2 className="h-5 w-5" /> Empresas</NavItem>
-                <NavItem href="/agendamentos" isMobile><CalendarPlus className="h-5 w-5" /> Agendamentos</NavItem>
-                <NavItem href="/pagamentos" isMobile><CreditCard className="h-5 w-5" /> Pagamentos</NavItem>
-                <NavItem href="/planos-vencidos" isMobile><CalendarX className="h-5 w-5" /> Planos Vencidos</NavItem>
-                <NavItem href="/creditos" isMobile><Wallet className="h-5 w-5" /> Créditos</NavItem>
-                <NavItem href="/exames" isMobile><ShieldCheck className="h-5 w-5" /> Exames</NavItem>
-                <NavItem href="/seminarios" isMobile><BookCopy className="h-5 w-5" /> Seminários</NavItem>
-                <NavItem href="/aulas" isMobile><ClipboardList className="h-5 w-5" /> Aulas Particulares</NavItem>
-                <NavItem href="/vendas" isMobile><ShoppingCart className="h-5 w-5" /> Vendas</NavItem>
-                <NavItem href="/uniformes" isMobile><Shirt className="h-5 w-5" /> Uniformes</NavItem>
-                <NavItem href="/lista-de-tarefas" isMobile><ListChecks className="h-5 w-5" /> Lista de Tarefas</NavItem>
-                <NavItem href="/leads" isMobile><Phone className="h-5 w-5" /> Leads CAT CPKM</NavItem>
-                <NavItem href="/register" isMobile target="_blank"><UserPlus className="h-5 w-5" /> Cadastro Público</NavItem>
+              <nav className="flex-1 overflow-y-auto p-2">
+                <div className="grid gap-1">
+                  {MENU_ITEMS.map((item) => (
+                    <NavItem key={item.href} href={item.href} isMobile target={item.target}>
+                      <item.icon className={cn("h-5 w-5", item.color)} /> {item.label}
+                    </NavItem>
+                  ))}
+                </div>
               </nav>
             </SheetContent>
           </Sheet>
-          <div className="w-full flex-1" />
+          <div className="w-full flex-1 font-semibold truncate md:hidden">
+            KM Ipiranga
+          </div>
+          <div className="w-full flex-1 hidden md:block" />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-9 w-9 relative">
+              <Button variant="outline" size="icon" className="h-9 w-9 relative shrink-0">
                 <Bell className="h-4 w-4" />
                 {totalNotifications > 0 && (
                   <span className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold">
@@ -359,10 +305,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
+                <Button variant="ghost" className="flex items-center gap-2 px-2 h-9">
+                    <Avatar className="h-7 w-7">
                       <AvatarImage src={user?.photoURL || undefined} />
-                      <AvatarFallback><UserCircle className="h-6 w-6" /></AvatarFallback>
+                      <AvatarFallback><UserCircle className="h-5 w-5" /></AvatarFallback>
                     </Avatar>
                     <span className="font-medium hidden sm:inline">Admin</span>
                 </Button>
@@ -389,8 +335,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-auto">
-          {children}
+        
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-6 bg-background">
+          <div className="mx-auto max-w-full">
+            {children}
+          </div>
         </main>
       </div>
     </div>
@@ -408,10 +357,9 @@ function NavItem({ href, children, isMobile = false, target }: { href: string; c
   };
 
   const className = cn(
-    isMobile 
-      ? "mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-      : "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-    !target && isActive && (isMobile ? "bg-muted text-foreground" : "text-primary bg-muted")
+    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-muted-foreground transition-all hover:text-primary",
+    isMobile ? "text-base py-3" : "text-sm",
+    !target && isActive && "bg-muted text-primary font-bold shadow-sm"
   );
 
   return (

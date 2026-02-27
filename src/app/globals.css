@@ -64,10 +64,16 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
     font-family: 'PT Sans', sans-serif;
+    /* Prevents pull-to-refresh on mobile if needed, but here just standard */
   }
   h1, h2, h3, h4, h5, h6 {
+    @apply font-bold;
     font-family: 'PT Sans', sans-serif;
+  }
+  /* Prevents iOS auto-zoom on focus by ensuring at least 16px font size */
+  input, select, textarea {
+    @apply text-base sm:text-sm;
   }
 }

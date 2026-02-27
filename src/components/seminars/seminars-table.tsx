@@ -1,4 +1,3 @@
-
 "use client"
 
 import {
@@ -121,13 +120,13 @@ export function SeminarsTable({ seminars, setSeminars, allStudents, isLoading }:
           <Accordion type="single" collapsible className="w-full">
             {seminars.map((seminar: Seminar) => (
                 <AccordionItem value={seminar.id} key={seminar.id} className={cn("px-4", seminar.isNew && "bg-muted/50")}>
-                    <AccordionTrigger className="hover:no-underline">
-                       <div className="flex items-center justify-between w-full">
-                            <div className="flex-1 text-left font-medium">{seminar.studentName || "Novo Registro"}</div>
-                            <div className="flex-1 text-left text-muted-foreground truncate pr-4">{seminar.topic || "Seminário..."}</div>
-                            <div className="flex-1 text-left font-semibold">R$ {seminar.paymentAmount.toFixed(2)}</div>
-                            <div className="flex-1 text-left">
-                                <Badge variant={getStatusVariant(seminar.paymentStatus)}>{seminar.paymentStatus}</Badge>
+                    <AccordionTrigger className="hover:no-underline py-3 text-sm">
+                       <div className="grid grid-cols-[1fr_auto] sm:grid-cols-4 gap-2 w-full pr-4 items-center text-sm">
+                            <div className="text-left font-medium truncate">{seminar.studentName || "Novo Registro"}</div>
+                            <div className="hidden sm:block text-left text-muted-foreground truncate pr-4 text-xs">{seminar.topic || "Seminário..."}</div>
+                            <div className="text-left font-semibold text-blue-600">R$ {seminar.paymentAmount.toFixed(2)}</div>
+                            <div className="text-right sm:text-left">
+                                <Badge variant={getStatusVariant(seminar.paymentStatus)} className="text-[10px] px-2 py-0">{seminar.paymentStatus}</Badge>
                             </div>
                         </div>
                     </AccordionTrigger>
@@ -154,7 +153,7 @@ export function SeminarsTable({ seminars, setSeminars, allStudents, isLoading }:
                               </div>
                             )}
                         </div>
-                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-muted-foreground">Valor (R$)</label>
                                 <Input type="number" value={seminar.paymentAmount} onChange={e => handleInputChange(seminar.id, 'paymentAmount', parseFloat(e.target.value) || 0)} />
@@ -182,14 +181,14 @@ export function SeminarsTable({ seminars, setSeminars, allStudents, isLoading }:
                                 </Select>
                             </div>
                         </div>
-                        <div className="flex justify-end gap-2 mt-6">
-                            <Button variant="destructive" onClick={(e) => handleDeleteSeminar(e, seminar.id, seminar.studentName)}>
+                        <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+                            <Button variant="destructive" size="sm" className="w-full sm:w-auto" onClick={(e) => handleDeleteSeminar(e, seminar.id, seminar.studentName)}>
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Excluir
                             </Button>
-                            <Button onClick={() => handleSaveSeminar(seminar)}>
+                            <Button size="sm" className="w-full sm:w-auto" onClick={() => handleSaveSeminar(seminar)}>
                                 <Save className="h-4 w-4 mr-2" />
-                                Salvar Inscrição
+                                Salvar
                             </Button>
                         </div>
                     </AccordionContent>
