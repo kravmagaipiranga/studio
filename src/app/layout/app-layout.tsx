@@ -28,6 +28,7 @@ import {
   Sparkles,
   CheckSquare,
   PieChart,
+  Settings,
 } from "lucide-react";
 import {
   Sheet,
@@ -74,6 +75,7 @@ const protectedAdminRoutes = [
   "/planos-vencidos",
   "/mes-das-mulheres",
   "/chamada",
+  "/configuracoes",
 ];
 
 const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/mes-das-mulheres/registro", "/gift-card"];
@@ -370,6 +372,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                     <Link href="/indicadores-internos"><PieChart className="mr-2 h-4 w-4" />Indicadores Internos</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/configuracoes"><Settings className="mr-2 h-4 w-4" />Configurações</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
