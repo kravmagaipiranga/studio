@@ -30,7 +30,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Student, Payment } from "@/lib/types"
 import { Combobox } from "@/components/ui/combobox";
-import { useFirestore, addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
+import { useFirestore, addDocumentNonBlocking } from "@/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 
 const formSchema = z.object({
@@ -46,6 +46,7 @@ const formSchema = z.object({
   paymentDate: z.string().refine((val) => val, {
     message: "A data de pagamento é obrigatória.",
   }),
+  expirationDate: z.string().optional(),
   paymentMethod: z.enum(["Pix", "Boleto", "Dinheiro", "Pendente"]),
   notes: z.string().optional(),
 })
@@ -64,7 +65,6 @@ export function RegisterPaymentForm({
   const router = useRouter();
   
   const [selectedStudent, setSelectedStudent] = useState<Student | undefined>(undefined);
-  const [calculatedExpiryDate, setCalculatedExpiryDate] = useState<string>('');
   
   const studentOptions = allStudents.slice().sort((a, b) => a.name.localeCompare(b.name)).map(s => ({ value: s.id, label: s.name }));
 
@@ -75,6 +75,7 @@ export function RegisterPaymentForm({
         planType: "Mensal",
         amount: 330,
         paymentDate: format(new Date(), 'yyyy-MM-dd'),
+        expirationDate: '',
         paymentMethod: "Pix",
         notes: "",
     },
@@ -83,10 +84,10 @@ export function RegisterPaymentForm({
   const paymentDateWatcher = form.watch('paymentDate');
   const planTypeWatcher = form.watch('planType');
 
+  // Lógica de valores automáticos
   useEffect(() => {
     if (!paymentDateWatcher) return;
     
-    // Lógica de novos valores a partir de 01/03/2025
     const pDate = parseISO(paymentDateWatcher);
     const isNewPrice = !isNaN(pDate.getTime()) && isAfter(pDate, new Date(2025, 1, 28));
 
@@ -112,6 +113,7 @@ export function RegisterPaymentForm({
     }
   }, [planTypeWatcher, paymentDateWatcher, form, selectedStudent]);
 
+  // Cálculo automático da validade (sugestão)
   useEffect(() => {
     if (paymentDateWatcher && planTypeWatcher) {
         try {
@@ -120,23 +122,22 @@ export function RegisterPaymentForm({
             
             if (planTypeWatcher === 'Bolsa 100%') {
                 const currentYear = paymentDate.getFullYear();
-                expiryDate = new Date(currentYear, 11, 31); // December 31st
+                expiryDate = new Date(currentYear, 11, 31);
             } else {
-                let monthsToAdd = 1; // Default for Mensal, Matrícula, Outros, Bolsa 50%
+                let monthsToAdd = 1;
                 if (planTypeWatcher === 'Trimestral') monthsToAdd = 3;
-
                 const futureMonth = addMonths(paymentDate, monthsToAdd);
-                expiryDate = setDate(futureMonth, 5); // Set due date to the 5th
+                expiryDate = setDate(futureMonth, 5);
             }
             
-            setCalculatedExpiryDate(format(expiryDate, 'dd/MM/yyyy'));
+            if (expiryDate) {
+                form.setValue('expirationDate', format(expiryDate, 'yyyy-MM-dd'));
+            }
         } catch (e) {
-            setCalculatedExpiryDate('');
+            form.setValue('expirationDate', '');
         }
-    } else {
-        setCalculatedExpiryDate('');
     }
-  }, [paymentDateWatcher, planTypeWatcher]);
+  }, [paymentDateWatcher, planTypeWatcher, form]);
 
 
   useEffect(() => {
@@ -150,6 +151,7 @@ export function RegisterPaymentForm({
           planType: studentPlanType as any,
           amount: studentToLoad.planValue ?? 330,
           paymentDate: format(new Date(), 'yyyy-MM-dd'),
+          expirationDate: '',
           paymentMethod: "Pix",
           notes: "",
       });
@@ -185,23 +187,9 @@ export function RegisterPaymentForm({
         return;
     }
     
-    let expirationDateISO: string | null = null;
-    let studentUpdate: Partial<Student> = {};
-
-    const paymentDate = parseISO(values.paymentDate);
-    let expirationDate: Date;
-
-    if (values.planType === 'Bolsa 100%') {
-        expirationDate = new Date(paymentDate.getFullYear(), 11, 31);
-    } else {
-        const monthsToAdd = values.planType === 'Trimestral' ? 3 : 1;
-        expirationDate = setDate(addMonths(paymentDate, monthsToAdd), 5);
-    }
-    expirationDateISO = expirationDate.toISOString().split('T')[0];
-
-    studentUpdate = {
+    const studentUpdate: Partial<Student> = {
         lastPaymentDate: values.paymentDate,
-        planExpirationDate: expirationDateISO,
+        planExpirationDate: values.expirationDate,
         paymentStatus: 'Pago',
     };
 
@@ -209,14 +197,13 @@ export function RegisterPaymentForm({
         studentUpdate.status = 'Ativo';
     }
 
-
     const paymentData: Omit<Payment, 'id'> = {
         studentId: values.studentId,
         studentName: targetStudent.name,
         paymentDate: values.paymentDate,
         planType: values.planType,
         amount: values.amount,
-        expirationDate: expirationDateISO ?? undefined,
+        expirationDate: values.expirationDate,
         paymentMethod: values.paymentMethod,
         notes: values.notes,
     };
@@ -331,18 +318,20 @@ export function RegisterPaymentForm({
                             </FormItem>
                         )}
                     />
-                    <FormItem>
-                        <FormLabel>Validade do Plano</FormLabel>
-                        <FormControl>
-                            <Input
-                                type="text"
-                                value={calculatedExpiryDate}
-                                disabled
-                                placeholder={'Calculada...'}
-                                className="disabled:opacity-100 disabled:cursor-default"
-                            />
-                        </FormControl>
-                    </FormItem>
+                    <FormField
+                        control={form.control}
+                        name="expirationDate"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Validade / Próximo Vencimento</FormLabel>
+                            <FormControl>
+                                <Input type="date" {...field} value={field.value ?? ''} />
+                            </FormControl>
+                            <FormDescription className="text-[10px]">Sugestão automática baseada no plano.</FormDescription>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 </div>
                  <FormField
                     control={form.control}
