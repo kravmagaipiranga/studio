@@ -67,7 +67,7 @@ export function RegisterPaymentForm({
   
   const [selectedStudent, setSelectedStudent] = useState<Student | undefined>(undefined);
   
-  const studentOptions = allStudents.slice().sort((a, b) => a.name.localeCompare(b.name)).map(s => ({ value: s.id, label: s.label || s.name }));
+  const studentOptions = allStudents.slice().sort((a, b) => a.name.localeCompare(b.name)).map(s => ({ value: s.id, label: s.name }));
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -85,7 +85,7 @@ export function RegisterPaymentForm({
   const paymentDateWatcher = form.watch('paymentDate');
   const planTypeWatcher = form.watch('planType');
 
-  // Lógica de valores automáticos
+  // Lógica de valores automáticos (sugestão inicial)
   useEffect(() => {
     if (!paymentDateWatcher) return;
     
@@ -106,8 +106,10 @@ export function RegisterPaymentForm({
         form.setValue('amount', isNewPrice ? 165 : 160);
         break;
       case 'Bolsa 100%':
+        form.setValue('amount', 0);
+        break;
       case 'Outros':
-        if (!selectedStudent || planTypeWatcher === 'Outros') {
+        if (!selectedStudent) {
             form.setValue('amount', 0);
         }
         break;
@@ -297,9 +299,10 @@ export function RegisterPaymentForm({
                                 type="number" 
                                 step="0.01" 
                                 {...field} 
-                                disabled={planTypeWatcher !== 'Outros'}
+                                placeholder="0.00"
                             />
                         </FormControl>
+                        <FormDescription className="text-[10px]">O valor sugerido pode ser alterado manualmente.</FormDescription>
                         <FormMessage />
                         </FormItem>
                     )}
