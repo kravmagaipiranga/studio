@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -79,7 +80,7 @@ export function PublicRegistrationForm() {
       paymentStatus: 'Pendente' as const,
       registrationDate: new Date().toISOString(),
       planType: 'Mensal' as const,
-      planValue: 315,
+      planValue: 330,
     };
 
     try {

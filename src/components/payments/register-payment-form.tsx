@@ -1,11 +1,10 @@
 
-
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { addMonths, format, parseISO, setDate } from 'date-fns';
+import { addMonths, format, parseISO, setDate, isAfter } from 'date-fns';
 import { useEffect, useState } from "react";
 import { collection, doc, updateDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -74,7 +73,7 @@ export function RegisterPaymentForm({
     defaultValues: {
         studentId: '',
         planType: "Mensal",
-        amount: 315,
+        amount: 330,
         paymentDate: format(new Date(), 'yyyy-MM-dd'),
         paymentMethod: "Pix",
         notes: "",
@@ -85,25 +84,33 @@ export function RegisterPaymentForm({
   const planTypeWatcher = form.watch('planType');
 
   useEffect(() => {
+    if (!paymentDateWatcher) return;
+    
+    // Lógica de novos valores a partir de 01/03/2025
+    const pDate = parseISO(paymentDateWatcher);
+    const isNewPrice = !isNaN(pDate.getTime()) && isAfter(pDate, new Date(2025, 1, 28));
+
     switch (planTypeWatcher) {
       case 'Matrícula':
-        form.setValue('amount', 160);
+        form.setValue('amount', isNewPrice ? 170 : 160);
         break;
       case 'Mensal':
-        form.setValue('amount', 315);
+        form.setValue('amount', isNewPrice ? 330 : 315);
         break;
       case 'Trimestral':
-        form.setValue('amount', 898);
+        form.setValue('amount', isNewPrice ? 940 : 898);
         break;
       case 'Bolsa 50%':
-        form.setValue('amount', 160);
+        form.setValue('amount', isNewPrice ? 165 : 160);
         break;
       case 'Bolsa 100%':
       case 'Outros':
-        form.setValue('amount', 0);
+        if (!selectedStudent || planTypeWatcher === 'Outros') {
+            form.setValue('amount', 0);
+        }
         break;
     }
-  }, [planTypeWatcher, form]);
+  }, [planTypeWatcher, paymentDateWatcher, form, selectedStudent]);
 
   useEffect(() => {
     if (paymentDateWatcher && planTypeWatcher) {
@@ -141,7 +148,7 @@ export function RegisterPaymentForm({
       form.reset({
           studentId: studentToLoad.id,
           planType: studentPlanType as any,
-          amount: studentToLoad.planValue ?? 315, // Fallback for existing data
+          amount: studentToLoad.planValue ?? 330,
           paymentDate: format(new Date(), 'yyyy-MM-dd'),
           paymentMethod: "Pix",
           notes: "",
@@ -158,7 +165,7 @@ export function RegisterPaymentForm({
                 setSelectedStudent(foundStudent);
                 const studentPlanType = foundStudent.planType || 'Mensal';
                 form.setValue('planType', studentPlanType as any);
-                form.setValue('amount', foundStudent.planValue ?? 315);
+                form.setValue('amount', foundStudent.planValue ?? 330);
             }
         }
     });
@@ -187,7 +194,7 @@ export function RegisterPaymentForm({
     if (values.planType === 'Bolsa 100%') {
         expirationDate = new Date(paymentDate.getFullYear(), 11, 31);
     } else {
-        const monthsToAdd = values.planType === 'Trimestral' ? 3 : 1; // Matrícula treated as 1 month
+        const monthsToAdd = values.planType === 'Trimestral' ? 3 : 1;
         expirationDate = setDate(addMonths(paymentDate, monthsToAdd), 5);
     }
     expirationDateISO = expirationDate.toISOString().split('T')[0];

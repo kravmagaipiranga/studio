@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -152,7 +151,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
       generalNotes: "",
       medicalHistory: "",
       planType: 'Mensal' as const,
-      planValue: 315,
+      planValue: 330,
       paymentPreference: [],
       fikmAnnuityPaid: false,
       fikmAnnuityPaymentDate: "",
@@ -196,7 +195,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
         generalNotes: student.generalNotes || "",
         medicalHistory: student.medicalHistory || "",
         planType: student.planType || 'Mensal',
-        planValue: student.planValue ?? 315,
+        planValue: student.planValue ?? 330,
         paymentPreference: student.paymentPreference || [],
         fikmAnnuityPaid: student.fikmAnnuityPaid || false,
         fikmAnnuityPaymentDate: student.fikmAnnuityPaymentDate ? student.fikmAnnuityPaymentDate.split('T')[0] : '',
@@ -523,7 +522,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                                 <Input 
                                     type="number" 
                                     step="0.01" 
-                                    placeholder="315.00" 
+                                    placeholder="330.00" 
                                     {...field} 
                                     value={field.value ?? ''}
                                     onChange={event => field.onChange(event.target.value === '' ? undefined : parseFloat(event.target.value))} 

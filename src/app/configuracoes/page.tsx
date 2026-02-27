@@ -3,12 +3,12 @@
 
 import { useState, useEffect } from "react";
 import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
-import { collection, getDocs, doc, setDoc } from "firebase/firestore";
+import { collection, getDocs, doc, writeBatch } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Upload, ShieldAlert, Loader2, Database, FileJson, AlertTriangle, Building2, GraduationCap, Save } from "lucide-react";
+import { Download, Upload, ShieldAlert, Loader2, Database, FileJson, AlertTriangle, Building2, GraduationCap, Save, RefreshCw } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GlobalParameters } from "@/lib/types";
+import { GlobalParameters, Student } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -150,7 +150,8 @@ export default function ConfiguracoesPage() {
             for (const docData of docs) {
               const { id, ...payload } = docData;
               if (id) {
-                await setDoc(doc(firestore, colName, id), payload, { merge: true });
+                const docRef = doc(firestore, colName, id);
+                await setDocumentNonBlocking(docRef, payload, { merge: true });
                 totalProcessed++;
               }
             }
@@ -190,6 +191,46 @@ export default function ConfiguracoesPage() {
         variant: "destructive",
         title: "Erro ao Salvar",
         description: "Não foi possível salvar os parâmetros."
+      });
+    } finally {
+      setIsSavingParams(false);
+    }
+  };
+
+  const handleUpdateAllStudentPlans = async () => {
+    if (!firestore) return;
+    setIsSavingParams(true);
+    try {
+      const querySnapshot = await getDocs(collection(firestore, 'students'));
+      const batch = writeBatch(firestore);
+      let count = 0;
+
+      querySnapshot.forEach((studentDoc) => {
+        const data = studentDoc.data() as Student;
+        let newVal = data.planValue;
+        
+        // Novos valores de Março/2025
+        if (data.planType === 'Mensal') newVal = 330;
+        if (data.planType === 'Matrícula') newVal = 170;
+        if (data.planType === 'Trimestral') newVal = 940;
+        if (data.planType === 'Bolsa 50%') newVal = 165;
+
+        if (newVal !== data.planValue) {
+          batch.update(studentDoc.ref, { planValue: newVal });
+          count++;
+        }
+      });
+
+      await batch.commit();
+      toast({
+        title: "Atualização Concluída",
+        description: `${count} alunos tiveram os valores de plano atualizados para a tabela de Março/2025.`,
+      });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erro na atualização",
+        description: "Não foi possível atualizar os cadastros em massa."
       });
     } finally {
       setIsSavingParams(false);
@@ -304,6 +345,36 @@ export default function ConfiguracoesPage() {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground pb-2">O sistema usará este valor para calcular faltas estimadas.</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Manutenção de Alunos</h4>
+                <div className="p-4 border rounded-lg bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <p className="text-sm font-bold">Atualizar Valores de Março/2025</p>
+                        <p className="text-xs text-muted-foreground">Aplica Matrícula (170), Mensalidade (330) e Trimestral (940) em todos os cadastros.</p>
+                    </div>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm" disabled={isSavingParams}>
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                Aplicar em Todos Alunos
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Atualizar todos os planos?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta ação modificará o valor do plano no cadastro de todos os alunos ativos para a nova tabela de preços de Março/2025.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleUpdateAllStudentPlans}>Confirmar Atualização</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
               </div>
 
