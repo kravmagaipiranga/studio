@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -51,9 +52,11 @@ export function useCollection<T = any>(
       },
       (err: FirestoreError) => {
         if (err.code === 'permission-denied') {
+            // Tenta extrair o caminho da coleção para um erro mais preciso
+            const path = (memoizedTargetRefOrQuery as any).path || 'requested-collection';
             const contextualError = new FirestorePermissionError({
               operation: 'list',
-              path: 'requested-collection',
+              path: path,
             });
             setError(contextualError);
             errorEmitter.emit('permission-error', contextualError);
