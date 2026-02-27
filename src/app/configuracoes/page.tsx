@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GlobalParameters } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 const collectionsToBackup = [
   'students', 
@@ -57,6 +58,17 @@ const DEFAULT_PARAMETERS: GlobalParameters = {
     azul: 24,
     marrom: 36,
   }
+};
+
+const beltOrder: (keyof GlobalParameters['beltRules'])[] = ['branca', 'amarela', 'laranja', 'verde', 'azul', 'marrom'];
+
+const beltDisplay: Record<string, { label: string, color: string, textColor: string }> = {
+  branca: { label: 'Branca', color: 'bg-white border-gray-300', textColor: 'text-black' },
+  amarela: { label: 'Amarela', color: 'bg-yellow-400 border-yellow-500', textColor: 'text-black' },
+  laranja: { label: 'Laranja', color: 'bg-orange-500 border-orange-600', textColor: 'text-white' },
+  verde: { label: 'Verde', color: 'bg-green-500 border-green-600', textColor: 'text-white' },
+  azul: { label: 'Azul', color: 'bg-blue-500 border-blue-600', textColor: 'text-white' },
+  marrom: { label: 'Marrom', color: 'bg-amber-800 border-amber-900', textColor: 'text-white' },
 };
 
 export default function ConfiguracoesPage() {
@@ -295,20 +307,36 @@ export default function ConfiguracoesPage() {
               </div>
 
               <div className="space-y-4">
-                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Tempo Mínimo por Faixa (Meses)</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  {Object.entries(localParams.beltRules).map(([belt, months]) => (
-                    <div key={belt} className="space-y-2">
-                      <Label className="capitalize">{belt}</Label>
-                      <Input 
-                        type="number" 
-                        value={months} 
-                        onChange={e => updateBeltRule(belt as any, e.target.value)} 
-                      />
-                    </div>
-                  ))}
+                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Tempo Mínimo por Faixa</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {beltOrder.map((beltKey) => {
+                    const config = beltDisplay[beltKey];
+                    return (
+                      <div key={beltKey} className="flex items-center gap-4 p-4 rounded-lg border bg-card shadow-sm hover:shadow-md transition-shadow">
+                        <div className={cn("w-12 h-12 rounded-full flex items-center justify-center border-2 shadow-inner shrink-0", config.color)}>
+                           <span className={cn("text-xs font-black uppercase", config.textColor)}>
+                             {config.label[0]}
+                           </span>
+                        </div>
+                        <div className="flex-1 space-y-1.5">
+                          <Label className="text-sm font-bold flex items-center gap-2">
+                            {config.label}
+                          </Label>
+                          <div className="flex items-center gap-2">
+                            <Input 
+                              type="number" 
+                              className="h-9 w-20 text-center font-semibold"
+                              value={localParams.beltRules[beltKey]} 
+                              onChange={e => updateBeltRule(beltKey, e.target.value)} 
+                            />
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-tighter">Meses</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <p className="text-[10px] text-muted-foreground italic">Define quando um aluno aparecerá como "Apto para Revisão" nos indicadores.</p>
+                <p className="text-[10px] text-muted-foreground italic">Estes tempos definem quando um aluno aparece como "Apto para Revisão" nos indicadores técnicos.</p>
               </div>
 
               <div className="flex justify-end pt-4 border-t">
