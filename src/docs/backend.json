@@ -60,6 +60,27 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "name", "whatsapp", "chosenClass", "hasCompanions", "year", "attended", "createdAt"]
+    },
+    "Company": {
+      "title": "Company",
+      "type": "object",
+      "description": "Represents a corporate client.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "cnpj": { "type": "string" },
+        "contactName": { "type": "string" },
+        "contactPhone": { "type": "string" },
+        "contactEmail": { "type": "string" },
+        "workType": { "type": "string" },
+        "value": { "type": "number" },
+        "paymentDate": { "type": "string", "format": "date" },
+        "paymentMethod": { "type": "string" },
+        "paymentStatus": { "type": "string", "enum": ["Pago", "Pendente"] },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name"]
     }
   },
   "auth": {
@@ -97,6 +118,14 @@
           "entityName": "WomensMonthLead",
           "schema": { "$ref": "#/backend/entities/WomensMonthLead" },
           "description": "Stores leads for the Women's Month campaign."
+        }
+      },
+      {
+        "path": "/companies/{companyId}",
+        "definition": {
+          "entityName": "Company",
+          "schema": { "$ref": "#/backend/entities/Company" },
+          "description": "Stores corporate client data."
         }
       }
     ]

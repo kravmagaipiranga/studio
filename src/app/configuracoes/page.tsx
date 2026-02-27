@@ -40,7 +40,8 @@ const collectionsToBackup = [
   'tasks', 
   'leads',
   'attendance',
-  'parameters'
+  'parameters',
+  'companies'
 ];
 
 const DEFAULT_PARAMETERS: GlobalParameters = {

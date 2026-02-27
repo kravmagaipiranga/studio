@@ -29,6 +29,7 @@ import {
   CheckSquare,
   PieChart,
   Settings,
+  Building2,
 } from "lucide-react";
 import {
   Sheet,
@@ -76,6 +77,7 @@ const protectedAdminRoutes = [
   "/mes-das-mulheres",
   "/chamada",
   "/configuracoes",
+  "/empresas",
 ];
 
 const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/mes-das-mulheres/registro", "/gift-card"];
@@ -202,6 +204,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <NavItem href="/mes-das-mulheres">
                 <Star className="h-4 w-4 text-pink-600" /> Mês das Mulheres
               </NavItem>
+              <NavItem href="/empresas">
+                <Building2 className="h-4 w-4" /> Empresas
+              </NavItem>
               <NavItem href="/agendamentos">
                 <CalendarPlus className="h-4 w-4" /> Agendamentos
               </NavItem>
@@ -267,6 +272,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <NavItem href="/alunos" isMobile><Users className="h-5 w-5" /> Alunos</NavItem>
                 <NavItem href="/chamada" isMobile><CheckSquare className="h-5 w-5" /> Controle de Presença</NavItem>
                 <NavItem href="/mes-das-mulheres" isMobile><Star className="h-5 w-5 text-pink-600" /> Mês das Mulheres</NavItem>
+                <NavItem href="/empresas" isMobile><Building2 className="h-5 w-5" /> Empresas</NavItem>
                 <NavItem href="/agendamentos" isMobile><CalendarPlus className="h-5 w-5" /> Agendamentos</NavItem>
                 <NavItem href="/pagamentos" isMobile><CreditCard className="h-5 w-5" /> Pagamentos</NavItem>
                 <NavItem href="/planos-vencidos" isMobile><CalendarX className="h-5 w-5" /> Planos Vencidos</NavItem>

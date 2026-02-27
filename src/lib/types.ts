@@ -225,3 +225,20 @@ export type GlobalParameters = {
     marrom: number;
   };
 };
+
+export type Company = {
+  id: string;
+  name: string;
+  cnpj?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  workType: string; // Palestra, Curso, Workshop, Aula Particular, Outros
+  value: number;
+  paymentDate?: string;
+  paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
+  paymentStatus: 'Pago' | 'Pendente';
+  notes?: string;
+  createdAt: string;
+  isNew?: boolean;
+};
