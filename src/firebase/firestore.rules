@@ -33,5 +33,7 @@ service cloud.firestore {
     match /uniformOrders/{orderId} { allow read, write: if isSignedIn(); }
     match /leads/{leadId} { allow read, write: if isSignedIn(); }
     match /roles_admin/{userId} { allow read, write: if isSignedIn(); }
+    match /attendance/{docId} { allow read, write: if isSignedIn(); }
+    match /parameters/{docId} { allow read, write: if isSignedIn(); }
   }
 }

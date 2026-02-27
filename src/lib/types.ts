@@ -208,3 +208,20 @@ export type Attendance = {
   category?: 'Aluno' | 'Visita' | 'Experiência';
   createdAt: string;
 };
+
+export type GlobalParameters = {
+  id: 'global';
+  schoolName: string;
+  schoolCnpj: string;
+  schoolAddress: string;
+  schoolPhone: string;
+  attendanceTargetPerWeek: number;
+  beltRules: {
+    branca: number;
+    amarela: number;
+    laranja: number;
+    verde: number;
+    azul: number;
+    marrom: number;
+  };
+};

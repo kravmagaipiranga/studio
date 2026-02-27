@@ -1,13 +1,14 @@
+
 "use client";
 
-import { useState } from "react";
-import { useFirestore } from "@/firebase";
+import { useState, useEffect } from "react";
+import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
 import { collection, getDocs, doc, setDoc } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Upload, ShieldAlert, Loader2, Database, FileJson, AlertTriangle } from "lucide-react";
+import { Download, Upload, ShieldAlert, Loader2, Database, FileJson, AlertTriangle, Building2, GraduationCap, Save } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +20,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { GlobalParameters } from "@/lib/types";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const collectionsToBackup = [
   'students', 
@@ -33,14 +38,47 @@ const collectionsToBackup = [
   'indicators', 
   'tasks', 
   'leads',
-  'attendance'
+  'attendance',
+  'parameters'
 ];
+
+const DEFAULT_PARAMETERS: GlobalParameters = {
+  id: 'global',
+  schoolName: "CT Krav Magá IPIRANGA",
+  schoolCnpj: "31.116.136/0001-95",
+  schoolAddress: "Rua Tabor, 482 - Ipiranga - São Paulo - SP",
+  schoolPhone: "11 2589-6049",
+  attendanceTargetPerWeek: 2,
+  beltRules: {
+    branca: 4,
+    amarela: 12,
+    laranja: 18,
+    verde: 24,
+    azul: 24,
+    marrom: 36,
+  }
+};
 
 export default function ConfiguracoesPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isSavingParams, setIsSavingParams] = useState(false);
+  const [localParams, setLocalParams] = useState<GlobalParameters>(DEFAULT_PARAMETERS);
+
+  const paramsRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'parameters', 'global');
+  }, [firestore]);
+
+  const { data: dbParams, isLoading: isLoadingParams } = useDoc<GlobalParameters>(paramsRef);
+
+  useEffect(() => {
+    if (dbParams) {
+      setLocalParams(dbParams);
+    }
+  }, [dbParams]);
 
   const handleBackup = async () => {
     if (!firestore) return;
@@ -99,7 +137,6 @@ export default function ConfiguracoesPage() {
             for (const docData of docs) {
               const { id, ...payload } = docData;
               if (id) {
-                // Using setDoc directly for restoration to maintain IDs
                 await setDoc(doc(firestore, colName, id), payload, { merge: true });
                 totalProcessed++;
               }
@@ -120,121 +157,272 @@ export default function ConfiguracoesPage() {
         });
       } finally {
         setIsRestoring(false);
-        // Reset file input
         event.target.value = "";
       }
     };
     reader.readAsText(file);
   };
 
+  const handleSaveParameters = async () => {
+    if (!firestore) return;
+    setIsSavingParams(true);
+    try {
+      await setDocumentNonBlocking(doc(firestore, 'parameters', 'global'), localParams, { merge: true });
+      toast({
+        title: "Configurações Salvas",
+        description: "Os parâmetros da escola foram atualizados com sucesso."
+      });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao Salvar",
+        description: "Não foi possível salvar os parâmetros."
+      });
+    } finally {
+      setIsSavingParams(false);
+    }
+  };
+
+  const updateParam = (field: keyof GlobalParameters, value: any) => {
+    setLocalParams(prev => ({ ...prev, [field]: value }));
+  };
+
+  const updateBeltRule = (belt: keyof GlobalParameters['beltRules'], value: string) => {
+    const num = parseInt(value) || 0;
+    setLocalParams(prev => ({
+      ...prev,
+      beltRules: { ...prev.beltRules, [belt]: num }
+    }));
+  };
+
   return (
-    <div className="flex flex-col gap-8 max-w-4xl mx-auto">
+    <div className="flex flex-col gap-8 max-w-5xl mx-auto pb-10">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Configurações do Sistema</h1>
-        <p className="text-muted-foreground">Gerencie a segurança dos dados e parâmetros globais do aplicativo.</p>
+        <p className="text-muted-foreground">Gerencie a identidade da escola, regras acadêmicas e segurança dos dados.</p>
       </div>
 
-      <div className="grid gap-6">
-        <Card className="border-amber-200 bg-amber-50/30">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5 text-amber-600" />
-              Segurança e Backup de Dados
-            </CardTitle>
-            <CardDescription>
-              Exporte todos os cadastros e histórico financeiro para um arquivo local ou restaure dados de um backup anterior.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-white rounded-lg border shadow-sm">
-              <div className="flex-1 space-y-1">
-                <p className="text-sm font-bold">Gerar Backup Completo</p>
-                <p className="text-xs text-muted-foreground">Baixa um arquivo .json com todas as informações da escola.</p>
-              </div>
-              <Button 
-                onClick={handleBackup} 
-                disabled={isBackingUp}
-                className="w-full sm:w-auto"
-              >
-                {isBackingUp ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
-                Baixar Dados
-              </Button>
-            </div>
+      <Tabs defaultValue="identidade" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 max-w-md">
+          <TabsTrigger value="identidade">Escola</TabsTrigger>
+          <TabsTrigger value="academico">Acadêmico</TabsTrigger>
+          <TabsTrigger value="seguranca">Segurança</TabsTrigger>
+        </TabsList>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-white rounded-lg border shadow-sm">
-              <div className="flex-1 space-y-1">
-                <p className="text-sm font-bold">Restaurar de Arquivo</p>
-                <p className="text-xs text-muted-foreground">Carrega dados de um arquivo de backup para o servidor.</p>
-              </div>
-              
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" className="w-full sm:w-auto border-amber-300 text-amber-700 hover:bg-amber-50">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Carregar Backup
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle className="flex items-center gap-2">
-                      <ShieldAlert className="h-5 w-5 text-destructive" />
-                      Atenção: Operação Crítica
-                    </AlertDialogTitle>
-                    <AlertDialogDescription className="space-y-3">
-                      <p>
-                        Ao restaurar dados, informações existentes no servidor serão <strong>sobrescritas</strong> ou complementadas pelos dados do arquivo.
-                      </p>
-                      <p className="font-bold text-destructive">
-                        Esta ação pode causar duplicidade ou perda de dados recentes caso o arquivo esteja desatualizado.
-                      </p>
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <div className="relative">
-                      <Input
-                        type="file"
-                        accept=".json"
-                        onChange={handleRestore}
-                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                        disabled={isRestoring}
-                      />
-                      <Button disabled={isRestoring}>
-                        {isRestoring ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Selecionar Arquivo e Confirmar"}
-                      </Button>
-                    </div>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileJson className="h-5 w-5 text-blue-600" />
-              Documentação de Dados
-            </CardTitle>
-            <CardDescription>Estrutura de coleções monitoradas pelo backup.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {collectionsToBackup.map(col => (
-                <div key={col} className="text-[10px] uppercase font-mono bg-muted p-2 rounded border">
-                  {col}
+        <TabsContent value="identidade" className="space-y-6 pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-blue-600" />
+                Dados da Instituição
+              </CardTitle>
+              <CardDescription>Informações exibidas em recibos e comunicações oficiais.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isLoadingParams ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
-              ))}
-            </div>
-            <div className="mt-6 p-4 rounded-lg bg-blue-50 border border-blue-100 flex gap-3">
-              <AlertTriangle className="h-5 w-5 text-blue-600 shrink-0" />
-              <p className="text-xs text-blue-800 leading-relaxed">
-                <strong>Dica de Segurança:</strong> Recomendamos realizar o backup semanalmente e armazenar o arquivo em um local seguro (nuvem ou HD externo). Este arquivo contém informações sensíveis de alunos e dados financeiros.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Nome da Escola</Label>
+                      <Input 
+                        value={localParams.schoolName} 
+                        onChange={e => updateParam('schoolName', e.target.value)} 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>CNPJ</Label>
+                      <Input 
+                        value={localParams.schoolCnpj} 
+                        onChange={e => updateParam('schoolCnpj', e.target.value)} 
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Endereço Completo</Label>
+                    <Input 
+                      value={localParams.schoolAddress} 
+                      onChange={e => updateParam('schoolAddress', e.target.value)} 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Telefone de Contato</Label>
+                    <Input 
+                      value={localParams.schoolPhone} 
+                      onChange={e => updateParam('schoolPhone', e.target.value)} 
+                    />
+                  </div>
+                  <div className="flex justify-end pt-4">
+                    <Button onClick={handleSaveParameters} disabled={isSavingParams}>
+                      {isSavingParams ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                      Salvar Alterações
+                    </Button>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="academico" className="space-y-6 pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GraduationCap className="h-5 w-5 text-emerald-600" />
+                Regras e Metas
+              </CardTitle>
+              <CardDescription>Configure os parâmetros para cálculos de frequência e prontidão de exames.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              <div className="space-y-4">
+                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Frequência Esperada</h4>
+                <div className="flex items-end gap-4 max-w-xs">
+                  <div className="space-y-2 flex-1">
+                    <Label>Aulas por Semana (Meta)</Label>
+                    <Input 
+                      type="number" 
+                      value={localParams.attendanceTargetPerWeek} 
+                      onChange={e => updateParam('attendanceTargetPerWeek', parseInt(e.target.value) || 0)} 
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground pb-2">O sistema usará este valor para calcular faltas estimadas.</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Tempo Mínimo por Faixa (Meses)</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  {Object.entries(localParams.beltRules).map(([belt, months]) => (
+                    <div key={belt} className="space-y-2">
+                      <Label className="capitalize">{belt}</Label>
+                      <Input 
+                        type="number" 
+                        value={months} 
+                        onChange={e => updateBeltRule(belt as any, e.target.value)} 
+                      />
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground italic">Define quando um aluno aparecerá como "Apto para Revisão" nos indicadores.</p>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t">
+                <Button onClick={handleSaveParameters} disabled={isSavingParams}>
+                  {isSavingParams ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                  Salvar Regras
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="seguranca" className="space-y-6 pt-4">
+          <Card className="border-amber-200 bg-amber-50/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5 text-amber-600" />
+                Segurança e Backup de Dados
+              </CardTitle>
+              <CardDescription>
+                Exporte todos os cadastros e histórico financeiro para um arquivo local ou restaure dados de um backup anterior.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-white rounded-lg border shadow-sm">
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-bold">Gerar Backup Completo</p>
+                  <p className="text-xs text-muted-foreground">Baixa um arquivo .json com todas as informações da escola.</p>
+                </div>
+                <Button 
+                  onClick={handleBackup} 
+                  disabled={isBackingUp}
+                  className="w-full sm:w-auto"
+                >
+                  {isBackingUp ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
+                  Baixar Dados
+                </Button>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-white rounded-lg border shadow-sm">
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-bold">Restaurar de Arquivo</p>
+                  <p className="text-xs text-muted-foreground">Carrega dados de um arquivo de backup para o servidor.</p>
+                </div>
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="w-full sm:w-auto border-amber-300 text-amber-700 hover:bg-amber-50">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Carregar Backup
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="flex items-center gap-2">
+                        <ShieldAlert className="h-5 w-5 text-destructive" />
+                        Atenção: Operação Crítica
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="space-y-3">
+                        <p>
+                          Ao restaurar dados, informações existentes no servidor serão <strong>sobrescritas</strong> ou complementadas pelos dados do arquivo.
+                        </p>
+                        <p className="font-bold text-destructive">
+                          Esta ação pode causar duplicidade ou perda de dados recentes caso o arquivo esteja desatualizado.
+                        </p>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <div className="relative">
+                        <Input
+                          type="file"
+                          accept=".json"
+                          onChange={handleRestore}
+                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                          disabled={isRestoring}
+                        />
+                        <Button disabled={isRestoring}>
+                          {isRestoring ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Selecionar Arquivo e Confirmar"}
+                        </Button>
+                      </div>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileJson className="h-5 w-5 text-blue-600" />
+                Documentação de Dados
+              </CardTitle>
+              <CardDescription>Estrutura de coleções monitoradas pelo backup.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {collectionsToBackup.map(col => (
+                  <div key={col} className="text-[10px] uppercase font-mono bg-muted p-2 rounded border">
+                    {col}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 p-4 rounded-lg bg-blue-50 border border-blue-100 flex gap-3">
+                <AlertTriangle className="h-5 w-5 text-blue-600 shrink-0" />
+                <p className="text-xs text-blue-800 leading-relaxed">
+                  <strong>Dica de Segurança:</strong> Recomendamos realizar o backup semanalmente e armazenar o arquivo em um local seguro (nuvem ou HD externo).
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
