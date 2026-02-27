@@ -7,38 +7,25 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    match /students/{studentId} {
-      allow get, list: if isSignedIn();
-      allow create: if true;
-      allow update, delete: if isSignedIn();
-    }
-    
-    match /giftCardOrders/{orderId} {
-      allow create: if true;
+    // Regras para acesso administrativo (exige login)
+    // Permite leitura e escrita em qualquer documento se o usuário estiver logado
+    match /{document=**} {
       allow read, write: if isSignedIn();
     }
+
+    // Regras para acessos públicos (não exige login)
+    // Necessário para formulários externos de captação
     
-    match /payments/{paymentId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
+    match /students/{studentId} {
+      allow create: if true; 
     }
     
     match /womensMonth/{leadId} {
       allow create: if true;
-      allow get, list, update, delete: if isSignedIn();
     }
-    
-    match /appointments/{docId} { allow read, write: if isSignedIn(); }
-    match /privateClasses/{docId} { allow read, write: if isSignedIn(); }
-    match /seminars/{docId} { allow read, write: if isSignedIn(); }
-    match /sales/{docId} { allow read, write: if isSignedIn(); }
-    match /exams/{examId} { allow read, write: if isSignedIn(); }
-    match /indicators/{indicatorId} { allow read, write: if isSignedIn(); }
-    match /tasks/{taskId} { allow read, write: if isSignedIn(); }
-    match /uniformOrders/{orderId} { allow read, write: if isSignedIn(); }
-    match /leads/{leadId} { allow read, write: if isSignedIn(); }
-    match /roles_admin/{userId} { allow read, write: if isSignedIn(); }
-    match /attendance/{docId} { allow read, write: if isSignedIn(); }
-    match /parameters/{docId} { allow read, write: if isSignedIn(); }
+
+    match /giftCardOrders/{orderId} {
+      allow create: if true;
+    }
   }
 }

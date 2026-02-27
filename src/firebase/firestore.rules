@@ -7,38 +7,25 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Regras gerais para coleções administrativas
-    // O uso de 'read' cobre 'get' e 'list'
-    // O uso de 'write' cobre 'create', 'update' e 'delete'
-
-    match /students/{studentId} {
+    // Regras para acesso administrativo (exige login)
+    // Permite leitura e escrita em qualquer documento se o usuário estiver logado
+    match /{document=**} {
       allow read, write: if isSignedIn();
-      allow create: if true; // Permite cadastro público
+    }
+
+    // Regras para acessos públicos (não exige login)
+    // Necessário para formulários externos de captação
+    
+    match /students/{studentId} {
+      allow create: if true; 
     }
     
     match /womensMonth/{leadId} {
-      allow create: if true; // Permite inscrição pública
-      allow read, write: if isSignedIn();
+      allow create: if true;
     }
 
     match /giftCardOrders/{orderId} {
       allow create: if true;
-      allow read, write: if isSignedIn();
     }
-    
-    match /payments/{paymentId} { allow read, write: if isSignedIn(); }
-    match /appointments/{docId} { allow read, write: if isSignedIn(); }
-    match /privateClasses/{docId} { allow read, write: if isSignedIn(); }
-    match /seminars/{docId} { allow read, write: if isSignedIn(); }
-    match /sales/{docId} { allow read, write: if isSignedIn(); }
-    match /exams/{examId} { allow read, write: if isSignedIn(); }
-    match /indicators/{indicatorId} { allow read, write: if isSignedIn(); }
-    match /tasks/{taskId} { allow read, write: if isSignedIn(); }
-    match /uniformOrders/{orderId} { allow read, write: if isSignedIn(); }
-    match /leads/{leadId} { allow read, write: if isSignedIn(); }
-    match /roles_admin/{userId} { allow read, write: if isSignedIn(); }
-    match /attendance/{docId} { allow read, write: if isSignedIn(); }
-    match /parameters/{docId} { allow read, write: if isSignedIn(); }
-    match /companies/{docId} { allow read, write: if isSignedIn(); }
   }
 }

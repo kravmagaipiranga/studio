@@ -21,6 +21,17 @@ export interface UseCollectionResult<T> {
   error: FirestoreError | Error | null;
 }
 
+/**
+ * Helper function to extract path from a CollectionReference or Query
+ */
+function getPathFromRef(refOrQuery: any): string {
+  if (!refOrQuery) return 'unknown';
+  if (refOrQuery.path) return refOrQuery.path;
+  if (refOrQuery.ref && refOrQuery.ref.path) return refOrQuery.ref.path;
+  // Fallback for complex queries
+  return refOrQuery._query?.path?.segments?.join('/') || 'requested-collection';
+}
+
 export function useCollection<T = any>(
     memoizedTargetRefOrQuery: (CollectionReference<DocumentData> | Query<DocumentData>) | null | undefined,
 ): UseCollectionResult<T> {
@@ -52,8 +63,7 @@ export function useCollection<T = any>(
       },
       (err: FirestoreError) => {
         if (err.code === 'permission-denied') {
-            // Tenta extrair o caminho da coleção para um erro mais preciso
-            const path = (memoizedTargetRefOrQuery as any).path || 'requested-collection';
+            const path = getPathFromRef(memoizedTargetRefOrQuery);
             const contextualError = new FirestorePermissionError({
               operation: 'list',
               path: path,
