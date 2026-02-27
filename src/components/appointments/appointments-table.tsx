@@ -12,39 +12,39 @@ import { Button } from "@/components/ui/button"
 import { Save, Trash2, UserCheck, UserX, CheckSquare, MessageSquare, ClipboardList } from "lucide-react"
 import { Appointment } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
-import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
-import { collection, doc } from "firebase/firestore";
-import { Input } from "../ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { Textarea } from "../ui/textarea";
-import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
-import { Badge } from "../ui/badge";
+import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
+import { collection, doc } from "firebase/firestore"
+import { Input } from "../ui/input"
+import { useToast } from "@/hooks/use-toast"
+import { Textarea } from "../ui/textarea"
+import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group"
+import { Badge } from "../ui/badge"
 import { cn } from "@/lib/utils"
 import { format, parseISO, isTomorrow } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
 interface AppointmentsTableProps {
-  appointments: Appointment[];
-  setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>;
-  isLoading: boolean;
+  appointments: Appointment[]
+  setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>
+  isLoading: boolean
 }
 
 export function AppointmentsTable({ appointments, setAppointments, isLoading }: AppointmentsTableProps) {
-  const firestore = useFirestore();
-  const { toast } = useToast();
-  const [mounted, setMounted] = useState(false);
+  const firestore = useFirestore()
+  const { toast } = useToast()
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    setMounted(true)
+  }, [])
 
   const handleInputChange = (appointmentId: string, field: keyof Appointment, value: any) => {
     setAppointments(prev =>
       prev.map(item =>
         item.id === appointmentId ? { ...item, [field]: value } : item
       )
-    );
-  };
+    )
+  }
   
   const handleStatusChange = (appointmentId: string, status: 'attended' | 'missed' | 'enrolled') => {
       setAppointments(prev =>
@@ -55,131 +55,97 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
               attended: status === 'attended',
               missed: status === 'missed',
               enrolled: status === 'enrolled'
-            };
+            }
           }
-          return item;
+          return item
         })
-      );
-  };
+      )
+  }
 
   const getStatus = (item: Appointment) => {
-    if (item.enrolled) return "Matriculado";
-    if (item.attended) return "Compareceu";
-    if (item.missed) return "Faltou";
-    return "Agendado";
+    if (item.enrolled) return "Matriculado"
+    if (item.attended) return "Compareceu"
+    if (item.missed) return "Faltou"
+    return "Agendado"
   }
 
   const getStatusVariant = (item: Appointment): "default" | "secondary" | "destructive" | "outline" => {
-    if (item.enrolled) return "default";
-    if (item.attended) return "secondary";
-    if (item.missed) return "destructive";
-    return "outline";
+    if (item.enrolled) return "default"
+    if (item.attended) return "secondary"
+    if (item.missed) return "destructive"
+    return "outline"
   }
 
   const handleSaveAppointment = (itemToSave: Appointment) => {
-    if (!firestore) return;
+    if (!firestore) return
 
     if (!itemToSave.name || !itemToSave.whatsapp || !itemToSave.classDate || !itemToSave.classTime) {
         toast({
             variant: "destructive",
             title: "Campos Obrigatórios",
             description: "Por favor, preencha Nome, WhatsApp, Data e Horário antes de salvar."
-        });
-        return;
+        })
+        return
     }
 
-    const { isNew, id, ...itemData } = itemToSave;
-    const finalId = isNew ? doc(collection(firestore, "appointments")).id : id;
+    const { isNew, id, ...itemData } = itemToSave
+    const finalId = isNew ? doc(collection(firestore, "appointments")).id : id
 
-    const docRef = doc(firestore, 'appointments', finalId);
-    setDocumentNonBlocking(docRef, { ...itemData, id: finalId }, { merge: true });
+    const docRef = doc(firestore, 'appointments', finalId)
+    setDocumentNonBlocking(docRef, { ...itemData, id: finalId }, { merge: true })
 
     toast({
         title: "Agendamento Salvo!",
         description: `O agendamento de ${itemData.name} foi salvo com sucesso.`
-    });
+    })
     
-    setAppointments(prev => prev.map(ex => ex.id === itemToSave.id ? { ...itemData, id: finalId, isNew: false } : ex));
-  };
+    setAppointments(prev => prev.map(ex => ex.id === itemToSave.id ? { ...itemData, id: finalId, isNew: false } : ex))
+  }
 
   const handleDeleteAppointment = (e: React.MouseEvent, itemId: string, itemName: string) => {
-    e.stopPropagation();
-    if (!firestore) return;
+    e.stopPropagation()
+    if (!firestore) return
     
-    const isNewRow = itemId.startsWith('new_');
+    const isNewRow = itemId.startsWith('new_')
     if (isNewRow) {
-        setAppointments(prev => prev.filter(ex => ex.id !== itemId));
-        return;
+        setAppointments(prev => prev.filter(ex => ex.id !== itemId))
+        return
     }
 
-    const docRef = doc(firestore, 'appointments', itemId);
-    deleteDocumentNonBlocking(docRef);
+    const docRef = doc(firestore, 'appointments', itemId)
+    deleteDocumentNonBlocking(docRef)
     toast({
         title: "Agendamento Removido",
         description: `O agendamento de ${itemName} foi removido.`
     })
-  };
+  }
 
   const generateWhatsAppLinks = (appointment: Appointment) => {
-    const phone = appointment.whatsapp?.replace(/\D/g, '');
-    const firstName = appointment.name.split(' ')[0];
+    const phone = appointment.whatsapp?.replace(/\D/g, '')
+    const firstName = appointment.name.split(' ')[0]
     
-    const missedMessage = `Oi, ${firstName}, tudo bem? Notamos que você não conseguiu comparecer ao seu treino experimental na semana passada e sentimos sua falta!
+    const missedMessage = `Oi, ${firstName}, tudo bem? Notamos que você não conseguiu comparecer ao seu treino experimental na semana passada e sentimos sua falta!\n\nSabemos que a correria do dia a dia e os imprevistos podem desanimar, mas o Krav Magá é justamente sobre superar esses obstáculos e fortalecer sua mente. A disciplina é o que nos leva além, mesmo nos dias em que o cansaço tenta vencer. ✨\n\nQue tal darmos esse primeiro passo juntos agora? Vamos agendar um novo horário para você vivenciar essa experiênica. Qual dia e horário desta semana funcionam melhor para você? 👊`
 
-Sabemos que a correria do dia a dia e os imprevistos podem desanimar, mas o Krav Magá é justamente sobre superar esses obstáculos e fortalecer sua mente. A disciplina é o que nos leva além, mesmo nos dias em que o cansaço tenta vencer. ✨
+    const thankYouMessage = `Olá, ${firstName}! Foi uma satisfação ter você conosco no nosso treino! 👊\nParabéns por dar esse primeiro passo. No Krav Magá, técnica e confiança andam juntas, e você já mostrou que tem a determinação necessária para se proteger e viver com mais segurança.\n\nQueremos muito que você faça parte da nossa família aqui no CT Ipiranga! Para incentivar sua continuidade, temos um presente: 25% de desconto na sua camiseta oficial de treino (válido por 7 dias). Basta mostrar este print na recepção. 🎁\n\nPronto para o próximo nível? Faça sua matrícula no link abaixo:\n👉 https://tinyurl.com/kmipiranga\n\nNos vemos no tatame!\nProfessor Thiago R. Pedro`
 
-Que tal darmos esse primeiro passo juntos agora? Vamos agendar um novo horário para você vivenciar essa experiênica. Qual dia e horário desta semana funcionam melhor para você? 👊`;
-
-    const thankYouMessage = `Olá, ${firstName}! Foi uma satisfação ter você conosco no nosso treino! 👊
-Parabéns por dar esse primeiro passo. No Krav Magá, técnica e confiança andam juntas, e você já mostrou que tem a determinação necessária para se proteger e viver com mais segurança.
-
-Queremos muito que você faça parte da nossa família aqui no CT Ipiranga! Para incentivar sua continuidade, temos um presente: 25% de desconto na sua camiseta oficial de treino (válido por 7 dias). Basta mostrar este print na recepção. 🎁
-
-Pronto para o próximo nível? Faça sua matrícula no link abaixo:
-👉 https://tinyurl.com/kmipiranga
-
-Nos vemos no tatame!
-Professor Thiago R. Pedro`;
-
-    // Pre-Class Instructions Message
-    let instructionsMessage = "";
+    let instructionsMessage = ""
     if (appointment.classDate) {
         try {
-            const appointmentDate = parseISO(appointment.classDate);
-            const dayOfWeek = format(appointmentDate, 'EEEE', { locale: ptBR });
-            const formattedDate = format(appointmentDate, 'dd/MM/yyyy');
+            const appointmentDate = parseISO(appointment.classDate)
+            const dayOfWeek = format(appointmentDate, 'EEEE', { locale: ptBR })
+            const formattedDate = format(appointmentDate, 'dd/MM/yyyy')
 
-            instructionsMessage = `Olá, ${appointment.name}! Tudo bem? 
-Na próxima ${dayOfWeek}, dia ${formattedDate}, você fará sua aulas de experiência gratuita no Centro de Treinamento de Krav Magá Ipiranga!
-
-Para sua aula, utilize uma roupa confortável, a mesma que usaria para um passeio ao parque, ou para a prática de uma atividade física (como a musculação, por exemplo). Recomendamos o uso de uma calça (pode ser um moletom, legging ou uma calça de kimono) e camiseta.
-
-📋 Abaixo, listamos algumas Informações Importantes para Suas Aulas de Krav Magá:
-
-📍 Estrutura do Centro:
-- Nossa academia possui vestiários e armários, disponíveis para que você possa guardar pertences e trocar de roupa, antes ou depois das aulas.
-- Retire todos os acessórios (relógios, pulseiras, colares, anéis) antes do treino para evitar acidentes.  
-
-🗣️ Durante a Aula:  
-- Comunique-se com o instrutor ao entrar/sair do tatame.  
-- Respeite seu corpo: evite exageros para prevenir lesões.  
-- Informe ao instrutor qualquer dor ou condição médica (tratamento de coluna, problemas de glicemia ou pressão, problemas cardíacos, limitação de movimentos em membros, etc) 
-- Siga as orientações do instrutor à risca –a experiência dele é seu guia!  
-- Priorize a técnica, não a velocidade. A evolução vem com consistência.  
-- Concentre-se e absorva cada detalhe.  
-- Pergunte sempre se tiver dúvidas – todos estão ali para aprender juntos!
-
-Nos vemos na aula! Kida!`;
+            instructionsMessage = `Olá, ${appointment.name}! Tudo bem? \nNa próxima ${dayOfWeek}, dia ${formattedDate}, você fará sua aulas de experiência gratuita no Centro de Treinamento de Krav Magá Ipiranga!\n\nPara sua aula, utilize uma roupa confortável, a mesma que usaria para um passeio ao parque, ou para a prática de uma atividade física (como a musculação, por exemplo). Recomendamos o uso de uma calça (pode ser um moletom, legging ou uma calça de kimono) e camiseta.\n\n📋 Abaixo, listamos algumas Informações Importantes para Suas Aulas de Krav Magá:\n\n📍 Estrutura do Centro:\n- Nossa academia possui vestiários e armários, disponíveis para que você possa guardar pertences e trocar de roupa, antes ou depois das aulas.\n- Retire todos os acessórios (relógios, pulseiras, colares, anéis) antes do treino para evitar acidentes.  \n\n🗣️ Durante a Aula:  \n- Comunique-se com o instrutor ao entrar/sair do tatame.  \n- Respeite seu corpo: evite exageros para prevenir lesões.  \n- Informe ao instrutor qualquer dor ou condição médica (tratamento de coluna, problemas de glicemia ou pressão, problemas cardíacos, limitação de movimentos em membros, etc) \n- Siga as orientações do instrutor à risca –a experiência dele é seu guia!  \n- Priorize a técnica, não a velocidade. A evolução vem com consistência.  \n- Concentre-se e absorva cada detalhe.  \n- Pergunte sempre se tiver dúvidas – todos estão ali para aprender juntos!\n\nNos vemos na aula! Kida!`
         } catch (e) {}
     }
 
-    const baseUrl = "https://wa.me/55";
+    const baseUrl = "https://wa.me/55"
     return {
         missed: phone ? `${baseUrl}${phone}?text=${encodeURIComponent(missedMessage)}` : "#",
         thanks: phone ? `${baseUrl}${phone}?text=${encodeURIComponent(thankYouMessage)}` : "#",
         instructions: phone && instructionsMessage ? `${baseUrl}${phone}?text=${encodeURIComponent(instructionsMessage)}` : "#"
-    };
-  };
+    }
+  }
 
   if (isLoading || !mounted) {
       return (
@@ -196,11 +162,11 @@ Nos vemos na aula! Kida!`;
         {appointments.length > 0 ? (
           <Accordion type="single" collapsible className="w-full">
             {appointments.map((appointment: Appointment) => {
-              const waLinks = generateWhatsAppLinks(appointment);
-              let classIsTomorrow = false;
+              const waLinks = generateWhatsAppLinks(appointment)
+              let classIsTomorrow = false
               if (appointment.classDate) {
                   try {
-                      classIsTomorrow = isTomorrow(parseISO(appointment.classDate));
+                      classIsTomorrow = isTomorrow(parseISO(appointment.classDate))
                   } catch (e) {}
               }
 
@@ -331,7 +297,7 @@ Nos vemos na aula! Kida!`;
 
                   </AccordionContent>
                 </AccordionItem>
-              );
+              )
             })}
           </Accordion>
         ) : (

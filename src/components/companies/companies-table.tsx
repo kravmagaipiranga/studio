@@ -12,81 +12,81 @@ import { Button } from "@/components/ui/button"
 import { Save, Trash2, Building2, Phone, Mail, User } from "lucide-react"
 import { Company } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
-import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
-import { collection, doc } from "firebase/firestore";
-import { Input } from "../ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { Textarea } from "../ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Badge } from "../ui/badge";
+import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
+import { collection, doc } from "firebase/firestore"
+import { Input } from "../ui/input"
+import { useToast } from "@/hooks/use-toast"
+import { Textarea } from "../ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import { Badge } from "../ui/badge"
 import { cn } from "@/lib/utils"
 
 interface CompaniesTableProps {
-  companies: Company[];
-  setCompanies: React.Dispatch<React.SetStateAction<Company[]>>;
-  isLoading: boolean;
+  companies: Company[]
+  setCompanies: React.Dispatch<React.SetStateAction<Company[]>>
+  isLoading: boolean
 }
 
 export function CompaniesTable({ companies, setCompanies, isLoading }: CompaniesTableProps) {
-  const firestore = useFirestore();
-  const { toast } = useToast();
-  const [mounted, setMounted] = useState(false);
+  const firestore = useFirestore()
+  const { toast } = useToast()
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    setMounted(true)
+  }, [])
 
   const handleInputChange = (companyId: string, field: keyof Company, value: any) => {
     setCompanies(prev =>
       prev.map(item =>
         item.id === companyId ? { ...item, [field]: value } : item
       )
-    );
-  };
+    )
+  }
 
   const handleSaveCompany = (itemToSave: Company) => {
-    if (!firestore) return;
+    if (!firestore) return
 
     if (!itemToSave.name || !itemToSave.workType) {
         toast({
             variant: "destructive",
             title: "Campos Obrigatórios",
             description: "O Nome da Empresa e o Tipo de Trabalho são obrigatórios."
-        });
-        return;
+        })
+        return
     }
 
-    const { isNew, id, ...itemData } = itemToSave;
-    const finalId = isNew ? doc(collection(firestore, "companies")).id : id;
+    const { isNew, id, ...itemData } = itemToSave
+    const finalId = isNew ? doc(collection(firestore, "companies")).id : id
 
-    const docRef = doc(firestore, 'companies', finalId);
-    setDocumentNonBlocking(docRef, { ...itemData, id: finalId }, { merge: true });
+    const docRef = doc(firestore, 'companies', finalId)
+    setDocumentNonBlocking(docRef, { ...itemData, id: finalId }, { merge: true })
 
     toast({
         title: "Empresa Salva!",
         description: `Os dados de ${itemData.name} foram salvos com sucesso.`
-    });
+    })
     
-    setCompanies(prev => prev.map(c => c.id === itemToSave.id ? { ...itemData, id: finalId, isNew: false } : c));
-  };
+    setCompanies(prev => prev.map(c => c.id === itemToSave.id ? { ...itemData, id: finalId, isNew: false } : c))
+  }
 
   const handleDeleteCompany = (e: React.MouseEvent, itemId: string, companyName: string) => {
-    e.stopPropagation();
-    if (!firestore) return;
+    e.stopPropagation()
+    if (!firestore) return
     
-    const isNewRow = itemId.startsWith('new_');
+    const isNewRow = itemId.startsWith('new_')
     if (isNewRow) {
-        setCompanies(prev => prev.filter(c => c.id !== itemId));
-        return;
+        setCompanies(prev => prev.filter(c => c.id !== itemId))
+        return
     }
 
-    const docRef = doc(firestore, 'companies', itemId);
-    deleteDocumentNonBlocking(docRef);
+    const docRef = doc(firestore, 'companies', itemId)
+    deleteDocumentNonBlocking(docRef)
     toast({
         title: "Registro Removido",
         description: `A empresa ${companyName} foi removida do sistema.`
     })
-  };
+  }
 
   if (isLoading || !mounted) {
       return (
@@ -125,7 +125,6 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                   </AccordionTrigger>
                   <AccordionContent className="pt-4 pb-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {/* Dados da Empresa */}
                           <div className="space-y-4">
                               <h4 className="text-xs font-black uppercase text-muted-foreground tracking-widest border-b pb-1">Identificação</h4>
                               <div className="space-y-2">
@@ -162,7 +161,6 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                               </div>
                           </div>
 
-                          {/* Dados de Contato */}
                           <div className="space-y-4">
                               <h4 className="text-xs font-black uppercase text-muted-foreground tracking-widest border-b pb-1">Contato na Empresa</h4>
                               <div className="space-y-2">
@@ -195,7 +193,6 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                           </div>
                       </div>
 
-                      {/* Controle Financeiro */}
                       <div className="mt-8 space-y-4">
                           <h4 className="text-xs font-black uppercase text-muted-foreground tracking-widest border-b pb-1">Financeiro</h4>
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -266,8 +263,7 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                       </div>
                   </AccordionContent>
                 </AccordionItem>
-              );
-            })}
+            ))}
           </Accordion>
         ) : (
             <div className="text-center py-10 text-muted-foreground">

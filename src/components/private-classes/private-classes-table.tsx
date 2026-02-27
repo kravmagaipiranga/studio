@@ -11,74 +11,73 @@ import { Button } from "@/components/ui/button"
 import { Save, Trash2, Copy } from "lucide-react"
 import { PrivateClass } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
-import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
-import { collection, doc } from "firebase/firestore";
-import { Input } from "../ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { Textarea } from "../ui/textarea";
+import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
+import { collection, doc } from "firebase/firestore"
+import { Input } from "../ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import { useToast } from "@/hooks/use-toast"
+import { Textarea } from "../ui/textarea"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuidv4 } from "uuid"
 
 
 interface PrivateClassesTableProps {
-  privateClasses: PrivateClass[];
-  setPrivateClasses: React.Dispatch<React.SetStateAction<PrivateClass[]>>;
-  isLoading: boolean;
+  privateClasses: PrivateClass[]
+  setPrivateClasses: React.Dispatch<React.SetStateAction<PrivateClass[]>>
+  isLoading: boolean
 }
 
 export function PrivateClassesTable({ privateClasses, setPrivateClasses, isLoading }: PrivateClassesTableProps) {
-  const firestore = useFirestore();
-  const { toast } = useToast();
+  const firestore = useFirestore()
+  const { toast } = useToast()
   
   const handleInputChange = (classId: string, field: keyof PrivateClass, value: any) => {
     setPrivateClasses(prev =>
       prev.map(item => {
         if (item.id === classId) {
-          const updatedItem = { ...item, [field]: value };
+          const updatedItem = { ...item, [field]: value }
 
-          // Recalculate total amount if number of classes or price per class changes
           if (field === 'numberOfClasses' || field === 'pricePerClass') {
-              const numClasses = field === 'numberOfClasses' ? (Number(value) || 0) : item.numberOfClasses;
-              const price = field === 'pricePerClass' ? (Number(value) || 0) : item.pricePerClass;
-              updatedItem.paymentAmount = numClasses * price;
+              const numClasses = field === 'numberOfClasses' ? (Number(value) || 0) : item.numberOfClasses
+              const price = field === 'pricePerClass' ? (Number(value) || 0) : item.pricePerClass
+              updatedItem.paymentAmount = numClasses * price
           }
-          return updatedItem;
+          return updatedItem
         }
-        return item;
+        return item
       })
-    );
-  };
+    )
+  }
   
   const handleSaveClass = (itemToSave: PrivateClass) => {
-    if (!firestore) return;
+    if (!firestore) return
     
     if (!itemToSave.studentName || !itemToSave.classDate || !itemToSave.classTime) {
         toast({
             variant: "destructive",
             title: "Campos Obrigatórios",
             description: "Por favor, preencha Nome do Aluno, Data e Horário da Aula antes de salvar."
-        });
-        return;
+        })
+        return
     }
 
-    const { isNew, id, ...itemData } = itemToSave;
-    const finalId = isNew ? doc(collection(firestore, "privateClasses")).id : id;
+    const { isNew, id, ...itemData } = itemToSave
+    const finalId = isNew ? doc(collection(firestore, "privateClasses")).id : id
 
-    const docRef = doc(firestore, 'privateClasses', finalId);
-    setDocumentNonBlocking(docRef, { ...itemData, id: finalId }, { merge: true });
+    const docRef = doc(firestore, 'privateClasses', finalId)
+    setDocumentNonBlocking(docRef, { ...itemData, id: finalId }, { merge: true })
 
     toast({
         title: "Aula Salva!",
         description: `A aula de ${itemData.studentName} foi salva com sucesso.`
-    });
+    })
     
-    setPrivateClasses(prev => prev.map(ex => ex.id === itemToSave.id ? { ...itemData, id: finalId, isNew: false } : ex));
-  };
+    setPrivateClasses(prev => prev.map(ex => ex.id === itemToSave.id ? { ...itemData, id: finalId, isNew: false } : ex))
+  }
 
   const handleDuplicateClass = (e: React.MouseEvent, classToDuplicate: PrivateClass) => {
-    e.stopPropagation();
+    e.stopPropagation()
     
     const newClass: PrivateClass = {
         ...classToDuplicate,
@@ -87,36 +86,36 @@ export function PrivateClassesTable({ privateClasses, setPrivateClasses, isLoadi
         paymentStatus: 'Pendente',
         paymentDate: undefined,
         classDate: new Date().toISOString().split('T')[0],
-    };
+    }
 
-    setPrivateClasses(prev => [newClass, ...prev]);
+    setPrivateClasses(prev => [newClass, ...prev])
 
     toast({
         title: "Aula Duplicada!",
         description: "Uma nova aula foi criada com base na anterior. Ajuste a data e salve.",
-    });
-  };
+    })
+  }
 
   const handleDeleteClass = (e: React.MouseEvent, itemId: string, studentName: string) => {
-    e.stopPropagation();
-    if (!firestore) return;
+    e.stopPropagation()
+    if (!firestore) return
     
-    const isNewRow = itemId.startsWith('new_');
+    const isNewRow = itemId.startsWith('new_')
     if (isNewRow) {
-        setPrivateClasses(prev => prev.filter(ex => ex.id !== itemId));
-        return;
+        setPrivateClasses(prev => prev.filter(ex => ex.id !== itemId))
+        return
     }
 
-    const docRef = doc(firestore, 'privateClasses', itemId);
-    deleteDocumentNonBlocking(docRef);
+    const docRef = doc(firestore, 'privateClasses', itemId)
+    deleteDocumentNonBlocking(docRef)
     toast({
         title: "Aula Removida",
         description: `A aula de ${studentName} foi removida.`
     })
-  };
+  }
 
   const getStatusVariant = (status: 'Pago' | 'Pendente'): 'default' | 'destructive' => {
-      return status === 'Pago' ? 'default' : 'destructive';
+      return status === 'Pago' ? 'default' : 'destructive'
   }
 
   if (isLoading) {
