@@ -12,12 +12,13 @@ import { Button } from "@/components/ui/button"
 import { Trash2, MessageSquare, Save, CalendarPlus } from "lucide-react"
 import { Lead } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
-import { useFirestore, deleteDocumentNonBlocking, updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase"
+import { useFirestore, deleteDocumentNonBlocking, updateDocumentNonBlocking, addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase"
 import { doc, collection } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { Checkbox } from "../ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "../ui/input"
+import { cn } from "@/lib/utils"
 
 interface LeadsTableProps {
   leads: Lead[];
@@ -49,16 +50,30 @@ export function LeadsTable({
 
   const handleSave = (lead: Lead) => {
     if (!firestore) return;
-    const docRef = doc(firestore, 'leads', lead.id);
-    updateDocumentNonBlocking(docRef, {
-        name: lead.name,
-        contactDate: lead.contactDate,
-        phone: lead.phone,
-    });
+
+    if (!lead.name || !lead.contactDate || !lead.phone) {
+        toast({
+            variant: "destructive",
+            title: "Campos Obrigatórios",
+            description: "Por favor, preencha Nome, Data e Telefone."
+        });
+        return;
+    }
+
+    const { isNew, id, ...leadData } = lead;
+    const finalId = isNew ? doc(collection(firestore, "leads")).id : id;
+    const docRef = doc(firestore, 'leads', finalId);
+
+    setDocumentNonBlocking(docRef, { ...leadData, id: finalId }, { merge: true });
+
     toast({
-      title: "Lead Atualizado",
-      description: `O lead de ${lead.name} foi atualizado.`
+      title: isNew ? "Lead Criado" : "Lead Atualizado",
+      description: `O lead de ${leadData.name} foi salvo com sucesso.`
     });
+
+    if (isNew) {
+        setLeads(prev => prev.map(l => l.id === lead.id ? { ...leadData, id: finalId, isNew: false } : l));
+    }
   };
 
   const handleScheduleClass = async (lead: Lead) => {
@@ -94,6 +109,12 @@ export function LeadsTable({
 
   const handleDelete = (lead: Lead) => {
     if (!firestore) return;
+
+    if (lead.isNew) {
+        setLeads(prev => prev.filter(l => l.id !== lead.id));
+        return;
+    }
+
     const docRef = doc(firestore, 'leads', lead.id);
     deleteDocumentNonBlocking(docRef);
     toast({
@@ -194,7 +215,7 @@ kravmagaipiranga.com`;
                     : '#';
 
                 return (
-                  <TableRow key={lead.id} data-state={selectedLeads.includes(lead.id) && "selected"}>
+                  <TableRow key={lead.id} data-state={selectedLeads.includes(lead.id) && "selected"} className={cn(lead.isNew && "bg-muted/50")}>
                     <TableCell className="pl-4">
                        <Checkbox
                             checked={selectedLeads.includes(lead.id)}
@@ -220,6 +241,7 @@ kravmagaipiranga.com`;
                       <Input
                         value={lead.name}
                         onChange={(e) => handleInputChange(lead.id, 'name', e.target.value)}
+                        placeholder="Nome do Lead"
                         className="h-auto p-1 border-0 bg-transparent rounded-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:bg-muted/50"
                       />
                     </TableCell>
@@ -235,6 +257,7 @@ kravmagaipiranga.com`;
                       <Input
                         value={lead.phone}
                         onChange={(e) => handleInputChange(lead.id, 'phone', e.target.value)}
+                        placeholder="(11) 99999-9999"
                         className="h-auto p-1 border-0 bg-transparent rounded-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:bg-muted/50"
                       />
                     </TableCell>
@@ -246,6 +269,7 @@ kravmagaipiranga.com`;
                                 className="hover:bg-transparent text-blue-600 hover:text-blue-700" 
                                 onClick={() => handleScheduleClass(lead)}
                                 title="Agendar Aula"
+                                disabled={lead.isNew}
                             >
                                 <CalendarPlus className="h-4 w-4" />
                             </Button>
@@ -253,7 +277,7 @@ kravmagaipiranga.com`;
                                 <Save className="h-4 w-4" />
                             </Button>
                             <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
-                                <Button variant="secondary" size="sm" disabled={whatsappLink === '#'} className="bg-green-500 text-white hover:bg-green-600">
+                                <Button variant="secondary" size="sm" disabled={whatsappLink === '#' || lead.isNew} className="bg-green-500 text-white hover:bg-green-600">
                                     <MessageSquare className="h-4 w-4 mr-2"/>
                                     WhatsApp
                                 </Button>
@@ -269,7 +293,7 @@ kravmagaipiranga.com`;
               {!isLoading && leads.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="h-24 text-center">
-                    Nenhum lead encontrado. Comece importando um arquivo.
+                    Nenhum lead encontrado. Comece importando um arquivo ou adicionando manualmente.
                   </TableCell>
                 </TableRow>
               )}

@@ -1,11 +1,10 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { LeadsTable } from "@/components/leads/leads-table";
 import { LeadImportDialog } from "@/components/leads/lead-import-dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Search, Phone, PhoneForwarded, PhoneOff, Upload, Trash2, PhoneIncoming, Calendar as CalendarIcon, FilterX, ChevronLeft, ChevronRight } from "lucide-react";
+import { Download, Search, Phone, PhoneForwarded, PhoneOff, Upload, Trash2, PhoneIncoming, Calendar as CalendarIcon, FilterX, ChevronLeft, ChevronRight, PlusCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Lead } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
@@ -19,6 +18,7 @@ import { ptBR } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { v4 as uuidv4 } from 'uuid';
 import {
   Select,
   SelectContent,
@@ -172,6 +172,19 @@ export default function LeadsPage() {
         toast({ title: "Leads Atualizados" });
     };
 
+    const handleAddNewLead = () => {
+       const newLead: Lead = {
+         id: `new_${uuidv4()}`,
+         contactDate: format(new Date(), 'yyyy-MM-dd'),
+         name: "",
+         phone: "",
+         contacted: false,
+         responded: false,
+         isNew: true,
+       };
+       setLeads(prev => [newLead, ...prev]);
+    };
+
     return (
         <div className="flex flex-col gap-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -230,10 +243,14 @@ export default function LeadsPage() {
             <div className="flex items-center justify-between gap-4">
                 <h1 className="text-lg font-semibold md:text-2xl">Leads CAT CPKM</h1>
                 <div className="flex items-center gap-2">
+                    <Button onClick={handleAddNewLead}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Novo Lead
+                    </Button>
                     <LeadImportDialog>
-                        <Button>
+                        <Button variant="outline">
                             <Upload className="mr-2 h-4 w-4" />
-                            Importar Leads
+                            Importar em Massa
                         </Button>
                     </LeadImportDialog>
                     <Button variant="outline" onClick={handleExportData}>
