@@ -15,10 +15,30 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, parseISO, startOfMonth, endOfMonth, isSaturday, eachWeekOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckSquare, Trash2, UserCheck, Search, Clock, ChevronLeft, ChevronRight, UserPlus, Info } from "lucide-react";
+import { CheckSquare, Trash2, UserCheck, Search, Clock, ChevronLeft, ChevronRight, UserPlus, Info, TrendingDown, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  Cell
+} from "recharts";
+
+const beltColors: Record<string, string> = {
+  'Branca': '#e2e8f0',
+  'Amarela': '#fbbf24',
+  'Laranja': '#f97316',
+  'Verde': '#22c55e',
+  'Azul': '#3b82f6',
+  'Marrom': '#78350f',
+  'Preta': '#0f172a',
+};
 
 export default function ChamadaPage() {
   const firestore = useFirestore();
@@ -207,20 +227,48 @@ export default function ChamadaPage() {
       };
     });
 
-    let filtered = data;
-    if (searchQuery) {
-      filtered = data.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()));
-    }
+    return data;
+  }, [students, monthAttendance, reportMonth, reportYear]);
 
+  const filteredReportData = useMemo(() => {
+    let filtered = fullReportData;
+    if (searchQuery) {
+      filtered = fullReportData.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
-  }, [students, monthAttendance, reportMonth, reportYear, searchQuery]);
+  }, [fullReportData, searchQuery]);
+
+  // Analytics for Report
+  const classEngagementData = useMemo(() => {
+    if (!monthAttendance) return [];
+    const counts: Record<string, number> = {};
+    monthAttendance.forEach(a => {
+      if (a.time) counts[a.time] = (counts[a.time] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [monthAttendance]);
+
+  const absencesByBelt = useMemo(() => {
+    if (fullReportData.length === 0) return [];
+    const belts = ['Branca', 'Amarela', 'Laranja', 'Verde', 'Azul', 'Marrom', 'Preta'];
+    return belts.map(belt => {
+      const studentsInBelt = fullReportData.filter(d => d.belt === belt && d.absences > 0);
+      if (studentsInBelt.length === 0) return null;
+      return {
+        belt,
+        students: studentsInBelt.sort((a, b) => b.absences - a.absences).slice(0, 5)
+      };
+    }).filter(Boolean);
+  }, [fullReportData]);
 
   // Pagination logic
-  const totalPages = Math.ceil(fullReportData.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredReportData.length / itemsPerPage);
   const paginatedReportData = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return fullReportData.slice(start, start + itemsPerPage);
-  }, [fullReportData, currentPage, itemsPerPage]);
+    return filteredReportData.slice(start, start + itemsPerPage);
+  }, [filteredReportData, currentPage, itemsPerPage]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -351,42 +399,119 @@ export default function ChamadaPage() {
         </TabsContent>
 
         <TabsContent value="relatorio" className="space-y-6 pt-4">
+          {/* Header & Year/Month Filters */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold">Resumo Mensal</h2>
+              <p className="text-sm text-muted-foreground">Visualização de faltas e engajamento das turmas.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={reportMonth} onValueChange={setReportMonth}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <SelectItem key={i} value={String(i + 1).padStart(2, "0")}>
+                      {format(new Date(2024, i, 1), "MMMM", { locale: ptBR })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={reportYear} onValueChange={setReportYear}>
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {["2024", "2025", "2026"].map(y => (
+                    <SelectItem key={y} value={y}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2">
+                  <Users className="h-4 w-4" /> Engajamento por Turma
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[250px] w-full">
+                  {isLoadingReport ? (
+                    <Skeleton className="h-full w-full" />
+                  ) : classEngagementData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={classEngagementData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                        <Tooltip 
+                          contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                          formatter={(value) => [value, "Presenças"]}
+                        />
+                        <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                          {classEngagementData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill="#2563eb" />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-muted-foreground italic">Sem dados neste período.</div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4" /> Alunos com Mais Faltas por Faixa
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[250px]">
+                  <div className="p-4 space-y-6">
+                    {isLoadingReport ? (
+                      <div className="space-y-4">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                    ) : absencesByBelt.length > 0 ? (
+                      absencesByBelt.map((group: any) => (
+                        <div key={group.belt} className="space-y-2">
+                          <h4 className="text-xs font-black uppercase flex items-center gap-2" style={{ color: beltColors[group.belt] || 'inherit' }}>
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: beltColors[group.belt] || '#ccc' }} />
+                            Faixa {group.belt}
+                          </h4>
+                          <div className="space-y-1">
+                            {group.students.map((s: any) => (
+                              <div key={s.id} className="flex items-center justify-between text-xs p-2 rounded bg-muted/30">
+                                <span className="font-medium">{s.name}</span>
+                                <span className="font-bold text-destructive">{s.absences} faltas</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-10 text-muted-foreground italic">Parabéns! Todos os alunos estão em dia.</div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Full Report Table Card */}
           <Card>
-            <CardHeader>
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <CardTitle>Frequência Mensal</CardTitle>
-                  <CardDescription>Resumo de aulas e faltas por aluno matriculado.</CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Select value={reportMonth} onValueChange={setReportMonth}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 12 }).map((_, i) => (
-                        <SelectItem key={i} value={String(i + 1).padStart(2, "0")}>
-                          {format(new Date(2024, i, 1), "MMMM", { locale: ptBR })}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={reportYear} onValueChange={setReportYear}>
-                    <SelectTrigger className="w-24">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {["2024", "2025", "2026"].map(y => (
-                        <SelectItem key={y} value={y}>{y}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4 p-0">
-              <div className="p-4 relative w-full max-w-sm">
-                <Search className="absolute left-6.5 top-6.5 h-4 w-4 text-muted-foreground ml-2 mt-0.5" />
+            <CardHeader className="pb-3 border-b">
+              <div className="relative max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder="Buscar aluno no relatório..."
@@ -395,56 +520,60 @@ export default function ChamadaPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-
-              <div className="border-t">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Aluno</TableHead>
-                      <TableHead>Faixa</TableHead>
-                      <TableHead className="text-center">Aulas (Peso Sáb.)</TableHead>
-                      <TableHead className="text-center">Meta Mensal</TableHead>
-                      <TableHead className="text-center">Faltas Est.</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoadingReport || isLoadingStudents ? (
-                      Array.from({ length: 5 }).map((_, i) => (
-                        <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-10 w-full" /></TableCell></TableRow>
-                      ))
-                    ) : paginatedReportData.length > 0 ? (
-                      paginatedReportData.map((d) => (
-                        <TableRow key={d.id}>
-                          <TableCell className="font-medium">{d.name}</TableCell>
-                          <TableCell>{d.belt}</TableCell>
-                          <TableCell className="text-center font-bold text-blue-600">{d.count}</TableCell>
-                          <TableCell className="text-center text-muted-foreground">{d.target}</TableCell>
-                          <TableCell className="text-center">
-                            <span className={cn(
-                              "font-bold px-2 py-1 rounded",
-                              d.absences > 3 ? "bg-red-100 text-red-700" : d.absences > 0 ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
-                            )}>
-                              {d.absences}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
-                          Nenhum dado para exibir.
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Aluno</TableHead>
+                    <TableHead>Faixa</TableHead>
+                    <TableHead className="text-center">Aulas (Peso Sáb.)</TableHead>
+                    <TableHead className="text-center">Meta Mensal</TableHead>
+                    <TableHead className="text-center">Faltas Est.</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoadingReport || isLoadingStudents ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-10 w-full" /></TableCell></TableRow>
+                    ))
+                  ) : paginatedReportData.length > 0 ? (
+                    paginatedReportData.map((d) => (
+                      <TableRow key={d.id}>
+                        <TableCell className="font-medium">{d.name}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: beltColors[d.belt] || '#ccc' }} />
+                            {d.belt}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center font-bold text-blue-600">{d.count}</TableCell>
+                        <TableCell className="text-center text-muted-foreground">{d.target}</TableCell>
+                        <TableCell className="text-center">
+                          <span className={cn(
+                            "font-bold px-2 py-1 rounded",
+                            d.absences > 3 ? "bg-red-100 text-red-700" : d.absences > 0 ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
+                          )}>
+                            {d.absences}
+                          </span>
                         </TableCell>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                        Nenhum dado para exibir.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
 
               {/* Pagination Controls */}
-              {!isLoadingReport && !isLoadingStudents && fullReportData.length > 0 && (
+              {!isLoadingReport && !isLoadingStudents && filteredReportData.length > 0 && (
                 <div className="p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/10">
                     <div className="text-sm text-muted-foreground">
-                        Mostrando <strong>{Math.min(fullReportData.length, (currentPage - 1) * itemsPerPage + 1)}</strong> a <strong>{Math.min(fullReportData.length, currentPage * itemsPerPage)}</strong> de <strong>{fullReportData.length}</strong> alunos
+                        Mostrando <strong>{Math.min(filteredReportData.length, (currentPage - 1) * itemsPerPage + 1)}</strong> a <strong>{Math.min(filteredReportData.length, currentPage * itemsPerPage)}</strong> de <strong>{filteredReportData.length}</strong> alunos
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
@@ -507,4 +636,12 @@ export default function ChamadaPage() {
       </Tabs>
     </div>
   );
+}
+
+function ScrollArea({ children, className }: { children: React.ReactNode, className?: string }) {
+    return (
+        <div className={cn("overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20", className)}>
+            {children}
+        </div>
+    );
 }
