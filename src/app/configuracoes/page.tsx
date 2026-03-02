@@ -2,13 +2,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
-import { collection, getDocs, doc, writeBatch } from "firebase/firestore";
+import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking, useCollection, deleteDocumentNonBlocking } from "@/firebase";
+import { collection, getDocs, doc, writeBatch, query, orderBy } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Upload, ShieldAlert, Loader2, Database, FileJson, AlertTriangle, Building2, GraduationCap, Save, RefreshCw } from "lucide-react";
+import { Download, Upload, ShieldAlert, Loader2, Database, FileJson, AlertTriangle, Building2, GraduationCap, Save, RefreshCw, MessageSquare, Plus, Trash2, Edit3, CheckCircle2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,10 +21,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GlobalParameters, Student } from "@/lib/types";
+import { GlobalParameters, Student, MessageTemplate } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { v4 as uuidv4 } from 'uuid';
 
 const collectionsToBackup = [
   'students', 
@@ -41,7 +44,8 @@ const collectionsToBackup = [
   'leads',
   'attendance',
   'parameters',
-  'companies'
+  'companies',
+  'messageTemplates'
 ];
 
 const DEFAULT_PARAMETERS: GlobalParameters = {
@@ -80,12 +84,22 @@ export default function ConfiguracoesPage() {
   const [isSavingParams, setIsSavingParams] = useState(false);
   const [localParams, setLocalParams] = useState<GlobalParameters>(DEFAULT_PARAMETERS);
 
+  // Message Template State
+  const [editingTemplate, setEditingTemplate] = useState<Partial<MessageTemplate> | null>(null);
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+
   const paramsRef = useMemoFirebase(() => {
     if (!firestore) return null;
     return doc(firestore, 'parameters', 'global');
   }, [firestore]);
 
+  const templatesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'messageTemplates'), orderBy('name', 'asc'));
+  }, [firestore]);
+
   const { data: dbParams, isLoading: isLoadingParams } = useDoc<GlobalParameters>(paramsRef);
+  const { data: templates, isLoading: isLoadingTemplates } = useCollection<MessageTemplate>(templatesQuery);
 
   useEffect(() => {
     if (dbParams) {
@@ -249,6 +263,39 @@ export default function ConfiguracoesPage() {
     }));
   };
 
+  // Message Template Handlers
+  const handleSaveTemplate = async () => {
+    if (!firestore || !editingTemplate) return;
+    if (!editingTemplate.name || !editingTemplate.body) {
+      toast({ variant: "destructive", title: "Erro", description: "Nome e Corpo da mensagem são obrigatórios." });
+      return;
+    }
+
+    setIsSavingTemplate(true);
+    try {
+      const id = editingTemplate.id || uuidv4();
+      const docRef = doc(firestore, 'messageTemplates', id);
+      const dataToSave = {
+        ...editingTemplate,
+        id,
+        subject: editingTemplate.subject || "Aviso Importante - Krav Magá Ipiranga"
+      };
+      await setDocumentNonBlocking(docRef, dataToSave, { merge: true });
+      toast({ title: "Modelo Salvo", description: "O modelo de mensagem foi atualizado com sucesso." });
+      setEditingTemplate(null);
+    } catch (e) {
+      toast({ variant: "destructive", title: "Erro ao Salvar", description: "Não foi possível salvar o modelo." });
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  };
+
+  const handleDeleteTemplate = (id: string) => {
+    if (!firestore) return;
+    deleteDocumentNonBlocking(doc(firestore, 'messageTemplates', id));
+    toast({ title: "Modelo Excluído" });
+  };
+
   return (
     <div className="flex flex-col gap-8 max-w-5xl mx-auto pb-10">
       <div>
@@ -257,9 +304,10 @@ export default function ConfiguracoesPage() {
       </div>
 
       <Tabs defaultValue="identidade" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 max-w-md">
+        <TabsList className="grid w-full grid-cols-4 max-w-lg">
           <TabsTrigger value="identidade">Escola</TabsTrigger>
           <TabsTrigger value="academico">Acadêmico</TabsTrigger>
+          <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
           <TabsTrigger value="seguranca">Segurança</TabsTrigger>
         </TabsList>
 
@@ -417,6 +465,119 @@ export default function ConfiguracoesPage() {
                   Salvar Regras
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="mensagens" className="space-y-6 pt-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-blue-600" />
+                  Modelos de Mensagem
+                </CardTitle>
+                <CardDescription>Gerencie os textos prontos para a Central de Mensagens.</CardDescription>
+              </div>
+              <Button size="sm" onClick={() => setEditingTemplate({ name: "", subject: "", body: "" })}>
+                <Plus className="h-4 w-4 mr-2" /> Novo Modelo
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {editingTemplate ? (
+                <div className="space-y-4 p-4 border rounded-lg bg-muted/20 animate-in fade-in slide-in-from-top-2">
+                  <h4 className="font-bold text-sm uppercase tracking-wider">{editingTemplate.id ? "Editar Modelo" : "Novo Modelo"}</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Nome do Modelo (Interno)</Label>
+                      <Input 
+                        value={editingTemplate.name} 
+                        onChange={e => setEditingTemplate({ ...editingTemplate, name: e.target.value })} 
+                        placeholder="Ex: Lembrete de Mensalidade"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Assunto (E-mail)</Label>
+                      <Input 
+                        value={editingTemplate.subject} 
+                        onChange={e => setEditingTemplate({ ...editingTemplate, subject: e.target.value })} 
+                        placeholder="Ex: Aviso Importante"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Corpo da Mensagem</Label>
+                      <div className="flex gap-1 flex-wrap">
+                        {["nome", "plano", "vencimento", "valor", "inicio"].map(tag => (
+                          <Badge 
+                            key={tag} 
+                            variant="secondary" 
+                            className="text-[9px] cursor-pointer hover:bg-muted"
+                            onClick={() => setEditingTemplate({ ...editingTemplate, body: (editingTemplate.body || "") + `{{${tag}}}` })}
+                          >
+                            + {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <Textarea 
+                      rows={10}
+                      value={editingTemplate.body} 
+                      onChange={e => setEditingTemplate({ ...editingTemplate, body: e.target.value })} 
+                      placeholder="Use {{nome}} para o nome do aluno..."
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="ghost" onClick={() => setEditingTemplate(null)}>Cancelar</Button>
+                    <Button onClick={handleSaveTemplate} disabled={isSavingTemplate}>
+                      {isSavingTemplate ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                      Salvar Modelo
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {isLoadingTemplates ? (
+                    <Skeleton className="h-24 w-full" />
+                  ) : templates && templates.length > 0 ? (
+                    templates.map(tpl => (
+                      <div key={tpl.id} className="p-4 border rounded-lg hover:shadow-sm transition-shadow group">
+                        <div className="flex items-center justify-between mb-2">
+                          <h5 className="font-bold text-sm text-blue-900">{tpl.name}</h5>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingTemplate(tpl)}>
+                              <Edit3 className="h-3.5 w-3.5" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir Modelo?</AlertDialogTitle>
+                                  <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteTemplate(tpl.id)}>Confirmar</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2 italic">{tpl.body}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-full py-10 text-center text-muted-foreground border-2 border-dashed rounded-lg">
+                      Nenhum modelo cadastrado. Clique em "Novo Modelo" para começar.
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

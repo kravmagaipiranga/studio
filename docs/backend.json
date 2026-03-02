@@ -61,33 +61,38 @@
       },
       "required": ["id", "name", "whatsapp", "chosenClass", "hasCompanions", "year", "attended", "createdAt"]
     },
-    "Attendance": {
-      "title": "Attendance",
+    "Company": {
+      "title": "Company",
       "type": "object",
-      "description": "Records student class attendance or visitor interaction.",
+      "description": "Represents a corporate client.",
       "properties": {
         "id": { "type": "string" },
-        "studentId": { "type": "string" },
-        "studentName": { "type": "string" },
-        "date": { "type": "string", "format": "date" },
-        "time": { "type": "string" },
-        "type": { "type": "string", "enum": ["Semanal", "Sábado"] },
-        "category": { "type": "string", "enum": ["Aluno", "Visita", "Experiência"] },
+        "name": { "type": "string" },
+        "cnpj": { "type": "string" },
+        "contactName": { "type": "string" },
+        "contactPhone": { "type": "string" },
+        "contactEmail": { "type": "string" },
+        "workType": { "type": "string" },
+        "value": { "type": "number" },
+        "paymentDate": { "type": "string", "format": "date" },
+        "paymentMethod": { "type": "string" },
+        "paymentStatus": { "type": "string", "enum": ["Pago", "Pendente"] },
+        "notes": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "studentName", "date", "time", "type"]
+      "required": ["id", "name"]
     },
-    "Parameters": {
-      "title": "Parameters",
+    "MessageTemplate": {
+      "title": "MessageTemplate",
       "type": "object",
-      "description": "Global school parameters.",
       "properties": {
-        "schoolName": { "type": "string" },
-        "schoolCnpj": { "type": "string" },
-        "schoolAddress": { "type": "string" },
-        "schoolPhone": { "type": "string" },
-        "attendanceTargetPerWeek": { "type": "number" }
-      }
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "subject": { "type": "string" },
+        "body": { "type": "string" },
+        "category": { "type": "string" }
+      },
+      "required": ["id", "name", "subject", "body"]
     }
   },
   "auth": {
@@ -128,19 +133,19 @@
         }
       },
       {
-        "path": "/attendance/{attendanceId}",
+        "path": "/companies/{companyId}",
         "definition": {
-          "entityName": "Attendance",
-          "schema": { "$ref": "#/backend/entities/Attendance" },
-          "description": "Stores student attendance and visitor records."
+          "entityName": "Company",
+          "schema": { "$ref": "#/backend/entities/Company" },
+          "description": "Stores corporate client data."
         }
       },
       {
-        "path": "/parameters/{paramId}",
+        "path": "/messageTemplates/{templateId}",
         "definition": {
-          "entityName": "Parameters",
-          "schema": { "$ref": "#/backend/entities/Parameters" },
-          "description": "Global school configuration."
+          "entityName": "MessageTemplate",
+          "schema": { "$ref": "#/backend/entities/MessageTemplate" },
+          "description": "Stores message templates for the message center."
         }
       }
     ]

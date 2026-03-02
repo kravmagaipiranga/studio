@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Bell,
   Home,
@@ -351,6 +351,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
 function NavItem({ href, children, isMobile = false, target }: { href: string; children: React.ReactNode; isMobile?: boolean; target?: string; }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const fullPath = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '');
+  
   const isActive = pathname ? (href === "/" ? pathname === "/" : pathname.startsWith(href)) : false;
   
   const linkProps = {

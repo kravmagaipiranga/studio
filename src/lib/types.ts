@@ -242,3 +242,11 @@ export type Company = {
   createdAt: string;
   isNew?: boolean;
 };
+
+export type MessageTemplate = {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  category?: string;
+};

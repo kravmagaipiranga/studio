@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { collection, query, orderBy, doc } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase, useDoc } from "@/firebase";
-import { Student, GlobalParameters } from "@/lib/types";
+import { Student, GlobalParameters, MessageTemplate } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,50 +13,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, MessageSquare, Mail, UserPlus, Users, Send, Info, CheckCircle2, RotateCcw } from "lucide-react";
+import { Search, MessageSquare, Mail, UserPlus, Users, Send, Info, CheckCircle2, RotateCcw, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
-type MessageTemplate = {
-  id: string;
-  name: string;
-  subject: string;
-  body: string;
-};
-
-export default function CentralDeMensagensPage() {
-  const firestore = useFirestore();
-  const { toast } = useToast();
-  
-  // Data Fetching
-  const studentsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'students'), orderBy('name', 'asc'));
-  }, [firestore]);
-
-  const paramsRef = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return doc(firestore, 'parameters', 'global');
-  }, [firestore]);
-
-  const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
-  const { data: schoolParams } = useDoc<GlobalParameters>(paramsRef);
-
-  // State
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [activeTemplateId, setActiveTemplateId] = useState("vencimento");
-  const [customBody, setBody] = useState("");
-  const [customSubject, setSubject] = useState("");
-
-  const templates: MessageTemplate[] = [
-    {
-      id: "vencimento",
-      name: "Lembrete de Vencimento",
-      subject: "Lembrete de Mensalidade - Krav Magá Ipiranga",
-      body: `Olá, {{nome}}! Tudo bem? 👊
+const DEFAULT_TEMPLATES: MessageTemplate[] = [
+  {
+    id: "vencimento",
+    name: "Lembrete de Vencimento",
+    subject: "Lembrete de Mensalidade - Krav Magá Ipiranga",
+    body: `Olá, {{nome}}! Tudo bem? 👊
 
 Passando para lembrar que seu plano de Krav Magá ({{plano}}) vence em {{vencimento}}.
 
@@ -67,12 +36,12 @@ Caso queira agilizar, você pode pagar via PIX usando a chave: thiago@kravmaga.o
 Se o pagamento já foi realizado, por favor desconsidere esta mensagem. Qualquer dúvida, estamos à disposição!
 
 Kida! 🛡️`
-    },
-    {
-      id: "boas_vindas",
-      name: "Boas-vindas",
-      subject: "Bem-vindo ao CT Krav Magá Ipiranga!",
-      body: `Olá, {{nome}}! Seja muito bem-vindo(a) ao nosso Centro de Treinamento! 🥊
+  },
+  {
+    id: "boas_vindas",
+    name: "Boas-vindas",
+    subject: "Bem-vindo ao CT Krav Magá Ipiranga!",
+    body: `Olá, {{nome}}! Seja muito bem-vindo(a) ao nosso Centro de Treinamento! 🥊
 
 Ficamos felizes em ter você conosco. Lembre-se que seu plano foi registrado como {{plano}} e sua data de início foi {{inicio}}.
 
@@ -82,7 +51,7 @@ Aqui vão algumas dicas para você aproveitar ao máximo suas aulas conosco!
 - Antes de entrar ou sair do tatame, avise o instrutor. Isso é importante para evitar acidentes e para todos saberem que você está bem.
 - Ouça seu corpo e obedeça ao seu ritmo individual. Qualquer lesão ocorrida pelo excesso de disposição ou pela falta de preparo irá atrapalhar sua rotina e trazer problemas. 
 - Ouça seu instrutor! Ele já tem muito tempo de experiência, e irá ajudá-lo a encontrar seu ritmo de treino e a maneira correta de fazê-lo sem se lesionar, aprendendo a técnica de forma mais rápida. Não deixe que a ansiedade e o ego atrapalhem suas ações e causem danos a você e a seu corpo!
-- Comece devagar. Essa é a melhor forma de ganhar, gradualmente, força, agilidade e técnica, sem se machucar. Mantenha o foco na técnica e na execução do exercício, e espere o momento certo para aumentar força e velocidade. Fazer certo é melhor que fazer rápido. Quando a técnica estiver boa, gradativamente aumente sua velocidade e sua intensidade de treino.
+- Comece devagar. Essa é a melhor forma de ganhar, gradualmente, força, agilidade e técnica, sem se machucar. Mantenha o foco na técnica e na execução do exercício, e espere o momento certo para aumentar força e velocidade. Fazer certo é melhor que fazer rápido. Quando a técnica estiver boa, gradativamente aumente seu velocidade e sua intensidade de treino.
 - Absorva o máximo de informações possível. Aulas de Krav Magá exigem concentração e atenção do aluno.
 - Pergunte. Não tenha medo de fazer perguntas quando não entender algo. Seu instrutor e seus colegas de treino estão lá para ajudar você! Todos sairão ganhando quando você entender o exercício corretamente. 
 - Treine! Não é preciso falar, mas, o único jeito de aprender e ficar bom em algo é treinando. Repita o exercício incontáveis números de vezes, não pare o treino enquanto o instrutor não solicitar ou não mudar de exercício. Preste atenção em cada detalhe do movimento e de seu corpo.
@@ -97,23 +66,57 @@ Tome sempre todos os cuidados necessários e mantenha o foco e a determinação 
 Qualquer dúvida sobre horários ou uniformes, pode nos chamar por aqui.
 
 Bom treino! Kida! 👊`
-    },
-    {
-      id: "personalizada",
-      name: "Mensagem em Branco",
-      subject: "Aviso Importante - Krav Magá Ipiranga",
-      body: "Olá, {{nome}}!\n\n"
-    }
-  ];
+  }
+];
+
+export default function CentralDeMensagensPage() {
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  
+  // Data Fetching
+  const studentsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'students'), orderBy('name', 'asc'));
+  }, [firestore]);
+
+  const templatesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'messageTemplates'), orderBy('name', 'asc'));
+  }, [firestore]);
+
+  const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
+  const { data: dbTemplates, isLoading: isLoadingTemplates } = useCollection<MessageTemplate>(templatesQuery);
+
+  const templates = useMemo(() => {
+    const list = [...(dbTemplates || [])];
+    // Add default templates if they don't exist in DB
+    DEFAULT_TEMPLATES.forEach(def => {
+      if (!list.find(t => t.id === def.id || t.name === def.name)) {
+        list.push(def);
+      }
+    });
+    return list;
+  }, [dbTemplates]);
+
+  // State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [activeTemplateId, setActiveTemplateId] = useState("");
+  const [customBody, setBody] = useState("");
+  const [customSubject, setSubject] = useState("");
 
   // Initialize template
   useEffect(() => {
-    const tpl = templates.find(t => t.id === activeTemplateId);
-    if (tpl) {
-      setBody(tpl.body);
-      setSubject(tpl.subject);
+    if (templates.length > 0) {
+      const initialId = activeTemplateId || templates[0].id;
+      const tpl = templates.find(t => t.id === initialId);
+      if (tpl) {
+        setActiveTemplateId(tpl.id);
+        setBody(tpl.body);
+        setSubject(tpl.subject);
+      }
     }
-  }, [activeTemplateId]);
+  }, [templates, activeTemplateId]);
 
   // Filtering
   const filteredStudents = useMemo(() => {
@@ -185,6 +188,12 @@ Bom treino! Kida! 👊`
           <h1 className="text-2xl font-bold tracking-tight">Central de Mensagens</h1>
           <p className="text-muted-foreground">Comunicação rápida e personalizada com seus alunos.</p>
         </div>
+        <Link href="/configuracoes?tab=mensagens">
+          <Button variant="outline" size="sm">
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Configurar Modelos
+          </Button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
