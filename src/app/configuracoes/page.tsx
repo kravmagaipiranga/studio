@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking, useCollection, deleteDocumentNonBlocking } from "@/firebase";
 import { collection, getDocs, doc, writeBatch, query, orderBy } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +46,55 @@ const collectionsToBackup = [
   'parameters',
   'companies',
   'messageTemplates'
+];
+
+const DEFAULT_TEMPLATES: MessageTemplate[] = [
+  {
+    id: "vencimento",
+    name: "Lembrete de Vencimento",
+    subject: "Lembrete de Mensalidade - Krav Magá Ipiranga",
+    body: `Olá, {{nome}}! Tudo bem? 👊
+
+Passando para lembrar que seu plano de Krav Magá ({{plano}}) vence em {{vencimento}}.
+
+O valor para renovação é R$ {{valor}}.
+
+Caso queira agilizar, você pode pagar via PIX usando a chave: thiago@kravmaga.org.br (CNPJ: 31.116.136/0001-95).
+
+Se o pagamento já foi realizado, por favor desconsidere esta mensagem. Qualquer dúvida, estamos à disposição!
+
+Kida! 🛡️`
+  },
+  {
+    id: "boas_vindas",
+    name: "Boas-vindas",
+    subject: "Bem-vindo ao CT Krav Magá Ipiranga!",
+    body: `Olá, {{nome}}! Seja muito bem-vindo(a) ao nosso Centro de Treinamento! 🥊
+
+Ficamos felizes em ter você conosco. Lembre-se que seu plano foi registrado como {{plano}} e sua data de início foi {{inicio}}.
+
+Aqui vão algumas dicas para você aproveitar ao máximo suas aulas conosco!
+
+- Nosso Centro de Treinamento possui vestiários e armários. Use-os como precisar, seja para colocar seu uniforme ou roupa de treino depois de chegar na academia, seja para guardar seus pertences em segurança (não use relógios, pulseiras, colares ou anéis durante os treinos, eles podem causar graves acidentes ou quebrar).
+- Antes de entrar ou sair do tatame, avise o instrutor. Isso é importante para evitar acidentes e para todos saberem que você está bem.
+- Ouça seu corpo e obedeça ao seu ritmo individual. Qualquer lesão ocorrida pelo excesso de disposição ou pela falta de preparo irá atrapalhar sua rotina e trazer problemas. 
+- Ouça seu instrutor! Ele já tem muito tempo de experiência, e irá ajudá-lo a encontrar seu ritmo de treino e a maneira correta de fazê-lo sem se lesionar, aprendendo a técnica de forma mais rápida. Não deixe que a ansiedade e o ego atrapalhem suas ações e causem danos a você e a seu corpo!
+- Comece devagar. Essa é a melhor forma de ganhar, gradualmente, força, agilidade e técnica, sem se machucar. Mantenha o foco na técnica e na execução do exercício, e espere o momento certo para aumentar força e velocidade. Fazer certo é melhor que fazer rápido. Quando a técnica estiver boa, gradativamente aumente seu velocidade e sua intensidade de treino.
+- Absorva o máximo de informações possível. Aulas de Krav Magá exigem concentração e atenção do aluno.
+- Pergunte. Não tenha medo de fazer perguntas quando não entender algo. Seu instrutor e seus colegas de treino estão lá para ajudar você! Todos sairão ganhando quando você entender o exercício corretamente. 
+- Treine! Não é preciso falar, mas, o único jeito de aprender e ficar bom em algo é treinando. Repita o exercício incontáveis números de vezes, não pare o treino enquanto o instrutor não solicitar ou não mudar de exercício. Preste atenção em cada detalhe do movimento e de seu corpo.
+
+Dicas para Recuperação Pós Aula:
+- Hidrate-se! Beba bastante água durante o dia, antes e após seu treino. Se preciso for, beba também durante, mas DO LADO DE FORA do tatame. A água ajuda na recuperação muscular e no funcionamento correto do seu corpo. Desidratação pode causar cãibra, fadiga e outros problemas mais graves.
+- Alongue! O alongamento ajuda a prevenir lesões. Alongamentos dinâmicos ajudam a soltar a musculatura e deixá-los prontos para o exercício, enquanto alongamentos estáticos ajudam a deixar a musculatura menos rígida e menos dolorida.
+- Descanse! Dê ao seu corpo um tempo de recuperação após a aula. Tenha uma boa noite de sono e se alimente de uma forma saudável para seus músculos se recuperarem! E não se assuste caso você sinta algum tipo de desconforto ou dor muscular após as primeiras aulas. Essa condição é absolutamente normal, e durará até que seu corpo se acostume com as aulas.
+
+Tome sempre todos os cuidados necessários e mantenha o foco e a determinação para atingir seus objetivos. Só assim você será capaz de ir longe e obter sempre os melhores resultados, no seu treino e na sua vida!
+
+Qualquer dúvida sobre horários ou uniformes, pode nos chamar por aqui.
+
+Bom treino! Kida! 👊`
+  }
 ];
 
 const DEFAULT_PARAMETERS: GlobalParameters = {
@@ -99,7 +148,18 @@ export default function ConfiguracoesPage() {
   }, [firestore]);
 
   const { data: dbParams, isLoading: isLoadingParams } = useDoc<GlobalParameters>(paramsRef);
-  const { data: templates, isLoading: isLoadingTemplates } = useCollection<MessageTemplate>(templatesQuery);
+  const { data: dbTemplates, isLoading: isLoadingTemplates } = useCollection<MessageTemplate>(templatesQuery);
+
+  const templates = useMemo(() => {
+    const list = [...(dbTemplates || [])];
+    // Adicionar templates padrão se não existirem no DB
+    DEFAULT_TEMPLATES.forEach(def => {
+      if (!list.find(t => t.id === def.id || t.name === def.name)) {
+        list.push(def);
+      }
+    });
+    return list.sort((a, b) => a.name.localeCompare(b.name));
+  }, [dbTemplates]);
 
   useEffect(() => {
     if (dbParams) {
@@ -539,36 +599,53 @@ export default function ConfiguracoesPage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {isLoadingTemplates ? (
-                    <Skeleton className="h-24 w-full" />
+                    <>
+                      <Skeleton className="h-24 w-full" />
+                      <Skeleton className="h-24 w-full" />
+                    </>
                   ) : templates && templates.length > 0 ? (
                     templates.map(tpl => (
-                      <div key={tpl.id} className="p-4 border rounded-lg hover:shadow-sm transition-shadow group">
-                        <div className="flex items-center justify-between mb-2">
-                          <h5 className="font-bold text-sm text-blue-900">{tpl.name}</h5>
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingTemplate(tpl)}>
-                              <Edit3 className="h-3.5 w-3.5" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive">
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Excluir Modelo?</AlertDialogTitle>
-                                  <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteTemplate(tpl.id)}>Confirmar</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                      <div key={tpl.id} className="p-4 border rounded-lg hover:shadow-sm transition-shadow group flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <h5 className="font-bold text-sm text-blue-900">{tpl.name}</h5>
+                              {DEFAULT_TEMPLATES.some(def => def.id === tpl.id) && (
+                                <Badge variant="outline" className="text-[8px] uppercase px-1">Padrão</Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingTemplate(tpl)}>
+                                <Edit3 className="h-3.5 w-3.5" />
+                              </Button>
+                              {!DEFAULT_TEMPLATES.some(def => def.id === tpl.id) && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive">
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Excluir Modelo?</AlertDialogTitle>
+                                      <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleDeleteTemplate(tpl.id)}>Confirmar</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+                            </div>
                           </div>
+                          <p className="text-xs text-muted-foreground line-clamp-3 italic mb-2">{tpl.body}</p>
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-2 italic">{tpl.body}</p>
+                        <div className="flex gap-1 flex-wrap pt-2 border-t mt-2">
+                           {tpl.body.match(/{{[a-z_]+}}/g)?.map(tag => (
+                             <span key={tag} className="text-[8px] bg-muted px-1 rounded font-mono">{tag}</span>
+                           ))}
+                        </div>
                       </div>
                     ))
                   ) : (
