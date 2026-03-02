@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -29,6 +30,7 @@ import {
   PieChart,
   Settings,
   Building2,
+  MessageSquare,
 } from "lucide-react";
 import {
   Sheet,
@@ -60,6 +62,7 @@ import { subDays, isAfter, parseISO } from 'date-fns';
 const MENU_ITEMS = [
   { href: "/alunos", label: "Alunos", icon: Users },
   { href: "/chamada", label: "Controle de Presença", icon: CheckSquare },
+  { href: "/central-de-mensagens", label: "Central de Mensagens", icon: MessageSquare, color: "text-blue-600" },
   { href: "/mes-das-mulheres", label: "Mês das Mulheres", icon: Star, color: "text-pink-600" },
   { href: "/empresas", label: "Empresas", icon: Building2 },
   { href: "/agendamentos", label: "Agendamentos", icon: CalendarPlus },
