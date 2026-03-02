@@ -174,7 +174,7 @@ Bom treino! Kida! 👊`
         
         {/* Coluna de Seleção de Alunos */}
         <Card className="lg:col-span-4 flex flex-col h-[600px] lg:h-[750px]">
-          <CardHeader className="pb-3 border-b">
+          <CardHeader className="pb-3 border-b shrink-0">
             <CardTitle className="text-base flex items-center gap-2">
               <Users className="h-4 w-4 text-blue-600" />
               Selecionar Destinatários
@@ -311,7 +311,7 @@ Bom treino! Kida! 👊`
               <CardDescription>Clique nos botões para abrir o chat ou e-mail de cada aluno.</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <ScrollArea className="max-h-[400px]">
+              <ScrollArea className="h-[400px] w-full">
                 {selectedIds.length === 0 ? (
                   <div className="p-10 text-center text-muted-foreground flex flex-col items-center gap-2">
                     <UserPlus className="h-8 w-8 opacity-20" />
