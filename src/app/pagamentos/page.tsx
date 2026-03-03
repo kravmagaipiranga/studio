@@ -71,6 +71,7 @@ export default function PagamentosPage() {
         
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        const todayStr = format(today, 'yyyy-MM-dd');
         const currentMonthStart = startOfMonth(today);
         const currentMonthEnd = endOfMonth(today);
 
@@ -88,21 +89,20 @@ export default function PagamentosPage() {
             .map(p => p.studentId)
         );
 
-        const activeQuarterlyStudents = students.filter(student => {
-            if (student.status !== 'Ativo' || student.planType !== 'Trimestral' || !student.planExpirationDate) {
-                return false;
-            }
-            try {
-                const expirationDate = parseISO(student.planExpirationDate);
-                return isAfter(expirationDate, today);
-            } catch {
-                return false;
-            }
-        });
+        // Cálculo baseado em transações trimestrais vigentes (expiração >= hoje)
+        const validQuarterlyStudentIds = new Set(
+            payments
+                .filter(p => 
+                    p.planType === 'Trimestral' && 
+                    p.expirationDate && 
+                    p.expirationDate >= todayStr
+                )
+                .map(p => p.studentId)
+        );
         
         return { 
             paidInMonthCount: paidThisMonthIds.size, 
-            activeQuarterlyPlansCount: activeQuarterlyStudents.length,
+            activeQuarterlyPlansCount: validQuarterlyStudentIds.size,
         };
 
     }, [students, payments]);
@@ -244,7 +244,7 @@ export default function PagamentosPage() {
                          <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
                              {isLoading ? <Skeleton className="h-8 w-12"/> : activeQuarterlyPlansCount}
                         </div>
-                        <p className="text-xs text-muted-foreground">Alunos com plano trimestral ativo.</p>
+                        <p className="text-xs text-muted-foreground">Baseado em transações trimestrais não expiradas.</p>
                     </CardContent>
                 </Card>
             </div>
