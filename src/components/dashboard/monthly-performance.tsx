@@ -2,21 +2,22 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { collection, query, where, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, doc } from "firebase/firestore";
 import { useFirestore, useMemoFirebase, setDocumentNonBlocking, useDoc, useCollection } from "@/firebase";
 import { MonthlyIndicator, Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Save, Loader2, ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { Save, Loader2, ChevronLeft, ChevronRight, Users, TrendingUp, Target } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, subMonths, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 const indicatorLabels: Record<keyof Omit<MonthlyIndicator, 'id' | 'year' | 'month' | 'previousMonthTotal' | 'totalStudents' | 'evolution' | 'conversionRate' | 'womensMonth'>, string> = {
   visits: "Visitas",
-  trialClasses: "Aulas de Experiência",
+  trialClasses: "Aulas Exp.",
   newEnrollments: "Matrículas",
   reenrollments: "Rematrículas",
   exits: "Saídas",
@@ -61,6 +62,11 @@ export function MonthlyPerformance() {
         setIndicator({
             year: selectedYear,
             month: selectedMonth,
+            visits: 0,
+            trialClasses: 0,
+            newEnrollments: 0,
+            reenrollments: 0,
+            exits: 0,
         });
     }
   }, [liveIndicator, selectedYear, selectedMonth]);
@@ -72,7 +78,6 @@ export function MonthlyPerformance() {
     const reenrollments = data.reenrollments || 0;
     const exits = data.exits || 0;
     
-    // Evolução = Quem entrou (novos + rematrículas) - Quem saiu
     data.evolution = enrollments + reenrollments - exits;
 
     const conversionDivisor = (data.trialClasses || 0) + (data.visits || 0);
@@ -81,7 +86,7 @@ export function MonthlyPerformance() {
   }, [indicator]);
 
   const handleInputChange = (field: EditableIndicator, value: string) => {
-    const numValue = value === '' ? undefined : Number(value);
+    const numValue = value === '' ? 0 : Number(value);
     if (numValue !== undefined && isNaN(numValue)) return;
     setIndicator(prev => ({ ...prev, [field]: numValue }));
   };
@@ -113,34 +118,34 @@ export function MonthlyPerformance() {
   };
 
   const changeMonth = (direction: 'prev' | 'next') => {
-    setIndicator({}); // Clear old data while new data loads
+    setIndicator({}); 
     setCurrentDate(current => direction === 'prev' ? subMonths(current, 1) : addMonths(current, 1));
   };
 
   const isLoading = isLoadingIndicator || isLoadingStudents;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <Card className="shadow-sm border-muted-foreground/10">
+      <CardHeader className="pb-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <CardTitle>Desempenho Mensal</CardTitle>
+            <CardTitle className="text-xl">Desempenho Mensal</CardTitle>
             <CardDescription>
-              Insira os dados do mês para acompanhar os resultados.
+              Acompanhamento de fluxo e retenção de alunos.
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => changeMonth('prev')}>
+          <div className="flex items-center gap-2 bg-muted/30 p-1 rounded-lg">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => changeMonth('prev')}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="font-semibold text-center w-32 capitalize">
+            <span className="text-sm font-bold text-center w-28 capitalize">
               {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
             </span>
-            <Button variant="outline" size="icon" onClick={() => changeMonth('next')}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => changeMonth('next')}>
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+            <Button size="sm" onClick={handleSave} disabled={isSaving} className="ml-2">
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
               Salvar
             </Button>
           </div>
@@ -149,16 +154,17 @@ export function MonthlyPerformance() {
       <CardContent>
         {isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-             {Object.keys(indicatorLabels).map(key => <Skeleton key={key} className="h-20 w-full" />)}
+             {Object.keys(indicatorLabels).map(key => <Skeleton key={key} className="h-16 w-full" />)}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 bg-muted/10 p-4 rounded-xl border border-dashed">
             {Object.entries(indicatorLabels).map(([key, label]) => (
-              <div key={key} className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">{label}</label>
+              <div key={key} className="space-y-1.5 text-center">
+                <label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">{label}</label>
                 <Input
                   type="number"
                   placeholder="0"
+                  className="h-9 text-center font-bold text-base focus-visible:ring-primary"
                   value={indicator[key as EditableIndicator] ?? ""}
                   onChange={(e) => handleInputChange(key as EditableIndicator, e.target.value)}
                 />
@@ -166,24 +172,38 @@ export function MonthlyPerformance() {
             ))}
           </div>
         )}
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4 border-t pt-4">
-            <div className="p-4 rounded-lg bg-muted/50">
-                <div className="text-sm font-medium text-muted-foreground flex items-center">
-                    <Users className="h-4 w-4 mr-2" />
-                    Total de Alunos Ativos
-                </div>
-                <div className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-1/2" /> : activeStudentsCount}</div>
-            </div>
-            <div className="p-4 rounded-lg bg-muted/50">
-                <div className="text-sm font-medium text-muted-foreground">Evolução no Mês</div>
-                <div className={`text-2xl font-bold ${!isLoading && (calculatedData.evolution ?? 0) > 0 ? 'text-green-600' : (calculatedData.evolution ?? 0) < 0 ? 'text-red-600' : ''}`}>
-                    {isLoading ? <Skeleton className="h-8 w-1/2" /> : `${(calculatedData.evolution ?? 0) > 0 ? '+' : ''}${calculatedData.evolution ?? 0}`}
+
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-6">
+            <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-blue-50 border border-blue-100 dark:bg-blue-950 dark:border-blue-900 shadow-sm">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600 mb-1">Alunos Ativos</span>
+                <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-blue-500" />
+                    <span className="text-2xl font-black text-blue-900 dark:text-blue-100">
+                        {isLoading ? <Skeleton className="h-8 w-12" /> : activeStudentsCount}
+                    </span>
                 </div>
             </div>
-             <div className="p-4 rounded-lg bg-muted/50">
-                <div className="text-sm font-medium text-muted-foreground">Taxa de Conversão</div>
-                <div className="text-2xl font-bold">
-                    {isLoading ? <Skeleton className="h-8 w-1/2" /> : `${Math.round(calculatedData.conversionRate ?? 0)}%`}
+            
+            <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-emerald-50 border border-emerald-100 dark:bg-emerald-950 dark:border-emerald-900 shadow-sm">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-1">Evolução Líquida</span>
+                <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-emerald-500" />
+                    <span className={cn(
+                        "text-2xl font-black",
+                        (calculatedData.evolution ?? 0) > 0 ? "text-emerald-700" : (calculatedData.evolution ?? 0) < 0 ? "text-red-600" : "text-emerald-900"
+                    )}>
+                        {isLoading ? <Skeleton className="h-8 w-12" /> : `${(calculatedData.evolution ?? 0) > 0 ? '+' : ''}${calculatedData.evolution ?? 0}`}
+                    </span>
+                </div>
+            </div>
+
+             <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-amber-50 border border-amber-100 dark:bg-amber-950 dark:border-amber-900 shadow-sm">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600 mb-1">Taxa de Conversão</span>
+                <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-amber-500" />
+                    <span className="text-2xl font-black text-amber-900 dark:text-amber-100">
+                        {isLoading ? <Skeleton className="h-8 w-16" /> : `${Math.round(calculatedData.conversionRate ?? 0)}%`}
+                    </span>
                 </div>
             </div>
         </div>

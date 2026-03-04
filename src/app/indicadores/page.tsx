@@ -36,11 +36,11 @@ const monthNames = [
 ];
 
 const indicatorLabels: Record<keyof Omit<MonthlyIndicator, 'id' | 'year' | 'month' | 'totalStudents' | 'evolution' | 'conversionRate' | 'womensMonth'>, string> = {
-  previousMonthTotal: "Total mês anterior",
+  previousMonthTotal: "Total Ant.",
   visits: "Visitas",
   trialClasses: "Aulas Exp.",
   newEnrollments: "Matrículas",
-  reenrollments: "Rematrículas",
+  reenrollments: "Rematr.",
   exits: "Saídas",
 };
 
@@ -107,7 +107,7 @@ export default function IndicadoresPage() {
 
 
   const handleInputChange = (month: number, field: EditableIndicator, value: string) => {
-    const numValue = value === '' ? null : Number(value);
+    const numValue = value === '' ? 0 : Number(value);
     if (numValue !== null && isNaN(numValue)) return;
 
     setIndicators(prev => ({
@@ -165,7 +165,7 @@ export default function IndicadoresPage() {
        return (
          <Input
             type="number"
-            className="w-14 text-center h-7 px-1 text-xs"
+            className="w-14 text-center h-7 px-1 text-[11px] font-bold border-muted-foreground/20"
             value={monthData[row as keyof MonthlyIndicator] as number ?? ''}
             onChange={(e) => handleInputChange(monthData.month!, row as EditableIndicator, e.target.value)}
             disabled={row === 'previousMonthTotal' && monthData.month !== 1}
@@ -176,17 +176,17 @@ export default function IndicadoresPage() {
     if (isCalculated) {
         let value = monthData[row as keyof MonthlyIndicator] as number;
         let displayValue: string;
-        let className = "font-bold text-[11px]";
+        let className = "font-black text-[11px] tracking-tighter";
 
         if (row === 'conversionRate') {
             displayValue = `${Math.round(value || 0)}%`;
             if (value < 50) className += " text-red-600";
-            else if (value < 100) className += " text-yellow-600";
-            else className += " text-green-600";
+            else if (value < 100) className += " text-amber-600";
+            else className += " text-emerald-600";
         } else {
              displayValue = String(value || 0);
              if (row === 'evolution') {
-                 if (value > 0) className += " text-green-600";
+                 if (value > 0) className += " text-emerald-600";
                  if (value < 0) className += " text-red-600";
              }
         }
@@ -197,9 +197,9 @@ export default function IndicadoresPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 max-w-[100vw] overflow-x-hidden">
+    <div className="flex flex-col gap-4 max-w-full overflow-x-hidden">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold md:text-2xl">Indicadores Mensais</h1>
+        <h1 className="text-xl font-bold md:text-2xl">Indicadores Anuais</h1>
         <div className="flex items-center gap-2">
             <Select 
               value={String(selectedYear)}
@@ -223,19 +223,19 @@ export default function IndicadoresPage() {
         </div>
       </div>
       
-      <Card className="border-none shadow-none bg-transparent">
-        <CardHeader className="px-0">
-          <CardTitle>Relatório de Desempenho - {selectedYear}</CardTitle>
-          <CardDescription>
-            Visualize e ajuste o histórico anual. Os dados são sincronizados com o Dashboard.
+      <Card className="border-none shadow-sm bg-card rounded-xl overflow-hidden">
+        <CardHeader className="px-6 py-4 border-b bg-muted/10">
+          <CardTitle className="text-lg">Relatório de Desempenho - {selectedYear}</CardTitle>
+          <CardDescription className="text-xs">
+            Visão consolidada de Janeiro a Dezembro. Edite os valores diretamente na tabela.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="w-full overflow-hidden border rounded-xl bg-card">
+          <div className="w-full">
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-[120px] font-bold text-xs sticky left-0 bg-card border-r">Indicador</TableHead>
+                <TableRow className="hover:bg-transparent bg-muted/20">
+                  <TableHead className="w-[110px] font-black text-[10px] uppercase sticky left-0 bg-white dark:bg-card border-r z-20">Indicador</TableHead>
                   {monthNames.map(name => <TableHead key={name} className="text-center text-[10px] p-1 font-black uppercase">{name.substring(0,3)}</TableHead>)}
                 </TableRow>
               </TableHeader>
@@ -243,7 +243,7 @@ export default function IndicadoresPage() {
                 {isLoading && (
                     Object.keys(indicatorLabels).map(key => (
                         <TableRow key={key}>
-                            <TableCell className="font-medium sticky left-0 bg-card border-r text-[11px] py-2"><Skeleton className="h-4 w-full" /></TableCell>
+                            <TableCell className="font-medium sticky left-0 bg-white dark:bg-card border-r text-[11px] py-2 z-10"><Skeleton className="h-4 w-full" /></TableCell>
                             {[...Array(12)].map((_, i) => <TableCell key={i} className="p-1"><Skeleton className="h-7 w-10 mx-auto" /></TableCell>)}
                         </TableRow>
                     ))
@@ -251,8 +251,8 @@ export default function IndicadoresPage() {
                 {!isLoading && (
                     <>
                         {Object.entries(indicatorLabels).map(([key, label]) => (
-                            <TableRow key={key}>
-                                <TableCell className="font-medium sticky left-0 bg-card border-r text-[11px] py-2">{label}</TableCell>
+                            <TableRow key={key} className="hover:bg-muted/5">
+                                <TableCell className="font-bold sticky left-0 bg-white dark:bg-card border-r text-[10px] uppercase text-muted-foreground py-2 z-10">{label}</TableCell>
                                 {calculatedData.map(monthData => (
                                     <TableCell key={monthData.month} className="text-center p-1">
                                       {renderCell(key as keyof MonthlyIndicator, monthData)}
@@ -261,22 +261,22 @@ export default function IndicadoresPage() {
                             </TableRow>
                         ))}
 
-                        <TableRow className="bg-muted/50 font-bold">
-                            <TableCell className="sticky left-0 bg-muted z-10 text-[11px] py-2 border-r">Total Alunos</TableCell>
+                        <TableRow className="bg-primary/5 font-black">
+                            <TableCell className="sticky left-0 bg-primary/10 z-10 text-[10px] uppercase py-2 border-r">Total Alunos</TableCell>
                             {calculatedData.map(monthData => (
-                                <TableCell key={monthData.month} className="text-center p-1 py-2 text-xs">{monthData.totalStudents}</TableCell>
+                                <TableCell key={monthData.month} className="text-center p-1 py-2 text-[11px] font-black">{monthData.totalStudents}</TableCell>
                             ))}
                         </TableRow>
-                        <TableRow>
-                            <TableCell className="sticky left-0 bg-card border-r text-[11px] py-2 font-medium">Evolução</TableCell>
+                        <TableRow className="hover:bg-muted/5">
+                            <TableCell className="sticky left-0 bg-white dark:bg-card border-r text-[10px] uppercase py-2 font-bold z-10">Evolução</TableCell>
                             {calculatedData.map(monthData => (
                                 <TableCell key={monthData.month} className="text-center p-1 py-2">
                                     {renderCell('evolution', monthData)}
                                 </TableCell>
                             ))}
                         </TableRow>
-                        <TableRow>
-                            <TableCell className="sticky left-0 bg-card border-r text-[11px] py-2 font-medium">Conversão</TableCell>
+                        <TableRow className="hover:bg-muted/5">
+                            <TableCell className="sticky left-0 bg-white dark:bg-card border-r text-[10px] uppercase py-2 font-bold z-10">Conversão</TableCell>
                             {calculatedData.map(monthData => (
                                 <TableCell key={monthData.month} className="text-center p-1 py-2">
                                     {renderCell('conversionRate', monthData)}
