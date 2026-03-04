@@ -2,9 +2,9 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { collection, query, where, doc } from "firebase/firestore";
+import { collection, query, where, doc, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
-import { Student, Attendance } from "@/lib/types";
+import { Student, Attendance, HandbookContent, TaughtTechnique } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, parseISO, startOfMonth, endOfMonth, isSaturday, eachWeekOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckSquare, Trash2, UserCheck, Search, Clock, ChevronLeft, ChevronRight, UserPlus, Info, TrendingDown, Users } from "lucide-react";
+import { CheckSquare, Trash2, UserCheck, Search, Clock, ChevronLeft, ChevronRight, UserPlus, Info, TrendingDown, Users, BookOpen, GraduationCap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
@@ -29,6 +29,16 @@ import {
   ResponsiveContainer,
   Cell
 } from "recharts";
+
+const BELTS = [
+  { id: 'branca', name: 'Faixa Branca (Iniciante)', color: '#e2e8f0' },
+  { id: 'amarela', name: 'Faixa Amarela', color: '#fbbf24' },
+  { id: 'laranja', name: 'Faixa Laranja', color: '#f97316' },
+  { id: 'verde', name: 'Faixa Verde', color: '#22c55e' },
+  { id: 'azul', name: 'Faixa Azul', color: '#3b82f6' },
+  { id: 'marrom', name: 'Faixa Marrom', color: '#78350f' },
+  { id: 'preta', name: 'Faixa Preta', color: '#0f172a' },
+];
 
 const beltColors: Record<string, string> = {
   'Branca': '#e2e8f0',
@@ -52,6 +62,11 @@ export default function ChamadaPage() {
   const [classTime, setClassTime] = useState(""); 
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // State for Taught Technique
+  const [selectedBeltId, setSelectedBeltId] = useState("");
+  const [selectedTechnique, setSelectedTechnique] = useState("");
+  const [isSubmittingTopic, setIsSubmittingTopic] = useState(false);
+
   // State for report filter
   const [reportMonth, setReportMonth] = useState(format(new Date(), "MM"));
   const [reportYear, setReportYear] = useState(format(new Date(), "yyyy"));
@@ -129,6 +144,32 @@ export default function ChamadaPage() {
     return [...rawTodayAttendance].sort((a, b) => a.time.localeCompare(b.time, undefined, { numeric: true }));
   }, [rawTodayAttendance]);
 
+  // Handbook fetching for techniques
+  const handbookQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'handbook');
+  }, [firestore]);
+
+  const { data: dbHandbook } = useCollection<HandbookContent>(handbookQuery);
+
+  const availableTechniques = useMemo(() => {
+    if (!dbHandbook || !selectedBeltId) return [];
+    const beltData = dbHandbook.find(h => h.id === selectedBeltId);
+    return beltData?.techniques || [];
+  }, [dbHandbook, selectedBeltId]);
+
+  // Taught Techniques fetching
+  const taughtTopicsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+        collection(firestore, "taughtTechniques"),
+        where("date", "==", classDate),
+        orderBy("createdAt", "desc")
+    );
+  }, [firestore, classDate]);
+
+  const { data: taughtTopics, isLoading: isLoadingTopics } = useCollection<TaughtTechnique>(taughtTopicsQuery);
+
   const reportQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     const monthStart = format(startOfMonth(new Date(Number(reportYear), Number(reportMonth) - 1)), "yyyy-MM-dd");
@@ -193,10 +234,45 @@ export default function ChamadaPage() {
     }
   };
 
+  const handleRecordTechnique = async () => {
+    if (!firestore || !selectedBeltId || !selectedTechnique) {
+        toast({ variant: "destructive", title: "Erro", description: "Selecione a graduação e a matéria." });
+        return;
+    }
+
+    setIsSubmittingTopic(true);
+    const beltName = BELTS.find(b => b.id === selectedBeltId)?.name || "";
+
+    const topicData: Omit<TaughtTechnique, 'id'> = {
+        date: classDate,
+        time: classTime,
+        beltId: selectedBeltId,
+        beltName,
+        technique: selectedTechnique,
+        createdAt: new Date().toISOString(),
+    };
+
+    try {
+        await addDocumentNonBlocking(collection(firestore, "taughtTechniques"), topicData);
+        toast({ title: "Matéria Registrada!", description: `Matéria da ${beltName} salva.` });
+        setSelectedTechnique("");
+    } catch (error) {
+        toast({ variant: "destructive", title: "Erro ao registrar matéria." });
+    } finally {
+        setIsSubmittingTopic(false);
+    }
+  };
+
   const handleDeleteAttendance = (id: string) => {
     if (!firestore) return;
     deleteDocumentNonBlocking(doc(firestore, "attendance", id));
     toast({ title: "Registro Removido" });
+  };
+
+  const handleDeleteTopic = (id: string) => {
+    if (!firestore) return;
+    deleteDocumentNonBlocking(doc(firestore, "taughtTechniques", id));
+    toast({ title: "Matéria Removida" });
   };
 
   const fullReportData = useMemo(() => {
@@ -347,7 +423,7 @@ export default function ChamadaPage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Clock className="h-5 w-5 text-muted-foreground" />
-                Registros de {format(parseISO(classDate), "dd/MM/yyyy")}
+                Registros de Presença: {format(parseISO(classDate), "dd/MM/yyyy")}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -394,6 +470,104 @@ export default function ChamadaPage() {
                   )}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+
+          {/* Registro de Matéria Ensinada */}
+          <Card className="border-blue-100">
+            <CardHeader className="bg-blue-50/30">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-blue-600" />
+                Matérias Ensinadas no Dia
+              </CardTitle>
+              <CardDescription>Registre os temas técnicos abordados em aula conforme a apostila.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Graduação (Filtro Apostila)</label>
+                        <Select value={selectedBeltId} onValueChange={setSelectedBeltId}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione a faixa..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {BELTS.map(belt => (
+                                    <SelectItem key={belt.id} value={belt.id}>
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: belt.color }} />
+                                            {belt.name}
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="md:col-span-2 space-y-2">
+                        <label className="text-sm font-medium">Técnica ensinada</label>
+                        <Select value={selectedTechnique} onValueChange={setSelectedTechnique} disabled={!selectedBeltId}>
+                            <SelectTrigger>
+                                <SelectValue placeholder={selectedBeltId ? "Escolha a técnica da apostila..." : "Selecione a faixa primeiro"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableTechniques.length > 0 ? (
+                                    availableTechniques.map((tech, idx) => (
+                                        <SelectItem key={idx} value={tech}>{tech}</SelectItem>
+                                    ))
+                                ) : (
+                                    <SelectItem value="none" disabled>Nenhuma técnica cadastrada</SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <div className="flex justify-end">
+                    <Button onClick={handleRecordTechnique} disabled={isSubmittingTopic || !selectedTechnique} className="bg-blue-600 hover:bg-blue-700">
+                        <GraduationCap className="mr-2 h-4 w-4" />
+                        Registrar Matéria
+                    </Button>
+                </div>
+
+                <div className="border rounded-lg overflow-hidden mt-4">
+                    <Table>
+                        <TableHeader className="bg-muted/50">
+                            <TableRow>
+                                <TableHead className="w-[150px]">Graduação</TableHead>
+                                <TableHead>Técnica / Exercício</TableHead>
+                                <TableHead className="w-[100px]">Horário</TableHead>
+                                <TableHead className="text-right w-[80px]">Ação</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoadingTopics ? (
+                                <TableRow><TableCell colSpan={4}><Skeleton className="h-10 w-full" /></TableCell></TableRow>
+                            ) : taughtTopics && taughtTopics.length > 0 ? (
+                                taughtTopics.map((topic) => (
+                                    <TableRow key={topic.id}>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2 font-bold text-[10px] uppercase">
+                                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: beltColors[topic.beltName.replace('Faixa ', '').split(' (')[0]] || '#ccc' }} />
+                                                {topic.beltName}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-sm font-medium">{topic.technique}</TableCell>
+                                        <TableCell className="text-xs text-muted-foreground">{topic.time}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteTopic(topic.id)}>
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center h-20 text-muted-foreground italic">
+                                        Nenhuma matéria registrada para este dia.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
             </CardContent>
           </Card>
         </TabsContent>

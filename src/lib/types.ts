@@ -209,6 +209,16 @@ export type Attendance = {
   createdAt: string;
 };
 
+export type TaughtTechnique = {
+  id: string;
+  date: string;
+  time: string;
+  beltId: string;
+  beltName: string;
+  technique: string;
+  createdAt: string;
+};
+
 export type GlobalParameters = {
   id: 'global';
   schoolName: string;

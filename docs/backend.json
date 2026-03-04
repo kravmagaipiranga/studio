@@ -82,28 +82,19 @@
       },
       "required": ["id", "name"]
     },
-    "MessageTemplate": {
-      "title": "MessageTemplate",
+    "TaughtTechnique": {
+      "title": "TaughtTechnique",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "name": { "type": "string" },
-        "subject": { "type": "string" },
-        "body": { "type": "string" },
-        "category": { "type": "string" }
-      },
-      "required": ["id", "name", "subject", "body"]
-    },
-    "HandbookContent": {
-      "title": "HandbookContent",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "time": { "type": "string" },
+        "beltId": { "type": "string" },
         "beltName": { "type": "string" },
-        "content": { "type": "string" },
-        "updatedAt": { "type": "string", "format": "date-time" }
+        "technique": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "beltName", "content", "updatedAt"]
+      "required": ["id", "date", "time", "beltId", "beltName", "technique"]
     }
   },
   "auth": {
@@ -152,19 +143,11 @@
         }
       },
       {
-        "path": "/messageTemplates/{templateId}",
+        "path": "/taughtTechniques/{id}",
         "definition": {
-          "entityName": "MessageTemplate",
-          "schema": { "$ref": "#/backend/entities/MessageTemplate" },
-          "description": "Stores message templates for the message center."
-        }
-      },
-      {
-        "path": "/handbook/{beltId}",
-        "definition": {
-          "entityName": "HandbookContent",
-          "schema": { "$ref": "#/backend/entities/HandbookContent" },
-          "description": "Stores technical content and exercises for each belt."
+          "entityName": "TaughtTechnique",
+          "schema": { "$ref": "#/backend/entities/TaughtTechnique" },
+          "description": "Stores techniques taught in each class."
         }
       }
     ]
