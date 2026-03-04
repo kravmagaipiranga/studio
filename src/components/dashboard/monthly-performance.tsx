@@ -14,10 +14,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format, subMonths, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const indicatorLabels: Record<keyof Omit<MonthlyIndicator, 'id' | 'year' | 'month' | 'previousMonthTotal' | 'totalStudents' | 'evolution' | 'conversionRate' | 'reenrollments' | 'womensMonth'>, string> = {
+const indicatorLabels: Record<keyof Omit<MonthlyIndicator, 'id' | 'year' | 'month' | 'previousMonthTotal' | 'totalStudents' | 'evolution' | 'conversionRate' | 'womensMonth'>, string> = {
   visits: "Visitas",
   trialClasses: "Aulas de Experiência",
   newEnrollments: "Matrículas",
+  reenrollments: "Rematrículas",
   exits: "Saídas",
 };
 
@@ -67,12 +68,11 @@ export function MonthlyPerformance() {
 
   const calculatedData = useMemo(() => {
     const data = { ...indicator };
-    const prevTotal = data.previousMonthTotal || 0;
     const enrollments = data.newEnrollments || 0;
     const reenrollments = data.reenrollments || 0;
     const exits = data.exits || 0;
     
-    // This calculation is for the indicators page, not the new total.
+    // Evolução = Quem entrou (novos + rematrículas) - Quem saiu
     data.evolution = enrollments + reenrollments - exits;
 
     const conversionDivisor = (data.trialClasses || 0) + (data.visits || 0);
@@ -140,7 +140,7 @@ export function MonthlyPerformance() {
               <ChevronRight className="h-4 w-4" />
             </Button>
             <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
               Salvar
             </Button>
           </div>
@@ -148,11 +148,11 @@ export function MonthlyPerformance() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
              {Object.keys(indicatorLabels).map(key => <Skeleton key={key} className="h-20 w-full" />)}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {Object.entries(indicatorLabels).map(([key, label]) => (
               <div key={key} className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">{label}</label>
