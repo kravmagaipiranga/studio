@@ -252,8 +252,9 @@ export type MessageTemplate = {
 };
 
 export type HandbookContent = {
-  id: string;
+  id: string; // beltId
   beltName: string;
-  content: string;
+  content: string; // Raw text for editing
+  techniques: string[]; // Individual techniques parsed from content
   updatedAt: string;
 };
