@@ -158,17 +158,28 @@ export default function ChamadaPage() {
     return beltData?.techniques || [];
   }, [dbHandbook, selectedBeltId]);
 
-  // Taught Techniques fetching
+  // Taught Techniques fetching - Removed orderBy to prevent missing index error
   const taughtTopicsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
         collection(firestore, "taughtTechniques"),
-        where("date", "==", classDate),
-        orderBy("createdAt", "desc")
+        where("date", "==", classDate)
     );
   }, [firestore, classDate]);
 
-  const { data: taughtTopics, isLoading: isLoadingTopics } = useCollection<TaughtTechnique>(taughtTopicsQuery);
+  const { data: rawTaughtTopics, isLoading: isLoadingTopics } = useCollection<TaughtTechnique>(taughtTopicsQuery);
+
+  // Sorting taught techniques on client side to avoid Firebase composite index requirement
+  const taughtTopics = useMemo(() => {
+    if (!rawTaughtTopics) return [];
+    return [...rawTaughtTopics].sort((a, b) => {
+        try {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        } catch (e) {
+            return 0;
+        }
+    });
+  }, [rawTaughtTopics]);
 
   const reportQuery = useMemoFirebase(() => {
     if (!firestore) return null;
