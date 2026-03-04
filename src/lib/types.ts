@@ -250,3 +250,10 @@ export type MessageTemplate = {
   body: string;
   category?: string;
 };
+
+export type HandbookContent = {
+  id: string;
+  beltName: string;
+  content: string;
+  updatedAt: string;
+};

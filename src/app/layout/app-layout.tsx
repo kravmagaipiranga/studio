@@ -31,6 +31,7 @@ import {
   Settings,
   Building2,
   MessageSquare,
+  BookOpen,
 } from "lucide-react";
 import {
   Sheet,
@@ -77,6 +78,7 @@ const MENU_ITEMS = [
   { href: "/lista-de-tarefas", label: "Lista de Tarefas", icon: ListChecks },
   { href: "/leads", label: "Leads CAT CPKM", icon: Phone },
   { href: "/register", label: "Cadastro Público", icon: UserPlus, target: "_blank" },
+  { href: "/apostila", label: "Apostila", icon: BookOpen, color: "text-emerald-600" },
 ];
 
 const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/mes-das-mulheres/registro", "/gift-card"];

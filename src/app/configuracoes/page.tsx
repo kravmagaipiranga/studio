@@ -45,7 +45,8 @@ const collectionsToBackup = [
   'attendance',
   'parameters',
   'companies',
-  'messageTemplates'
+  'messageTemplates',
+  'handbook'
 ];
 
 const DEFAULT_TEMPLATES: MessageTemplate[] = [
