@@ -247,7 +247,7 @@ export type Company = {
   value: number;
   paymentDate?: string;
   paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente' | 'Palestra Gratuita' | 'Atividade Gratuita';
-  paymentStatus: 'Pago' | 'Pendente';
+  paymentStatus: 'Pago' | 'Pendente' | 'Palestra Gratuita' | 'Atividade Gratuita';
   notes?: string;
   createdAt: string;
   isNew?: boolean;

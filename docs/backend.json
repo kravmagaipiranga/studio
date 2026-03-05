@@ -76,7 +76,7 @@
         "value": { "type": "number" },
         "paymentDate": { "type": "string", "format": "date" },
         "paymentMethod": { "type": "string" },
-        "paymentStatus": { "type": "string", "enum": ["Pago", "Pendente"] },
+        "paymentStatus": { "type": "string", "enum": ["Pago", "Pendente", "Palestra Gratuita", "Atividade Gratuita"] },
         "notes": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },

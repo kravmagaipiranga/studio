@@ -18,7 +18,7 @@ import { Input } from "../ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "../ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
-import { Badge } from "../ui/badge"
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 interface CompaniesTableProps {
@@ -88,6 +88,12 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
     })
   }
 
+  const getStatusBadgeVariant = (status: string): "default" | "destructive" | "secondary" | "outline" => {
+    if (status === 'Pago') return 'default';
+    if (status === 'Pendente') return 'destructive';
+    return 'outline';
+  };
+
   if (isLoading || !mounted) {
       return (
           <div className="space-y-2 w-full">
@@ -117,7 +123,7 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                               R$ {company.value.toFixed(2)}
                           </div>
                           <div className="text-right sm:text-left">
-                              <Badge variant={company.paymentStatus === 'Pago' ? 'default' : 'destructive'} className="text-[10px] px-2 py-0">
+                              <Badge variant={getStatusBadgeVariant(company.paymentStatus)} className="text-[10px] px-2 py-0">
                                 {company.paymentStatus}
                               </Badge>
                           </div>
@@ -214,6 +220,8 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                                     <SelectContent>
                                         <SelectItem value="Pago">Pago</SelectItem>
                                         <SelectItem value="Pendente">Pendente</SelectItem>
+                                        <SelectItem value="Palestra Gratuita">Palestra Gratuita</SelectItem>
+                                        <SelectItem value="Atividade Gratuita">Atividade Gratuita</SelectItem>
                                     </SelectContent>
                                 </Select>
                               </div>
