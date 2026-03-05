@@ -178,7 +178,11 @@ export default function CentralDeMensagensPage() {
       toast({ variant: "destructive", title: "Erro", description: `Aluno ${student.name} não possui e-mail.` });
       return;
     }
-    window.location.href = `mailto:${student.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+    
+    // Gmail Compose URL format: https://mail.google.com/mail/?view=cm&fs=1&to=TO&su=SUBJECT&body=BODY
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(student.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+    
+    window.open(gmailUrl, '_blank');
   };
 
   return (
