@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -235,6 +236,8 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                                         <SelectItem value="Pix">Pix</SelectItem>
                                         <SelectItem value="Boleto">Boleto</SelectItem>
                                         <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                                        <SelectItem value="Palestra Gratuita">Palestra Gratuita</SelectItem>
+                                        <SelectItem value="Atividade Gratuita">Atividade Gratuita</SelectItem>
                                     </SelectContent>
                                 </Select>
                               </div>

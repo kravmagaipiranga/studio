@@ -246,7 +246,7 @@ export type Company = {
   workType: string; // Palestra, Curso, Workshop, Aula Particular, Outros
   value: number;
   paymentDate?: string;
-  paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
+  paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente' | 'Palestra Gratuita' | 'Atividade Gratuita';
   paymentStatus: 'Pago' | 'Pendente';
   notes?: string;
   createdAt: string;
