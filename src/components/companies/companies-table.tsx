@@ -99,25 +99,33 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
     }
 
     const dateStr = company.eventDate.replace(/-/g, '');
-    let startTime = "090000";
-    let endTime = "100000";
+    let datesParam = "";
 
     if (company.eventTime) {
         const [hours, minutes] = company.eventTime.split(':');
-        startTime = `${hours}${minutes}00`;
-        // Default duration 1 hour
-        const endHour = (parseInt(hours) + 1).toString().padStart(2, '0');
-        endTime = `${endHour}${minutes}00`;
+        const startH = hours.padStart(2, '0');
+        const startM = minutes.padStart(2, '0');
+        
+        // Duração padrão de 1 hora no mesmo dia
+        let endHNum = parseInt(startH) + 1;
+        
+        if (endHNum >= 24) {
+            // Se passar de 23h, definimos o final para o limite do dia (23:59)
+            datesParam = `${dateStr}T${startH}${startM}00/${dateStr}T235959`;
+        } else {
+            const endH = endHNum.toString().padStart(2, '0');
+            datesParam = `${dateStr}T${startH}${startM}00/${dateStr}T${endH}${startM}00`;
+        }
+    } else {
+        // Evento de dia inteiro no mesmo dia
+        datesParam = `${dateStr}/${dateStr}`;
     }
 
     const title = encodeURIComponent(`${company.workType}: ${company.name}`);
     const location = encodeURIComponent(company.address || '');
     const details = encodeURIComponent(`Contato: ${company.contactName || ''}\nNotas: ${company.notes || ''}`);
     
-    // Google Calendar URL template
-    // If time is provided, use YYYYMMDDTHHMMSS format
-    const timeString = company.eventTime ? `T${startTime}/T${endTime}` : '';
-    const calendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dateStr}${timeString}&location=${location}&details=${details}`;
+    const calendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${datesParam}&location=${location}&details=${details}`;
     
     window.open(calendarUrl, '_blank');
   };
