@@ -245,6 +245,7 @@ export type Company = {
   contactEmail?: string;
   address?: string;
   eventDate?: string;
+  eventTime?: string;
   workType: string; // Palestra, Curso, Workshop, Aula Particular, Outros
   value: number;
   paymentDate?: string;

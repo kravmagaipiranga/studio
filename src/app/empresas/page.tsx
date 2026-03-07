@@ -106,6 +106,7 @@ export default function EmpresasPage() {
          contactEmail: "",
          address: "",
          eventDate: new Date().toISOString().split('T')[0],
+         eventTime: "09:00",
          workType: "Palestra",
          value: 0,
          paymentMethod: "Pendente",

@@ -9,7 +9,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
-import { Save, Trash2, Building2, Phone, Mail, User, MapPin, Calendar, CalendarPlus } from "lucide-react"
+import { Save, Trash2, Building2, Phone, Mail, User, MapPin, Calendar, CalendarPlus, Clock } from "lucide-react"
 import { Company } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
 import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
@@ -17,7 +17,7 @@ import { collection, doc } from "firebase/firestore"
 import { Input } from "../ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "../ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
@@ -99,12 +99,25 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
     }
 
     const dateStr = company.eventDate.replace(/-/g, '');
+    let startTime = "090000";
+    let endTime = "100000";
+
+    if (company.eventTime) {
+        const [hours, minutes] = company.eventTime.split(':');
+        startTime = `${hours}${minutes}00`;
+        // Default duration 1 hour
+        const endHour = (parseInt(hours) + 1).toString().padStart(2, '0');
+        endTime = `${endHour}${minutes}00`;
+    }
+
     const title = encodeURIComponent(`${company.workType}: ${company.name}`);
     const location = encodeURIComponent(company.address || '');
     const details = encodeURIComponent(`Contato: ${company.contactName || ''}\nNotas: ${company.notes || ''}`);
     
     // Google Calendar URL template
-    const calendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dateStr}/${dateStr}&location=${location}&details=${details}`;
+    // If time is provided, use YYYYMMDDTHHMMSS format
+    const timeString = company.eventTime ? `T${startTime}/T${endTime}` : '';
+    const calendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dateStr}${timeString}&location=${location}&details=${details}`;
     
     window.open(calendarUrl, '_blank');
   };
@@ -180,6 +193,32 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                                     />
                                 </div>
                               </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium flex items-center gap-2"><Clock className="h-3 w-3" /> Horário</label>
+                                    <Input 
+                                        type="time"
+                                        value={company.eventTime || ''} 
+                                        onChange={e => handleInputChange(company.id, 'eventTime', e.target.value)} 
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Tipo de Trabalho</label>
+                                    <Select value={company.workType} onValueChange={val => handleInputChange(company.id, 'workType', val)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Palestra">Palestra</SelectItem>
+                                            <SelectItem value="Curso">Curso</SelectItem>
+                                            <SelectItem value="Workshop">Workshop</SelectItem>
+                                            <SelectItem value="Aula Particular">Aula Particular</SelectItem>
+                                            <SelectItem value="Evento">Evento</SelectItem>
+                                            <SelectItem value="Outros">Outros</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                              </div>
                               <div className="space-y-2">
                                 <label className="text-sm font-medium flex items-center gap-2"><MapPin className="h-3 w-3" /> Endereço do Evento</label>
                                 <Input 
@@ -187,22 +226,6 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                                     value={company.address || ''} 
                                     onChange={e => handleInputChange(company.id, 'address', e.target.value)} 
                                 />
-                              </div>
-                              <div className="space-y-2">
-                                <label className="text-sm font-medium">Tipo de Trabalho</label>
-                                <Select value={company.workType} onValueChange={val => handleInputChange(company.id, 'workType', val)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Selecione..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Palestra">Palestra</SelectItem>
-                                        <SelectItem value="Curso">Curso</SelectItem>
-                                        <SelectItem value="Workshop">Workshop</SelectItem>
-                                        <SelectItem value="Aula Particular">Aula Particular</SelectItem>
-                                        <SelectItem value="Evento">Evento</SelectItem>
-                                        <SelectItem value="Outros">Outros</SelectItem>
-                                    </SelectContent>
-                                </Select>
                               </div>
                           </div>
 
@@ -306,7 +329,7 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                       <div className="space-y-2 mt-6">
                           <label className="text-sm font-medium">Anotações / Escopo do Trabalho</label>
                           <Textarea 
-                              placeholder="Detalhes sobre o treinamento, local, observações extras..."
+                              placeholder="Detalhes sobre le treinamento, local, observações extras..."
                               value={company.notes || ''}
                               onChange={e => handleInputChange(company.id, 'notes', e.target.value)} 
                           />
