@@ -153,28 +153,51 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
             {companies.map((company: Company) => (
                 <AccordionItem value={company.id} key={company.id} className={cn("px-4", company.isNew && "bg-muted/50")}>
                   <AccordionTrigger className="hover:no-underline py-3">
-                    <div className="grid grid-cols-[1fr_auto] sm:grid-cols-4 gap-2 w-full pr-4 items-center">
-                          <div className="text-left font-medium flex items-center gap-2 truncate">
-                            <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                            <span className="truncate">{company.name || "Novo Cliente Empresa"}</span>
+                    <div className="grid grid-cols-[1fr_auto] md:grid-cols-5 gap-4 w-full pr-4 items-center">
+                          {/* Empresa e Tipo */}
+                          <div className="flex flex-col text-left truncate min-w-0">
+                              <div className="font-bold flex items-center gap-2 truncate text-sm">
+                                  <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                  <span className="truncate">{company.name || "Nova Empresa"}</span>
+                              </div>
+                              <span className="text-[9px] uppercase text-muted-foreground font-black tracking-tighter">{company.workType}</span>
                           </div>
-                          <div className="hidden sm:block text-left text-muted-foreground truncate text-xs">
-                              {company.workType}
+
+                          {/* Data e Hora */}
+                          <div className="hidden md:flex flex-col text-left gap-0.5">
+                              <div className="flex items-center gap-1.5 text-[11px]">
+                                  <Calendar className="h-3 w-3 text-blue-500" />
+                                  <span className="font-bold">{company.eventDate ? new Date(company.eventDate + 'T00:00:00').toLocaleDateString('pt-BR') : '--/--/--'}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                                  <Clock className="h-2.5 w-2.5" />
+                                  <span>{company.eventTime || '--:--'}</span>
+                              </div>
                           </div>
-                          <div className="text-left font-bold text-blue-600 text-sm sm:text-base">
+
+                          {/* Local */}
+                          <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground truncate">
+                              <MapPin className="h-3 w-3 text-rose-500 shrink-0" />
+                              <span className="truncate">{company.address || 'Local não informado'}</span>
+                          </div>
+
+                          {/* Valor */}
+                          <div className="text-left font-black text-blue-700 text-sm">
                               R$ {company.value.toFixed(2)}
                           </div>
-                          <div className="text-right sm:text-left">
-                              <Badge variant={getStatusBadgeVariant(company.paymentStatus)} className="text-[10px] px-2 py-0">
+
+                          {/* Status */}
+                          <div className="text-right flex justify-end">
+                              <Badge variant={getStatusBadgeVariant(company.paymentStatus)} className="text-[9px] font-black uppercase px-2 py-0">
                                 {company.paymentStatus}
                               </Badge>
                           </div>
                       </div>
                   </AccordionTrigger>
-                  <AccordionContent className="pt-4 pb-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <AccordionContent className="pt-4 pb-6 border-t bg-muted/5 px-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                           <div className="space-y-4">
-                              <h4 className="text-xs font-black uppercase text-muted-foreground tracking-widest border-b pb-1">Identificação e Local</h4>
+                              <h4 className="text-xs font-black uppercase text-primary tracking-widest border-b pb-1">Identificação e Local</h4>
                               <div className="space-y-2">
                                   <label className="text-sm font-medium">Nome da Empresa</label>
                                   <Input 
@@ -238,7 +261,7 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                           </div>
 
                           <div className="space-y-4">
-                              <h4 className="text-xs font-black uppercase text-muted-foreground tracking-widest border-b pb-1">Contato na Empresa</h4>
+                              <h4 className="text-xs font-black uppercase text-primary tracking-widest border-b pb-1">Contato na Empresa</h4>
                               <div className="space-y-2">
                                 <label className="text-sm font-medium flex items-center gap-2"><User className="h-3 w-3" /> Nome do Contato</label>
                                 <Input 
@@ -282,7 +305,7 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                       </div>
 
                       <div className="mt-8 space-y-4">
-                          <h4 className="text-xs font-black uppercase text-muted-foreground tracking-widest border-b pb-1">Financeiro</h4>
+                          <h4 className="text-xs font-black uppercase text-primary tracking-widest border-b pb-1">Financeiro</h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                               <div className="space-y-2">
                                 <label className="text-sm font-medium">Valor do Contrato (R$)</label>
