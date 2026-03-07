@@ -72,15 +72,31 @@
         "contactName": { "type": "string" },
         "contactPhone": { "type": "string" },
         "contactEmail": { "type": "string" },
+        "address": { "type": "string" },
+        "eventDate": { "type": "string", "format": "date" },
         "workType": { "type": "string" },
         "value": { "type": "number" },
         "paymentDate": { "type": "string", "format": "date" },
         "paymentMethod": { "type": "string" },
-        "paymentStatus": { "type": "string", "enum": ["Pago", "Pendente"] },
+        "paymentStatus": { "type": "string", "enum": ["Pago", "Pendente", "Palestra Gratuita", "Atividade Gratuita"] },
         "notes": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "name"]
+    },
+    "TaughtTechnique": {
+      "title": "TaughtTechnique",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "time": { "type": "string" },
+        "beltId": { "type": "string" },
+        "beltName": { "type": "string" },
+        "technique": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "date", "time", "beltId", "beltName", "technique"]
     }
   },
   "auth": {
@@ -126,6 +142,14 @@
           "entityName": "Company",
           "schema": { "$ref": "#/backend/entities/Company" },
           "description": "Stores corporate client data."
+        }
+      },
+      {
+        "path": "/taughtTechniques/{id}",
+        "definition": {
+          "entityName": "TaughtTechnique",
+          "schema": { "$ref": "#/backend/entities/TaughtTechnique" },
+          "description": "Stores techniques taught in each class."
         }
       }
     ]

@@ -243,6 +243,8 @@ export type Company = {
   contactName?: string;
   contactPhone?: string;
   contactEmail?: string;
+  address?: string;
+  eventDate?: string;
   workType: string; // Palestra, Curso, Workshop, Aula Particular, Outros
   value: number;
   paymentDate?: string;

@@ -9,7 +9,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
-import { Save, Trash2, Building2, Phone, Mail, User } from "lucide-react"
+import { Save, Trash2, Building2, Phone, Mail, User, MapPin, Calendar, CalendarPlus } from "lucide-react"
 import { Company } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
 import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
@@ -88,8 +88,29 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
     })
   }
 
+  const handleAddToCalendar = (company: Company) => {
+    if (!company.eventDate) {
+        toast({
+            variant: "destructive",
+            title: "Data não informada",
+            description: "Preencha a data do evento para adicionar ao calendário."
+        });
+        return;
+    }
+
+    const dateStr = company.eventDate.replace(/-/g, '');
+    const title = encodeURIComponent(`${company.workType}: ${company.name}`);
+    const location = encodeURIComponent(company.address || '');
+    const details = encodeURIComponent(`Contato: ${company.contactName || ''}\nNotas: ${company.notes || ''}`);
+    
+    // Google Calendar URL template
+    const calendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dateStr}/${dateStr}&location=${location}&details=${details}`;
+    
+    window.open(calendarUrl, '_blank');
+  };
+
   const getStatusBadgeVariant = (status: string): "default" | "destructive" | "secondary" | "outline" => {
-    if (status === 'Pago') return 'default';
+    if (status === 'Pago' || status === 'Palestra Gratuita' || status === 'Atividade Gratuita') return 'default';
     if (status === 'Pendente') return 'destructive';
     return 'outline';
   };
@@ -132,7 +153,7 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                   <AccordionContent className="pt-4 pb-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-4">
-                              <h4 className="text-xs font-black uppercase text-muted-foreground tracking-widest border-b pb-1">Identificação</h4>
+                              <h4 className="text-xs font-black uppercase text-muted-foreground tracking-widest border-b pb-1">Identificação e Local</h4>
                               <div className="space-y-2">
                                   <label className="text-sm font-medium">Nome da Empresa</label>
                                   <Input 
@@ -141,13 +162,31 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                                       onChange={e => handleInputChange(company.id, 'name', e.target.value)} 
                                   />
                               </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">CNPJ</label>
+                                    <Input 
+                                        placeholder="00.000.000/0001-00" 
+                                        value={company.cnpj || ''} 
+                                        onChange={e => handleInputChange(company.id, 'cnpj', e.target.value)} 
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium flex items-center gap-2"><Calendar className="h-3 w-3" /> Data do Evento</label>
+                                    <Input 
+                                        type="date"
+                                        value={company.eventDate || ''} 
+                                        onChange={e => handleInputChange(company.id, 'eventDate', e.target.value)} 
+                                    />
+                                </div>
+                              </div>
                               <div className="space-y-2">
-                                <label className="text-sm font-medium">CNPJ</label>
-                                  <Input 
-                                      placeholder="00.000.000/0001-00" 
-                                      value={company.cnpj || ''} 
-                                      onChange={e => handleInputChange(company.id, 'cnpj', e.target.value)} 
-                                  />
+                                <label className="text-sm font-medium flex items-center gap-2"><MapPin className="h-3 w-3" /> Endereço do Evento</label>
+                                <Input 
+                                    placeholder="Rua, Número, Bairro, Cidade - UF" 
+                                    value={company.address || ''} 
+                                    onChange={e => handleInputChange(company.id, 'address', e.target.value)} 
+                                />
                               </div>
                               <div className="space-y-2">
                                 <label className="text-sm font-medium">Tipo de Trabalho</label>
@@ -195,6 +234,18 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                                         onChange={e => handleInputChange(company.id, 'contactEmail', e.target.value)} 
                                     />
                                 </div>
+                              </div>
+                              <div className="pt-4">
+                                <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    className="w-full text-blue-600 border-blue-200 hover:bg-blue-50"
+                                    onClick={() => handleAddToCalendar(company)}
+                                    disabled={!company.eventDate}
+                                >
+                                    <CalendarPlus className="h-4 w-4 mr-2" />
+                                    Adicionar ao Google Agenda
+                                </Button>
                               </div>
                           </div>
                       </div>
