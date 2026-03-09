@@ -4,16 +4,16 @@
 import { useState, useMemo, useEffect } from "react";
 import { CompaniesTable } from "@/components/companies/companies-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search, Building2, DollarSign, CalendarRange, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import { Download, PlusCircle, Search, Building2, DollarSign, CalendarRange, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Company } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy } from "firebase/firestore";
+import { collection } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { startOfMonth, endOfMonth, isWithinInterval, parseISO, format, isSameDay } from 'date-fns';
-import { Calendar } from "@/components/ui/calendar";
+import { startOfMonth, endOfMonth, isWithinInterval, parseISO, format, isAfter, isSameDay, startOfDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import {
   Select,
   SelectContent,
@@ -21,13 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function EmpresasPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
     const [companies, setCompanies] = useState<Company[]>([]);
     const [isMounted, setIsMounted] = useState(false);
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -39,7 +39,6 @@ export default function EmpresasPage() {
 
     const companiesCollection = useMemoFirebase(() => {
         if (!firestore) return null;
-        // Buscamos todos para ordenar e filtrar no cliente por causa de datas nulas
         return collection(firestore, 'companies');
     }, [firestore]);
 
@@ -84,11 +83,18 @@ export default function EmpresasPage() {
         return { total: companies.length, revenueThisMonth: revenue, pendingCount: pending };
     }, [companies, isMounted]);
 
-    // Datas com eventos para o calendário
-    const eventDates = useMemo(() => {
-        return (companies || [])
-            .filter(c => !!c.eventDate)
-            .map(c => parseISO(c.eventDate!));
+    // Próximos eventos para a lista de agenda
+    const upcomingEvents = useMemo(() => {
+        if (!companies) return [];
+        const today = startOfDay(new Date());
+        
+        return companies
+            .filter(c => {
+                if (!c.eventDate) return false;
+                const eDate = parseISO(c.eventDate);
+                return isAfter(eDate, today) || isSameDay(eDate, today);
+            })
+            .sort((a, b) => a.eventDate!.localeCompare(b.eventDate!));
     }, [companies]);
 
     const filteredAndSortedCompanies = useMemo(() => {
@@ -179,25 +185,43 @@ export default function EmpresasPage() {
                         </CardContent>
                     </Card>
                 </div>
-                <Card className="md:col-span-4 border-primary/10 shadow-sm">
-                    <CardHeader className="p-4 pb-0">
-                        <CardTitle className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-2">
+                <Card className="md:col-span-4 border-primary/10 shadow-sm flex flex-col h-full">
+                    <CardHeader className="p-4 pb-2 border-b">
+                        <CardTitle className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 tracking-widest">
                             <CalendarIcon className="h-3 w-3" /> Agenda de Eventos
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-2 flex justify-center">
-                        <Calendar
-                            mode="single"
-                            selected={selectedDate}
-                            onSelect={setSelectedDate}
-                            className="rounded-md"
-                            modifiers={{
-                                event: eventDates
-                            }}
-                            modifiersStyles={{
-                                event: { fontWeight: 'bold', textDecoration: 'underline', color: 'hsl(var(--primary))' }
-                            }}
-                        />
+                    <CardContent className="p-0 flex-1">
+                        <ScrollArea className="h-[140px] md:h-auto max-h-[200px]">
+                            {isLoading ? (
+                                <div className="p-4 space-y-2">
+                                    <Skeleton className="h-10 w-full" />
+                                    <Skeleton className="h-10 w-full" />
+                                </div>
+                            ) : upcomingEvents.length > 0 ? (
+                                <div className="divide-y">
+                                    {upcomingEvents.map((event) => (
+                                        <div key={event.id} className="p-3 hover:bg-muted/50 transition-colors">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-[10px] font-bold text-blue-600 uppercase">
+                                                    {format(parseISO(event.eventDate!), "dd 'de' MMM", { locale: ptBR })}
+                                                </span>
+                                                <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                                                    <Clock className="h-2.5 w-2.5" />
+                                                    {event.eventTime || '--:--'}
+                                                </div>
+                                            </div>
+                                            <p className="text-xs font-black truncate text-primary">{event.name}</p>
+                                            <p className="text-[9px] text-muted-foreground truncate uppercase tracking-tighter">{event.workType}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-8 text-center text-muted-foreground italic text-xs">
+                                    Nenhum evento agendado.
+                                </div>
+                            )}
+                        </ScrollArea>
                     </CardContent>
                 </Card>
             </div>
