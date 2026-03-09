@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { CompaniesTable } from "@/components/companies/companies-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search, Building2, DollarSign, CalendarRange, ChevronLeft, ChevronRight } from "lucide-react";
+import { Download, PlusCircle, Search, Building2, DollarSign, CalendarRange, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Company } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
@@ -12,7 +12,8 @@ import { collection, query, orderBy } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
+import { startOfMonth, endOfMonth, isWithinInterval, parseISO, format, isSameDay } from 'date-fns';
+import { Calendar } from "@/components/ui/calendar";
 import {
   Select,
   SelectContent,
@@ -26,6 +27,7 @@ export default function EmpresasPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [companies, setCompanies] = useState<Company[]>([]);
     const [isMounted, setIsMounted] = useState(false);
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -37,7 +39,8 @@ export default function EmpresasPage() {
 
     const companiesCollection = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'companies'), orderBy('createdAt', 'desc'));
+        // Buscamos todos para ordenar e filtrar no cliente por causa de datas nulas
+        return collection(firestore, 'companies');
     }, [firestore]);
 
     const { data: initialCompanies, isLoading: isLoadingCollection } = useCollection<Company>(companiesCollection);
@@ -81,20 +84,34 @@ export default function EmpresasPage() {
         return { total: companies.length, revenueThisMonth: revenue, pendingCount: pending };
     }, [companies, isMounted]);
 
-    const filteredCompanies = useMemo(() => {
-        return (companies || []).filter(company =>
+    // Datas com eventos para o calendário
+    const eventDates = useMemo(() => {
+        return (companies || [])
+            .filter(c => !!c.eventDate)
+            .map(c => parseISO(c.eventDate!));
+    }, [companies]);
+
+    const filteredAndSortedCompanies = useMemo(() => {
+        const filtered = (companies || []).filter(company =>
             company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (company.cnpj && company.cnpj.includes(searchQuery)) ||
             (company.contactName && company.contactName.toLowerCase().includes(searchQuery.toLowerCase()))
         );
+
+        // Ordenação por data do evento (mais recentes primeiro)
+        return filtered.sort((a, b) => {
+            if (!a.eventDate) return 1;
+            if (!b.eventDate) return -1;
+            return b.eventDate.localeCompare(a.eventDate);
+        });
     }, [companies, searchQuery]);
 
     // Pagination logic
-    const totalPages = Math.ceil(filteredCompanies.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredAndSortedCompanies.length / itemsPerPage);
     const paginatedCompanies = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage;
-        return filteredCompanies.slice(start, start + itemsPerPage);
-    }, [filteredCompanies, currentPage, itemsPerPage]);
+        return filteredAndSortedCompanies.slice(start, start + itemsPerPage);
+    }, [filteredAndSortedCompanies, currentPage, itemsPerPage]);
 
     const handleAddNewCompany = () => {
        const newCompany: Company = {
@@ -120,44 +137,67 @@ export default function EmpresasPage() {
 
     return (
         <div className="flex flex-col gap-4">
-            <div className="grid gap-4 md:grid-cols-3">
-                <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                            Empresas Atendidas
+            <div className="grid gap-4 md:grid-cols-12">
+                <div className="md:col-span-8 grid gap-4 sm:grid-cols-3">
+                    <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                                Empresas Atendidas
+                            </CardTitle>
+                            <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                                {isLoading ? <Skeleton className="h-8 w-12"/> : metrics.total}
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                                Receita Corporativa (Mês)
+                            </CardTitle>
+                            <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
+                                {isLoading ? <Skeleton className="h-8 w-24"/> : `R$ ${metrics.revenueThisMonth.toFixed(2)}`}
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                                Pagamentos Pendentes
+                            </CardTitle>
+                            <CalendarRange className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">
+                                {isLoading ? <Skeleton className="h-8 w-12"/> : metrics.pendingCount}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+                <Card className="md:col-span-4 border-primary/10 shadow-sm">
+                    <CardHeader className="p-4 pb-0">
+                        <CardTitle className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-2">
+                            <CalendarIcon className="h-3 w-3" /> Agenda de Eventos
                         </CardTitle>
-                        <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                            {isLoading ? <Skeleton className="h-8 w-12"/> : metrics.total}
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
-                            Receita Corporativa (Mês)
-                        </CardTitle>
-                        <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
-                            {isLoading ? <Skeleton className="h-8 w-24"/> : `R$ ${metrics.revenueThisMonth.toFixed(2)}`}
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                            Pagamentos Pendentes
-                        </CardTitle>
-                        <CalendarRange className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">
-                            {isLoading ? <Skeleton className="h-8 w-12"/> : metrics.pendingCount}
-                        </div>
+                    <CardContent className="p-2 flex justify-center">
+                        <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={setSelectedDate}
+                            className="rounded-md"
+                            modifiers={{
+                                event: eventDates
+                            }}
+                            modifiersStyles={{
+                                event: { fontWeight: 'bold', textDecoration: 'underline', color: 'hsl(var(--primary))' }
+                            }}
+                        />
                     </CardContent>
                 </Card>
             </div>
@@ -195,10 +235,10 @@ export default function EmpresasPage() {
                         isLoading={isLoading}
                     />
                     
-                    {!isLoading && filteredCompanies.length > 0 && (
+                    {!isLoading && filteredAndSortedCompanies.length > 0 && (
                         <div className="p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/10">
                             <div className="text-sm text-muted-foreground">
-                                Mostrando <strong>{Math.min(filteredCompanies.length, (currentPage - 1) * itemsPerPage + 1)}</strong> a <strong>{Math.min(filteredCompanies.length, currentPage * itemsPerPage)}</strong> de <strong>{filteredCompanies.length}</strong> empresas
+                                Mostrando <strong>{Math.min(filteredAndSortedCompanies.length, (currentPage - 1) * itemsPerPage + 1)}</strong> a <strong>{Math.min(filteredAndSortedCompanies.length, currentPage * itemsPerPage)}</strong> de <strong>{filteredAndSortedCompanies.length}</strong> empresas
                             </div>
                             <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-2">

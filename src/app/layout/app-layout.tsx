@@ -55,10 +55,10 @@ import { useUser, useCollection, useFirestore, useMemoFirebase, useAuth } from "
 import { useEffect, useMemo, useState } from "react";
 import { FirebaseErrorListener } from "@/components/FirebaseErrorListener";
 import { collection } from "firebase/firestore";
-import type { Student, WomensMonthLead } from "@/lib/types";
+import type { Student, WomensMonthLead, Company } from "@/lib/types";
 import { signOut } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { subDays, isAfter, parseISO } from 'date-fns';
+import { subDays, isAfter, parseISO, addDays, isSameDay } from 'date-fns';
 
 const MENU_ITEMS = [
   { href: "/alunos", label: "Alunos", icon: Users },
@@ -105,8 +105,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     return collection(firestore, 'womensMonth');
   }, [firestore, user, mounted]);
 
+  const companiesCollection = useMemoFirebase(() => {
+    if (!firestore || !user || !mounted) return null;
+    return collection(firestore, 'companies');
+  }, [firestore, user, mounted]);
+
   const { data: students } = useCollection<Student>(studentsCollection);
   const { data: womensLeads } = useCollection<WomensMonthLead>(womensMonthCollection);
+  const { data: companies } = useCollection<Company>(companiesCollection);
 
   const birthdayStudents = useMemo(() => {
     if (!students || !mounted) return [];
@@ -124,6 +130,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       }
     });
   }, [students, mounted]);
+
+  const upcomingCorporateEvents = useMemo(() => {
+    if (!companies || !mounted) return [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = addDays(today, 1);
+    
+    return companies.filter(company => {
+      if (!company.eventDate) return false;
+      try {
+        const eventDate = parseISO(company.eventDate);
+        return isSameDay(eventDate, today) || isSameDay(eventDate, tomorrow);
+      } catch {
+        return false;
+      }
+    }).sort((a, b) => (a.eventDate! > b.eventDate! ? 1 : -1));
+  }, [companies, mounted]);
 
   const pendingStudents = useMemo(() => {
     if (!students || !mounted) return [];
@@ -150,7 +173,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       });
   }, [womensLeads, mounted]);
 
-  const totalNotifications = mounted ? (birthdayStudents?.length || 0) + (pendingStudents?.length || 0) + (recentWomensLeads?.length || 0) : 0;
+  const totalNotifications = mounted 
+    ? (birthdayStudents?.length || 0) + (pendingStudents?.length || 0) + (recentWomensLeads?.length || 0) + (upcomingCorporateEvents?.length || 0)
+    : 0;
 
   useEffect(() => {
     if (isUserLoading || !pathname || !mounted) return;
@@ -270,9 +295,31 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </>
               )}
 
-              {recentWomensLeads.length > 0 && (
+              {upcomingCorporateEvents.length > 0 && (
                 <>
                   {(pendingStudents.length > 0) && <DropdownMenuSeparator />}
+                  <DropdownMenuLabel className="flex items-center gap-2 text-blue-600">
+                    <Building2 className="h-4 w-4" /> Próximos Eventos Empresas
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {upcomingCorporateEvents.map(event => (
+                    <DropdownMenuItem key={event.id} asChild>
+                      <Link href="/empresas">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="truncate font-bold">{event.name}</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {isSameDay(parseISO(event.eventDate!), new Date()) ? 'HOJE' : 'AMANHÃ'} às {event.eventTime || '--:--'}
+                          </span>
+                        </div>
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+
+              {recentWomensLeads.length > 0 && (
+                <>
+                  {(pendingStudents.length > 0 || upcomingCorporateEvents.length > 0) && <DropdownMenuSeparator />}
                   <DropdownMenuLabel className="flex items-center gap-2 text-pink-600">
                     <Sparkles className="h-4 w-4" /> Mês das Mulheres (24h)
                   </DropdownMenuLabel>
@@ -289,7 +336,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               
               {birthdayStudents.length > 0 && (
                   <>
-                    {(pendingStudents.length > 0 || recentWomensLeads.length > 0) && <DropdownMenuSeparator />}
+                    {(pendingStudents.length > 0 || recentWomensLeads.length > 0 || upcomingCorporateEvents.length > 0) && <DropdownMenuSeparator />}
                     <DropdownMenuLabel className="flex items-center gap-2">
                       <Cake className="h-4 w-4" /> Aniversariantes de Hoje
                     </DropdownMenuLabel>
