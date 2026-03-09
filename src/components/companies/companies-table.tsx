@@ -9,7 +9,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
-import { Save, Trash2, Building2, Phone, Mail, User, MapPin, Calendar, CalendarPlus, Clock } from "lucide-react"
+import { Save, Trash2, Building2, Phone, Mail, User, MapPin, Calendar, CalendarPlus, Clock, Copy } from "lucide-react"
 import { Company } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
 import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
@@ -17,9 +17,10 @@ import { collection, doc } from "firebase/firestore"
 import { Input } from "../ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "../ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { v4 as uuidv4 } from 'uuid'
 
 interface CompaniesTableProps {
   companies: Company[]
@@ -68,6 +69,27 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
     })
     
     setCompanies(prev => prev.map(c => c.id === itemToSave.id ? { ...itemData, id: finalId, isNew: false } : c))
+  }
+
+  const handleDuplicateCompany = (e: React.MouseEvent, companyToDuplicate: Company) => {
+    e.stopPropagation()
+    
+    const newCompany: Company = {
+        ...companyToDuplicate,
+        id: `new_${uuidv4()}`,
+        isNew: true,
+        paymentStatus: 'Pendente',
+        paymentDate: undefined,
+        eventDate: new Date().toISOString().split('T')[0],
+        createdAt: new Date().toISOString(),
+    }
+
+    setCompanies(prev => [newCompany, ...prev])
+
+    toast({
+        title: "Registro Duplicado!",
+        description: "Uma nova entrada foi criada com os dados desta empresa. Ajuste a data e salve.",
+    })
   }
 
   const handleDeleteCompany = (e: React.MouseEvent, itemId: string, companyName: string) => {
@@ -367,6 +389,10 @@ export function CompaniesTable({ companies, setCompanies, isLoading }: Companies
                       </div>
 
                       <div className="flex flex-col sm:flex-row justify-end items-center mt-8 gap-2 pt-4 border-t">
+                          <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={(e) => handleDuplicateCompany(e, company)}>
+                              <Copy className="h-4 w-4 mr-2" />
+                              Duplicar
+                          </Button>
                           <Button variant="destructive" size="sm" className="w-full sm:w-auto" onClick={(e) => handleDeleteCompany(e, company.id, company.name)}>
                               <Trash2 className="h-4 w-4 mr-2" />
                               Excluir
