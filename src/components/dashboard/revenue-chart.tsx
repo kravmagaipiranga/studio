@@ -1,11 +1,13 @@
+
 "use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
 import { collection } from "firebase/firestore"
-import { Student } from "@/lib/types"
+import { Payment } from "@/lib/types"
 import { useMemo } from "react"
+import { parseISO, getMonth } from "date-fns"
 
 const getMonthName = (monthIndex: number) => {
     const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -15,48 +17,43 @@ const getMonthName = (monthIndex: number) => {
 export function RevenueChart() {
     const firestore = useFirestore();
 
-    const studentsCollection = useMemoFirebase(() => {
+    const paymentsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
-        return collection(firestore, 'students');
+        return collection(firestore, 'payments');
     }, [firestore]);
 
-    const { data: students } = useCollection<Student>(studentsCollection);
+    const { data: payments } = useCollection<Payment>(paymentsCollection);
 
     const revenueData = useMemo(() => {
         const monthlyRevenue: { [key: string]: number } = {};
 
-        if (students) {
-            students.forEach(student => {
-                if (student.lastPaymentDate && student.planValue) {
+        if (payments) {
+            payments.forEach(payment => {
+                if (payment.paymentDate) {
                     try {
-                        const paymentDate = new Date(student.lastPaymentDate + "T00:00:00");
-                        const monthName = getMonthName(paymentDate.getMonth());
-                        if (monthlyRevenue[monthName]) {
-                            monthlyRevenue[monthName] += student.planValue;
-                        } else {
-                            monthlyRevenue[monthName] = student.planValue;
-                        }
+                        const date = parseISO(payment.paymentDate);
+                        const monthName = getMonthName(getMonth(date));
+                        monthlyRevenue[monthName] = (monthlyRevenue[monthName] || 0) + (payment.amount || 0);
                     } catch (e) {
-                        console.error("Invalid date for student payment", student.lastPaymentDate);
+                        // ignore invalid dates
                     }
                 }
             });
         }
         
-        // Ensure all months are present, even with 0 revenue
         const allMonths = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
         return allMonths.map(month => ({
             month,
             revenue: monthlyRevenue[month] || 0
         }));
 
-    }, [students]);
+    }, [payments]);
 
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Receita Mensal</CardTitle>
+        <CardTitle>Receita Mensal (Transações)</CardTitle>
       </CardHeader>
       <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={350}>
@@ -76,10 +73,11 @@ export function RevenueChart() {
               tickFormatter={(value) => `R$${value}`}
             />
             <Tooltip
-              cursor={{ fill: 'hsl(var(--card))' }}
+              cursor={{ fill: 'hsl(var(--card))', opacity: 0.1 }}
               contentStyle={{ 
                 backgroundColor: 'hsl(var(--background))',
-                borderColor: 'hsl(var(--border))'
+                borderColor: 'hsl(var(--border))',
+                borderRadius: '8px'
               }}
                formatter={(value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)}
             />

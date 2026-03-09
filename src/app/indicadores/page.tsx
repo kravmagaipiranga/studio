@@ -99,7 +99,8 @@ export default function IndicadoresPage() {
         currentMonth.totalStudents = totalStudents;
         currentMonth.evolution = totalStudents - previousMonthTotalStudents;
         
-        const conversionDivisor = (currentMonth.trialClasses || 0) + (currentMonth.visits || 0);
+        // Ajustado para usar apenas Aulas de Experiência no divisor
+        const conversionDivisor = (currentMonth.trialClasses || 0);
         currentMonth.conversionRate = conversionDivisor > 0 ? ((currentMonth.newEnrollments || 0) / conversionDivisor) * 100 : 0;
     }
     return newTableData;

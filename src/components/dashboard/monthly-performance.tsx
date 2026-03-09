@@ -77,10 +77,12 @@ export function MonthlyPerformance() {
     const enrollments = data.newEnrollments || 0;
     const reenrollments = data.reenrollments || 0;
     const exits = data.exits || 0;
+    const trials = data.trialClasses || 0;
     
     data.evolution = enrollments + reenrollments - exits;
 
-    const conversionDivisor = (data.trialClasses || 0) + (data.visits || 0);
+    // Ajustado para usar apenas Aulas de Experiência no divisor
+    const conversionDivisor = trials;
     data.conversionRate = conversionDivisor > 0 ? (enrollments / conversionDivisor) * 100 : 0;
     return data;
   }, [indicator]);
