@@ -2,12 +2,12 @@
 "use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
 import { collection } from "firebase/firestore"
 import { Payment } from "@/lib/types"
 import { useMemo } from "react"
-import { parseISO, getMonth } from "date-fns"
+import { parseISO, getMonth, getYear } from "date-fns"
 
 const getMonthName = (monthIndex: number) => {
     const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -16,6 +16,7 @@ const getMonthName = (monthIndex: number) => {
 
 export function RevenueChart() {
     const firestore = useFirestore();
+    const currentYear = new Date().getFullYear();
 
     const paymentsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -32,8 +33,11 @@ export function RevenueChart() {
                 if (payment.paymentDate) {
                     try {
                         const date = parseISO(payment.paymentDate);
-                        const monthName = getMonthName(getMonth(date));
-                        monthlyRevenue[monthName] = (monthlyRevenue[monthName] || 0) + (payment.amount || 0);
+                        // Filtra apenas pagamentos do ano atual
+                        if (getYear(date) === currentYear) {
+                            const monthName = getMonthName(getMonth(date));
+                            monthlyRevenue[monthName] = (monthlyRevenue[monthName] || 0) + (payment.amount || 0);
+                        }
                     } catch (e) {
                         // ignore invalid dates
                     }
@@ -47,13 +51,14 @@ export function RevenueChart() {
             revenue: monthlyRevenue[month] || 0
         }));
 
-    }, [payments]);
+    }, [payments, currentYear]);
 
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Receita Mensal (Transações)</CardTitle>
+        <CardTitle>Receita Mensal ({currentYear})</CardTitle>
+        <CardDescription>Soma de transações realizadas em cada mês do ano vigente.</CardDescription>
       </CardHeader>
       <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={350}>

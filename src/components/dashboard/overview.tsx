@@ -12,10 +12,13 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student, Payment } from "@/lib/types";
 import { collection, query } from "firebase/firestore";
 import { useMemo } from "react";
-import { isWithinInterval, startOfMonth, endOfMonth, parseISO } from "date-fns";
+import { isWithinInterval, startOfMonth, endOfMonth, parseISO, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export function Overview() {
   const firestore = useFirestore();
+  const today = new Date();
+  const monthName = format(today, 'MMMM', { locale: ptBR });
 
   const studentsCollection = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -32,10 +35,10 @@ export function Overview() {
   
   const isLoading = isLoadingStudents || isLoadingPayments;
 
-  const { totalRevenue, activeStudents, overduePayments } = useMemo(() => {
-    const today = new Date();
-    const monthStart = startOfMonth(today);
-    const monthEnd = endOfMonth(today);
+  const { totalRevenue, activeStudents } = useMemo(() => {
+    const todayRef = new Date();
+    const monthStart = startOfMonth(todayRef);
+    const monthEnd = endOfMonth(todayRef);
 
     const revenue = payments
       ?.filter(p => {
@@ -50,51 +53,38 @@ export function Overview() {
 
     const active = students?.filter(s => s.status === 'Ativo').length || 0;
     
-    const overdue = students?.filter(s => {
-        if (s.status !== 'Ativo') return false;
-        if (!s.planExpirationDate) return true; 
-        try {
-            const expirationDate = parseISO(s.planExpirationDate);
-            const todayStart = new Date();
-            todayStart.setHours(0,0,0,0);
-            return expirationDate < todayStart;
-        } catch {
-            return true;
-        }
-    }).length || 0;
-
-    return { totalRevenue: revenue, activeStudents: active, overduePayments: overdue };
+    return { totalRevenue: revenue, activeStudents: active };
   }, [students, payments]);
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <Card>
+      <Card className="bg-emerald-50/50 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Receita Total (Mês)
+          <CardTitle className="text-sm font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
+            Receita Total ({monthName})
           </CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <DollarSign className="h-4 w-4 text-emerald-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
+          <div className="text-3xl font-black text-emerald-900 dark:text-emerald-100">
             {isLoading ? "..." : `R$ ${totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
           </div>
-           <p className="text-xs text-muted-foreground">
-            {isLoading ? 'Calculando...' : 'Receita de todos pagamentos no mês atual'}
+           <p className="text-xs text-emerald-700/70 dark:text-emerald-500/70 mt-1">
+            Pagamentos recebidos no mês vigente.
           </p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
+          <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
             Alunos Ativos
           </CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{isLoading ? "..." : `+${activeStudents}`}</div>
-           <p className="text-xs text-muted-foreground">
-            {isLoading ? 'Carregando...' : 'Total de alunos com status ativo'}
+          <div className="text-3xl font-black">{isLoading ? "..." : activeStudents}</div>
+           <p className="text-xs text-muted-foreground mt-1">
+            Total de matrículas ativas no CT.
           </p>
         </CardContent>
       </Card>
