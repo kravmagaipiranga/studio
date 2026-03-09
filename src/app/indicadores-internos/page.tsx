@@ -20,7 +20,8 @@ import {
   endOfMonth, 
   eachWeekOfInterval, 
   differenceInMonths,
-  getDay
+  getDay,
+  subMonths
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { 
@@ -72,7 +73,7 @@ export default function IndicadoresInternosPage() {
     setIsMounted(true);
   }, []);
 
-  // Fetch data
+  // Fetch data - Busca 3 meses para cálculo de frequência acumulada
   const studentsQuery = useMemoFirebase(() => {
     if (!firestore || !isMounted) return null;
     return collection(firestore, "students");
@@ -80,26 +81,35 @@ export default function IndicadoresInternosPage() {
 
   const attendanceQuery = useMemoFirebase(() => {
     if (!firestore || !selectedMonth || !selectedYear) return null;
-    const start = format(startOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1)), "yyyy-MM-dd");
-    const end = format(endOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1)), "yyyy-MM-dd");
+    const currentEnd = endOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1));
+    const threeMonthsAgoStart = startOfMonth(subMonths(currentEnd, 2));
+    
     return query(
       collection(firestore, "attendance"),
-      where("date", ">=", start),
-      where("date", "<=", end)
+      where("date", ">=", format(threeMonthsAgoStart, "yyyy-MM-dd")),
+      where("date", "<=", format(currentEnd, "yyyy-MM-dd"))
     );
   }, [firestore, selectedMonth, selectedYear]);
 
   const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
-  const { data: attendance, isLoading: isLoadingAttendance } = useCollection<Attendance>(attendanceQuery);
+  const { data: allAttendance, isLoading: isLoadingAttendance } = useCollection<Attendance>(attendanceQuery);
 
   const isLoading = isLoadingStudents || isLoadingAttendance || !isMounted;
 
-  // 1. & 2. Turmas com mais/menos alunos
+  // Filtra presenças apenas do mês selecionado para os gráficos mensais
+  const attendanceThisMonth = useMemo(() => {
+    if (!allAttendance || !selectedMonth || !selectedYear) return [];
+    const start = format(startOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1)), "yyyy-MM-dd");
+    const end = format(endOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1)), "yyyy-MM-dd");
+    return allAttendance.filter(a => a.date >= start && a.date <= end);
+  }, [allAttendance, selectedMonth, selectedYear]);
+
+  // 1. & 2. Turmas com mais/menos alunos (Baseado no mês atual)
   const classRanking = useMemo(() => {
-    if (!attendance || !isMounted) return [];
+    if (!attendanceThisMonth || !isMounted) return [];
     const counts: Record<string, number> = {};
     
-    attendance.forEach(a => {
+    attendanceThisMonth.forEach(a => {
       if (a.time && a.date) {
         try {
             const date = parseISO(a.date);
@@ -129,14 +139,14 @@ export default function IndicadoresInternosPage() {
     return Object.entries(counts)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
-  }, [attendance, isMounted]);
+  }, [attendanceThisMonth, isMounted]);
 
   const mostPopularClass = classRanking[0] || null;
   const leastPopularClass = classRanking[classRanking.length - 1] || null;
 
-  // 3. Alunos com mais faltas
+  // 3. Alunos com mais faltas (Baseado no mês atual)
   const absenceRanking = useMemo(() => {
-    if (!students || !attendance || !selectedMonth || !selectedYear) return [];
+    if (!students || !attendanceThisMonth || !selectedMonth || !selectedYear) return [];
     
     const start = startOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1));
     const end = endOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1));
@@ -146,23 +156,23 @@ export default function IndicadoresInternosPage() {
     return students
       .filter(s => s.status === 'Ativo')
       .map(s => {
-        const studentAttendance = attendance.filter(a => a.studentId === s.id);
+        const studentAttendance = attendanceThisMonth.filter(a => a.studentId === s.id);
         const count = studentAttendance.reduce((acc, a) => acc + (a.type === "Sábado" ? 2 : 1), 0);
         const absences = Math.max(0, expectedClasses - count);
         return { name: s.name, absences, id: s.id };
       })
       .sort((a, b) => b.absences - a.absences)
       .slice(0, 10);
-  }, [students, attendance, selectedMonth, selectedYear]);
+  }, [students, attendanceThisMonth, selectedMonth, selectedYear]);
 
-  // 4. & 5. Visitas e Aulas de Experiência
+  // 4. & 5. Visitas e Aulas de Experiência (Mês atual)
   const trialMetrics = useMemo(() => {
-    if (!attendance) return { visits: 0, experiences: 0 };
+    if (!attendanceThisMonth) return { visits: 0, experiences: 0 };
     return {
-      visits: attendance.filter(a => a.category === 'Visita').length,
-      experiences: attendance.filter(a => a.category === 'Experiência').length
+      visits: attendanceThisMonth.filter(a => a.category === 'Visita').length,
+      experiences: attendanceThisMonth.filter(a => a.category === 'Experiência').length
     };
-  }, [attendance]);
+  }, [attendanceThisMonth]);
 
   // 6. Aniversariantes do mês count (Apenas Ativos)
   const birthdaysCount = useMemo(() => {
@@ -170,15 +180,21 @@ export default function IndicadoresInternosPage() {
     return students.filter(s => s.status === 'Ativo' && s.dob && s.dob.split('-')[1] === selectedMonth).length;
   }, [students, selectedMonth]);
 
-  // 7. Alunos Aptos a Revision e Frequência
+  // 7. Alunos Aptos a Revision e Frequência (BASEADO NOS ÚLTIMOS 3 MESES)
   const reviewMetrics = useMemo(() => {
-    if (!students || !attendance || !selectedMonth || !selectedYear) return [];
+    if (!students || !allAttendance || !selectedMonth || !selectedYear) return [];
     const now = new Date();
-    const weeksInMonth = eachWeekOfInterval({ 
-        start: startOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1)), 
-        end: endOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1)) 
-    }, { weekStartsOn: 1 }).length;
-    const meta = weeksInMonth * 2;
+    
+    // Cálculo da meta acumulada de 3 meses
+    const currentEnd = endOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1));
+    let totalMeta = 0;
+    for (let i = 0; i < 3; i++) {
+        const targetDate = subMonths(currentEnd, i);
+        const mStart = startOfMonth(targetDate);
+        const mEnd = endOfMonth(targetDate);
+        const weeks = eachWeekOfInterval({ start: mStart, end: mEnd }, { weekStartsOn: 1 }).length;
+        totalMeta += (weeks * 2);
+    }
 
     const aptos = students.filter(s => {
         if (s.status !== 'Ativo' || !s.belt) return false;
@@ -203,19 +219,19 @@ export default function IndicadoresInternosPage() {
         if (aptosInBelt.length === 0) return null;
 
         const studentsDetails = aptosInBelt.map(s => {
-            const sAttendance = attendance.filter(a => a.studentId === s.id);
+            const sAttendance = allAttendance.filter(a => a.studentId === s.id);
             const count = sAttendance.reduce((sum, a) => sum + (a.type === 'Sábado' ? 2 : 1), 0);
-            const perf = Math.round((count / meta) * 100);
+            const perf = Math.round((count / totalMeta) * 100);
             return { name: s.name, performance: perf };
         }).sort((a, b) => b.performance - a.performance);
 
         const totalPresences = aptosInBelt.reduce((acc, s) => {
-            const sAttendance = attendance.filter(a => a.studentId === s.id);
+            const sAttendance = allAttendance.filter(a => a.studentId === s.id);
             return acc + sAttendance.reduce((sum, a) => sum + (a.type === 'Sábado' ? 2 : 1), 0);
         }, 0);
 
         const averagePresence = totalPresences / aptosInBelt.length;
-        const performance = (averagePresence / meta) * 100;
+        const performance = (averagePresence / totalMeta) * 100;
 
         return {
             belt,
@@ -224,7 +240,7 @@ export default function IndicadoresInternosPage() {
             students: studentsDetails
         };
     }).filter(Boolean);
-  }, [students, attendance, selectedMonth, selectedYear]);
+  }, [students, allAttendance, selectedMonth, selectedYear]);
 
   const formatMonth = (m: string) => {
     if (!m) return "";
@@ -320,7 +336,7 @@ export default function IndicadoresInternosPage() {
         <Card>
           <CardHeader>
             <CardTitle>Engajamento por Turma</CardTitle>
-            <CardDescription>Presenças registradas por ciclo de dia e horário.</CardDescription>
+            <CardDescription>Presenças registradas por ciclo de dia e horário no mês selecionado.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
@@ -374,7 +390,7 @@ export default function IndicadoresInternosPage() {
         <Card className="flex flex-col">
           <CardHeader>
             <CardTitle>Top Alunos com Mais Faltas</CardTitle>
-            <CardDescription>Baseado na meta de 2 aulas por semana.</CardDescription>
+            <CardDescription>Baseado na meta de 2 aulas por semana no mês selecionado.</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 p-0 overflow-auto">
             {isLoading ? (
@@ -415,9 +431,9 @@ export default function IndicadoresInternosPage() {
       {/* Revisão por Faixa e Performance */}
       <Card>
         <CardHeader>
-          <CardTitle>Aptos para Revisão - Frequência Média</CardTitle>
+          <CardTitle>Aptos para Revisão - Frequência Trimestral Média</CardTitle>
           <CardDescription>
-            Alunos que cumprem o tempo mínimo de faixa e seu engajamento no mês selecionado.
+            Performance acumulada baseada nos últimos 3 meses (incluindo o selecionado).
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -443,7 +459,7 @@ export default function IndicadoresInternosPage() {
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-[10px] font-bold uppercase text-muted-foreground">
-                          <span>Média do Grupo</span>
+                          <span>Média Trimestral</span>
                           <span className={cn(
                             m.performance >= 80 ? "text-emerald-600" : m.performance >= 50 ? "text-orange-600" : "text-red-600"
                           )}>{m.performance}%</span>
@@ -480,7 +496,7 @@ export default function IndicadoresInternosPage() {
                     </div>
                     <div className="p-2 border-t bg-muted/30">
                        <p className="text-[9px] text-muted-foreground text-center italic flex items-center justify-center gap-1">
-                        <Info className="h-2.5 w-2.5" /> Meta: 2 aulas/semana
+                        <Info className="h-2.5 w-2.5" /> Meta: 2 aulas/semana (Acumulado)
                       </p>
                     </div>
                   </div>
