@@ -1,6 +1,7 @@
 
 'use client';
 
+import { Suspense } from "react";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student } from "@/lib/types";
 import { RegisterPaymentForm } from "@/components/payments/register-payment-form";
@@ -10,10 +11,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-
-export default function NewPaymentPage() {
+function NewPaymentContent() {
     const firestore = useFirestore();
     const searchParams = useSearchParams();
     const studentId = searchParams.get('aluno');
@@ -67,4 +67,12 @@ export default function NewPaymentPage() {
             <RegisterPaymentForm allStudents={students || []} studentIdFromUrl={studentId} />
         </>
     )
+}
+
+export default function NewPaymentPage() {
+  return (
+    <Suspense fallback={<Skeleton className="h-screen w-full" />}>
+      <NewPaymentContent />
+    </Suspense>
+  );
 }

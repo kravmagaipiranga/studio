@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { collection, query, where, doc, orderBy } from "firebase/firestore";
+import { useState, useMemo, useEffect, Suspense } from "react";
+import { collection, query, where, doc } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
 import { Student, Attendance, HandbookContent, TaughtTechnique } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, parseISO, startOfMonth, endOfMonth, isSaturday, eachWeekOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckSquare, Trash2, UserCheck, Search, Clock, ChevronLeft, ChevronRight, UserPlus, Info, TrendingDown, Users, BookOpen, GraduationCap } from "lucide-react";
+import { CheckSquare, Trash2, UserCheck, Clock, UserPlus, Info, TrendingDown, Users, BookOpen, GraduationCap, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
@@ -50,7 +50,7 @@ const beltColors: Record<string, string> = {
   'Preta': '#0f172a',
 };
 
-export default function ChamadaPage() {
+function ChamadaContent() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -158,7 +158,6 @@ export default function ChamadaPage() {
     return beltData?.techniques || [];
   }, [dbHandbook, selectedBeltId]);
 
-  // Taught Techniques fetching - Removed orderBy to prevent missing index error
   const taughtTopicsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
@@ -169,7 +168,6 @@ export default function ChamadaPage() {
 
   const { data: rawTaughtTopics, isLoading: isLoadingTopics } = useCollection<TaughtTechnique>(taughtTopicsQuery);
 
-  // Sorting taught techniques on client side to avoid Firebase composite index requirement
   const taughtTopics = useMemo(() => {
     if (!rawTaughtTopics) return [];
     return [...rawTaughtTopics].sort((a, b) => {
@@ -221,7 +219,7 @@ export default function ChamadaPage() {
         studentId = student.id;
     } else {
         studentName = category === 'Visita' ? "Visita" : "Aula Experimental";
-        studentId = category.toUpperCase(); // Placeholder ID
+        studentId = category.toUpperCase(); 
     }
 
     const attendanceData: Omit<Attendance, 'id'> = {
@@ -295,13 +293,9 @@ export default function ChamadaPage() {
 
     const data = students.map(student => {
       const attendances = monthAttendance.filter(a => a.studentId === student.id);
-      
-      // Peso 2 para aulas de Sábado, peso 1 para as demais
       const count = attendances.reduce((acc, a) => acc + (a.type === "Sábado" ? 2 : 1), 0);
-      
       const hasSaturday = attendances.some(a => a.type === "Sábado");
       const target = hasSaturday ? weeksInMonth : (weeksInMonth * 2);
-      
       const deficit = Math.max(0, target - count);
 
       return {
@@ -325,7 +319,6 @@ export default function ChamadaPage() {
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
   }, [fullReportData, searchQuery]);
 
-  // Analytics for Report
   const classEngagementData = useMemo(() => {
     if (!monthAttendance) return [];
     const counts: Record<string, number> = {};
@@ -350,7 +343,6 @@ export default function ChamadaPage() {
     }).filter(Boolean);
   }, [fullReportData]);
 
-  // Pagination logic
   const totalPages = Math.ceil(filteredReportData.length / itemsPerPage);
   const paginatedReportData = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -584,7 +576,6 @@ export default function ChamadaPage() {
         </TabsContent>
 
         <TabsContent value="relatorio" className="space-y-6 pt-4">
-          {/* Header & Year/Month Filters */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-bold">Resumo Mensal</h2>
@@ -616,7 +607,6 @@ export default function ChamadaPage() {
             </div>
           </div>
 
-          {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader className="pb-2">
@@ -692,7 +682,6 @@ export default function ChamadaPage() {
             </Card>
           </div>
 
-          {/* Full Report Table Card */}
           <Card>
             <CardHeader className="pb-3 border-b">
               <div className="relative max-w-sm">
@@ -754,7 +743,6 @@ export default function ChamadaPage() {
                 </TableBody>
               </Table>
 
-              {/* Pagination Controls */}
               {!isLoadingReport && !isLoadingStudents && filteredReportData.length > 0 && (
                 <div className="p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/10">
                     <div className="text-sm text-muted-foreground">
@@ -829,4 +817,12 @@ function ScrollArea({ children, className }: { children: React.ReactNode, classN
             {children}
         </div>
     );
+}
+
+export default function ChamadaPage() {
+  return (
+    <Suspense fallback={<Skeleton className="h-screen w-full" />}>
+      <ChamadaContent />
+    </Suspense>
+  );
 }

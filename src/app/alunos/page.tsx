@@ -1,13 +1,13 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { collection, query, orderBy } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student, Payment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, User, Search, Download, Upload, AlertCircle, UserCheck, UserX, MoreHorizontal, UserPlus, GraduationCap, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { PlusCircle, Search, Download, Upload, UserCheck, MoreHorizontal, UserPlus, GraduationCap, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -73,7 +73,7 @@ function calculateTimeSince(dateString: string): string {
         const now = new Date();
         const totalMonths = differenceInMonths(now, startDate);
         
-        if (totalMonths < 0) return ""; // Date is in the future
+        if (totalMonths < 0) return ""; 
         if (totalMonths < 1) return "< 1 mês";
 
         const years = Math.floor(totalMonths / 12);
@@ -100,8 +100,7 @@ function getInitials(name: string) {
     return name.substring(0, 2).toUpperCase();
 }
 
-
-export default function AlunosPage() {
+function AlunosContent() {
     const firestore = useFirestore();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -109,17 +108,13 @@ export default function AlunosPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
     
-    // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(25);
 
-    // Initial filter from URL
     useEffect(() => {
         const filterParam = searchParams.get('filter');
         if (filterParam === 'aptos') {
             setActiveFilter('Aptos para Revisão');
-        } else if (filterParam === 'aniversariantes') {
-            // No direct filter for birthdays yet, but could be handled here
         }
         
         const searchParam = searchParams.get('search');
@@ -143,7 +138,6 @@ export default function AlunosPage() {
     
     const isLoading = isLoadingStudents || isLoadingPayments;
 
-    // Reset pagination on filter or search change
     useEffect(() => {
         setCurrentPage(1);
     }, [searchQuery, activeFilter]);
@@ -210,7 +204,7 @@ export default function AlunosPage() {
                 try {
                     if (belt === 'branca') {
                         const startDate = student.startDate ? parseISO(student.startDate) : (student.registrationDate ? parseISO(student.registrationDate) : null);
-                        return startDate ? differenceInMonths(now, startDate) > 4 : false;
+                        return startDate ? differenceInMonths(now, startDate) >= 4 : false;
                     }
         
                     if (!student.lastExamDate) return false;
@@ -218,10 +212,10 @@ export default function AlunosPage() {
                     const lastExamDate = parseISO(student.lastExamDate);
                     const monthsSinceExam = differenceInMonths(now, lastExamDate);
         
-                    if (belt === 'amarela') return monthsSinceExam > 12;
-                    if (belt === 'laranja') return monthsSinceExam > 18; 
-                    if (belt === 'verde' || belt === 'azul') return monthsSinceExam > 24; 
-                    if (belt === 'marrom') return monthsSinceExam > 36; 
+                    if (belt === 'amarela') return monthsSinceExam >= 12;
+                    if (belt === 'laranja') return monthsSinceExam >= 18; 
+                    if (belt === 'verde' || belt === 'azul') return monthsSinceExam >= 24; 
+                    if (belt === 'marrom') return monthsSinceExam >= 36; 
         
                 } catch {
                     return false;
@@ -244,7 +238,6 @@ export default function AlunosPage() {
 
     }, [studentsWithTimeInBelt, activeFilter, searchQuery]);
 
-    // Pagination logic
     const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
     const paginatedStudents = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage;
@@ -487,7 +480,7 @@ export default function AlunosPage() {
                                                                     {student.userId ? (
                                                                         <UserCheck className="h-4 w-4 text-green-500" />
                                                                     ) : (
-                                                                        <UserX className="h-4 w-4 text-red-500" />
+                                                                        <UserPlus className="h-4 w-4 text-muted-foreground" />
                                                                     )}
                                                                 </TooltipTrigger>
                                                                 <TooltipContent>
@@ -599,4 +592,12 @@ export default function AlunosPage() {
             </Card>
         </div>
     );
+}
+
+export default function AlunosPage() {
+  return (
+    <Suspense fallback={<Skeleton className="h-screen w-full" />}>
+      <AlunosContent />
+    </Suspense>
+  );
 }
