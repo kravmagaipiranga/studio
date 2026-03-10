@@ -186,15 +186,16 @@ export default function EmpresasPage() {
                     </Card>
                 </div>
                 <Card className="md:col-span-4 border-primary/10 shadow-sm flex flex-col h-full">
-                    <CardHeader className="p-4 pb-2 border-b">
+                    <CardHeader className="p-4 pb-2 border-b shrink-0">
                         <CardTitle className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 tracking-widest">
                             <CalendarIcon className="h-3 w-3" /> Agenda de Eventos
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-0 flex-1">
-                        <ScrollArea className="h-[140px] md:h-auto max-h-[200px]">
+                    <CardContent className="p-0 flex-1 overflow-hidden">
+                        <ScrollArea className="h-[250px]">
                             {isLoading ? (
                                 <div className="p-4 space-y-2">
+                                    <Skeleton className="h-10 w-full" />
                                     <Skeleton className="h-10 w-full" />
                                     <Skeleton className="h-10 w-full" />
                                 </div>
