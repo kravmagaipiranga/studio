@@ -52,7 +52,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUser, useCollection, useFirestore, useMemoFirebase, useAuth } from "@/firebase";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { FirebaseErrorListener } from "@/components/FirebaseErrorListener";
 import { collection } from "firebase/firestore";
 import type { Student, WomensMonthLead, Company } from "@/lib/types";
@@ -222,11 +222,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex-1 overflow-y-auto">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4 py-4 gap-1">
-              {MENU_ITEMS.map((item) => (
-                <NavItem key={item.href} href={item.href} target={item.target}>
-                  <item.icon className={cn("h-4 w-4", item.color)} /> {item.label}
-                </NavItem>
-              ))}
+              <Suspense fallback={<div className="p-4 space-y-2"><div className="h-8 w-full bg-muted animate-pulse rounded" /></div>}>
+                {MENU_ITEMS.map((item) => (
+                  <NavItem key={item.href} href={item.href} target={item.target}>
+                    <item.icon className={cn("h-4 w-4", item.color)} /> {item.label}
+                  </NavItem>
+                ))}
+              </Suspense>
             </nav>
           </div>
         </div>
@@ -252,11 +254,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </SheetHeader>
               <nav className="flex-1 overflow-y-auto p-2">
                 <div className="grid gap-1">
-                  {MENU_ITEMS.map((item) => (
-                    <NavItem key={item.href} href={item.href} isMobile target={item.target}>
-                      <item.icon className={cn("h-5 w-5", item.color)} /> {item.label}
-                    </NavItem>
-                  ))}
+                  <Suspense fallback={null}>
+                    {MENU_ITEMS.map((item) => (
+                      <NavItem key={item.href} href={item.href} isMobile target={item.target}>
+                        <item.icon className={cn("h-5 w-5", item.color)} /> {item.label}
+                      </NavItem>
+                    ))}
+                  </Suspense>
                 </div>
               </nav>
             </SheetContent>
@@ -401,7 +405,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 function NavItem({ href, children, isMobile = false, target }: { href: string; children: React.ReactNode; isMobile?: boolean; target?: string; }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const fullPath = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '');
   
   const isActive = pathname ? (href === "/" ? pathname === "/" : pathname.startsWith(href)) : false;
   

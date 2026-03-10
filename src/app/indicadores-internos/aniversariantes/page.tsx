@@ -62,11 +62,7 @@ function BirthdayListContent() {
   const getBirthdayWhatsAppLink = (student: Student) => {
     const phone = student.phone?.replace(/\D/g, '');
     const firstName = student.name.split(' ')[0];
-    const message = `Parabéns, ${firstName}! Feliz aniversário! 🎂🥳
-
-Desejamos que seu novo ciclo seja repleto de força, saúde, superação e muito Krav Magá. Estamos muito felizes em ter você treinando conosco no Centro de Treinamento Krav Magá Ipiranga! 🛡️👊
-
-Aproveite seu dia! Kida!`;
+    const message = `Parabéns, ${firstName}! Feliz aniversário! 🎂🥳\n\nDesejamos que seu novo ciclo seja repleto de força, saúde, superação e muito Krav Magá. Estamos muito felizes em ter você treinando conosco no Centro de Treinamento Krav Magá Ipiranga! 🛡️👊\n\nAproveite seu dia! Kida!`;
     return `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
   };
 
@@ -180,7 +176,7 @@ Aproveite seu dia! Kida!`;
 
 export default function BirthdayListPage() {
   return (
-    <Suspense fallback={<Skeleton className="h-screen w-full" />}>
+    <Suspense fallback={<div className="p-8"><Skeleton className="h-64 w-full" /></div>}>
       <BirthdayListContent />
     </Suspense>
   );
