@@ -1,0 +1,41 @@
+name: Sincronizar Firebase Studio para GitHub
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Executa a cada 1 hora (ajuste conforme necessário)
+  workflow_dispatch: # Permite rodar manualmente no GitHub Actions
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }} # Token de Acesso Pessoal (PAT) para permissão de push
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Sincronizar com Firebase Studio
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          # Aqui o comando para baixar o código do Firebase Studio (se disponível via CLI)
+          # Se não, o script pode fazer o pull do branch que o Studio atualiza
+          # Como o Studio geralmente atualiza um branch específico ou faz push direto:
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Tenta fazer o pull das alterações mais recentes
+          git pull origin main --rebase
+          
+          # Se houver alterações, faz o commit e push
+          git add .
+          git commit -m "Sync: Atualizações do Firebase Studio [automático]" || echo "Sem alterações para sincronizar"
+          git push origin main
