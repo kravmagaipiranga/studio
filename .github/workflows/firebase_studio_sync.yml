@@ -2,7 +2,7 @@ name: Sincronizar Firebase Studio para GitHub
 
 on:
   schedule:
-    - cron: '0 * * * *' # Executa a cada 1 hora (ajuste conforme necessário)
+    - cron: '0 * * * *' # Executa a cada 24 horas (ajuste conforme necessário)
   workflow_dispatch: # Permite rodar manualmente no GitHub Actions
 
 jobs:
