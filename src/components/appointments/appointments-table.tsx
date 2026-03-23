@@ -11,8 +11,11 @@ import { Button } from "@/components/ui/button"
 import { Save, Trash2, UserCheck, UserX, CheckSquare, MessageSquare, ClipboardList } from "lucide-react"
 import { Appointment } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
-import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
+import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, doc } from "firebase/firestore"
+import { MessageTemplate } from "@/lib/types"
+import { DEFAULT_TEMPLATES, getTemplateBody, applyTemplateVars } from "@/lib/message-templates"
+import { useMemo } from "react"
 import { Input } from "../ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "../ui/textarea"
@@ -32,6 +35,17 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
   const firestore = useFirestore()
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
+
+  const templatesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'messageTemplates');
+  }, [firestore]);
+  const { data: dbTemplates } = useCollection<MessageTemplate>(templatesQuery);
+  const allTemplates = useMemo(() => {
+    const list = [...(dbTemplates || [])];
+    DEFAULT_TEMPLATES.forEach(def => { if (!list.find(t => t.id === def.id)) list.push(def); });
+    return list;
+  }, [dbTemplates]);
 
   useEffect(() => {
     setMounted(true)
@@ -122,10 +136,9 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
   const generateWhatsAppLinks = (appointment: Appointment) => {
     const phone = appointment.whatsapp?.replace(/\D/g, '')
     const firstName = appointment.name.split(' ')[0]
-    
-    const missedMessage = `Oi, ${firstName}, tudo bem? Notamos que você não conseguiu comparecer ao seu treino experimental na semana passada e sentimos sua falta!\n\nSabemos que a correria do dia a dia e os imprevistos podem desanimar, mas o Krav Magá é justamente sobre superar esses obstáculos e fortalecer sua mente. A disciplina é o que nos leva além, mesmo nos dias em que o cansaço tenta vencer. ✨\n\nQue tal darmos esse primeiro passo juntos agora? Vamos agendar um novo horário para você vivenciar essa experiênica. Qual dia e horário desta semana funcionam melhor para você? 👊`
 
-    const thankYouMessage = `Olá, ${firstName}! Foi uma satisfação ter você conosco no nosso treino! 👊\nParabéns por dar esse primeiro passo. No Krav Magá, técnica e confiança andam juntas, e você já mostrou que tem a determinação necessária para se proteger e viver com mais segurança.\n\nQueremos muito que você faça parte da nossa família aqui no CT Ipiranga! Para incentivar sua continuidade, temos um presente: 25% de desconto na sua camiseta oficial de treino (válido por 7 dias). Basta mostrar este print na recepção. 🎁\n\nPronto para o próximo nível? Faça sua matrícula no link abaixo:\n👉 https://tinyurl.com/kmipiranga\n\nNos vemos no tatame!\nProfessor Thiago R. Pedro`
+    const missedMessage = applyTemplateVars(getTemplateBody(allTemplates, 'agendamentos_faltou'), { nome: firstName })
+    const thankYouMessage = applyTemplateVars(getTemplateBody(allTemplates, 'agendamentos_obrigado'), { nome: firstName })
 
     let instructionsMessage = ""
     if (appointment.classDate) {
@@ -133,8 +146,13 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
             const appointmentDate = parseISO(appointment.classDate)
             const dayOfWeek = format(appointmentDate, 'EEEE', { locale: ptBR })
             const formattedDate = format(appointmentDate, 'dd/MM/yyyy')
-
-            instructionsMessage = `Olá, ${appointment.name}! Tudo bem? \nNa próxima ${dayOfWeek}, dia ${formattedDate}, você fará sua aulas de experiência gratuita no Centro de Treinamento de Krav Magá Ipiranga!\n\nPara sua aula, utilize uma roupa confortável, a mesma que usaria para um passeio ao parque, ou para a prática de uma atividade física (como a musculação, por exemplo). Recomendamos o uso de uma calça (pode ser um moletom, legging ou uma calça de kimono) e camiseta.\n\n📋 Abaixo, listamos algumas Informações Importantes para Suas Aulas de Krav Magá:\n\n📍 Estrutura do Centro:\n- Nossa academia possui vestiários e armários, disponíveis para que você possa guardar pertences e trocar de roupa, antes ou depois das aulas.\n- Retire todos os acessórios (relógios, pulseiras, colares, anéis) antes do treino para evitar acidentes.  \n\n🗣️ Durante a Aula:  \n- Comunique-se com o instrutor ao entrar/sair do tatame.  \n- Respeite seu corpo: evite exageros para prevenir lesões.  \n- Informe ao instrutor qualquer dor ou condição médica (tratamento de coluna, problemas de glicemia ou pressão, problemas cardíacos, limitação de movimentos em membros, etc) \n- Siga as orientações do instrutor à risca –a experiência dele é seu guia!  \n- Priorize a técnica, não a velocidade. A evolução vem com consistência.  \n- Concentre-se e absorva cada detalhe.  \n- Pergunte sempre se tiver dúvidas – todos estão ali para aprender juntos!\n\nNos vemos na aula! Kida!`
+            const instrBody = getTemplateBody(allTemplates, 'agendamentos_instrucoes')
+            instructionsMessage = applyTemplateVars(instrBody, {
+                nome_completo: appointment.name,
+                nome: firstName,
+                dia_semana: dayOfWeek,
+                data_aula: formattedDate,
+            })
         } catch (e) {}
     }
 

@@ -13,8 +13,11 @@ import { Button } from "@/components/ui/button"
 import { Trash2, MessageSquare, Save, Users, Info } from "lucide-react"
 import { WomensMonthLead } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
-import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
+import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, doc } from "firebase/firestore"
+import { MessageTemplate } from "@/lib/types"
+import { DEFAULT_TEMPLATES, getTemplateBody, applyTemplateVars } from "@/lib/message-templates"
+import { useMemo } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Input } from "../ui/input"
 import { cn } from "@/lib/utils"
@@ -31,6 +34,17 @@ interface WomensMonthTableProps {
 export function WomensMonthTable({ leads, setLeads, isLoading }: WomensMonthTableProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
+
+  const templatesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'messageTemplates');
+  }, [firestore]);
+  const { data: dbTemplates } = useCollection<MessageTemplate>(templatesQuery);
+  const allTemplates = useMemo(() => {
+    const list = [...(dbTemplates || [])];
+    DEFAULT_TEMPLATES.forEach(def => { if (!list.find(t => t.id === def.id)) list.push(def); });
+    return list;
+  }, [dbTemplates]);
 
   const handleInputChange = (id: string, field: keyof WomensMonthLead, value: any) => {
     setLeads(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
@@ -89,20 +103,11 @@ export function WomensMonthTable({ leads, setLeads, isLoading }: WomensMonthTabl
 
   const getWhatsAppLink = (lead: WomensMonthLead) => {
     const phone = lead.whatsapp.replace(/\D/g, '');
-    const message = `Olá, ${lead.name.split(' ')[0]}! Tudo bem? 👋
-
-Aqui é o Professor Thiago, do Centro de Krav Magá Ipiranga.
-
-Vimos seu interesse na nossa campanha especial do Mês das Mulheres! 🛡️
-
-Sua vaga para realizar um mês de aulas gratuitas durante o mês de março na turma de *${lead.chosenClass}* está pré-reservada.
-
-${lead.hasCompanions ? `Vimos também que você pretende trazer acompanhantes (${lead.companionNames}). Elas também são muito bem-vindas! 👯‍♀️` : ''}
-
-Gostaria de confirmar sua participação? Alguma dúvida sobre como funciona o treino ou localização?
-
-Estamos ansiosos para te receber no tatame! 👊`;
-
+    const templateBody = getTemplateBody(allTemplates, 'mes_das_mulheres');
+    const message = applyTemplateVars(templateBody, {
+      nome: lead.name.split(' ')[0],
+      turma: lead.chosenClass,
+    });
     return `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
   };
 

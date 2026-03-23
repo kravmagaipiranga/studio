@@ -4,9 +4,10 @@
 import { useState, useMemo } from "react";
 import { collection, query, where } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { Student, Payment } from "@/lib/types";
+import { Student, Payment, MessageTemplate } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Search, AlertTriangle, MessageSquare, Mail } from "lucide-react";
+import { DEFAULT_TEMPLATES, getTemplateBody, applyTemplateVars } from "@/lib/message-templates";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -42,8 +43,22 @@ export default function PlanosVencidosPage() {
         return collection(firestore, 'payments');
     }, [firestore]);
 
+    const templatesQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'messageTemplates');
+    }, [firestore]);
+
     const { data: activeStudents, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
     const { data: allPayments, isLoading: isLoadingPayments } = useCollection<Payment>(paymentsQuery);
+    const { data: dbTemplates } = useCollection<MessageTemplate>(templatesQuery);
+
+    const allTemplates = useMemo(() => {
+        const list = [...(dbTemplates || [])];
+        DEFAULT_TEMPLATES.forEach(def => {
+            if (!list.find(t => t.id === def.id)) list.push(def);
+        });
+        return list;
+    }, [dbTemplates]);
 
     const isLoading = isLoadingStudents || isLoadingPayments;
 
@@ -106,48 +121,45 @@ export default function PlanosVencidosPage() {
         const expirationDate = student.planExpirationDate 
             ? format(parseISO(student.planExpirationDate), 'dd/MM/yyyy') 
             : 'pendente';
-        
-        const message = `Olá, ${student.name.split(' ')[0]}! Tudo bem?\n\n` +
-                        `Somos do Krav Magá Ipiranga. Entramos em contato para lembrar que seu plano venceu em ${expirationDate}.\n\n` +
-                        `Para renovar e continuar treinando, você pode fazer o pagamento através do nosso link: https://kravmagaipiranga.com/pgto\n\n` +
-                        `Ou, se preferir, via PIX usando a chave: thiago@kravmaga.org.br (CNPJ: 31.116.136/0001-95).\n\n` +
-                        `Se o pagamento já foi efetuado, por favor, desconsidere esta mensagem.\n\n` +
-                        `Qualquer dúvida, estamos à disposição!\nKida!`;
-
+        const templateBody = getTemplateBody(allTemplates, 'planos_vencidos');
+        const message = applyTemplateVars(templateBody, {
+            nome: student.name.split(' ')[0],
+            vencimento: expirationDate,
+        });
         return encodeURIComponent(message);
     }
     
     const generateEmailLink = (student: Student) => {
         if (!student.email) return '#';
 
-        const subject = `Lembrete de Pagamento - Krav Magá Ipiranga`;
+        const expirationDate = student.planExpirationDate 
+            ? format(parseISO(student.planExpirationDate), 'dd/MM/yyyy') 
+            : 'pendente';
+
         let body = '';
+        let subject = '';
 
         if (student.planType === 'Trimestral' && student.lastPaymentDate) {
              const paymentDate = parseISO(student.lastPaymentDate);
              const paymentDay = format(paymentDate, 'dd/MM/yyyy');
-             
              const month1 = format(paymentDate, 'MMMM', { locale: ptBR });
              const month2 = format(addMonths(paymentDate, 1), 'MMMM', { locale: ptBR });
              const month3 = format(addMonths(paymentDate, 2), 'MMMM', { locale: ptBR });
              const monthsCovered = `${month1}, ${month2} e ${month3}`;
-
-             body = `Olá, ${student.name.split(' ')[0]}! Estamos entrando em contato para lembrar que seu plano trimestral expirou. O pagamento referente aos meses ${monthsCovered} foi realizado em ${paymentDay}.\n\n` +
-                    `Com isso, o prazo para pagamento da próxima mensalidade irá vencer nos próximos dias. O QR code para realizar seu próximo pagamento pode ser encontrado no link: https://kravmagaipiranga.com/pgto\n\n` +
-                    `Caso prefira pagar diretamente por PIX, use a chave thiago@kravmaga.org.br ou o CNPJ 31116136000195.\n\n` +
-                    `Essa é uma mensagem automática de nosso sistema. Caso já tenha realizado o pagamento, desconsidere esse email.\n\n`+
-                    `Qualquer dúvida, estamos à disposição! Até a aula! Kida!`;
+             const trimestralTpl = allTemplates.find(t => t.id === 'planos_vencidos_trimestral') ?? DEFAULT_TEMPLATES.find(t => t.id === 'planos_vencidos_trimestral')!;
+             subject = trimestralTpl.subject;
+             body = applyTemplateVars(trimestralTpl.body, {
+                 nome: student.name.split(' ')[0],
+                 meses_cobertos: monthsCovered,
+                 data_pagamento: paymentDay,
+             });
         } else {
-             const expirationDate = student.planExpirationDate 
-                ? format(parseISO(student.planExpirationDate), 'dd/MM/yyyy') 
-                : 'pendente';
-            
-            body = `Olá, ${student.name.split(' ')[0]}! Tudo bem?\n\n` +
-                   `Somos do Krav Magá Ipiranga. Entramos em contato para lembrar que seu plano venceu em ${expirationDate}.\n\n` +
-                   `Para renovar e continuar treinando, você pode fazer o pagamento através do nosso link: https://kravmagaipiranga.com/pgto\n\n` +
-                   `Ou, se preferir, via PIX usando a chave: thiago@kravmaga.org.br (CNPJ: 31.116.136/0001-95).\n\n` +
-                   `Se o pagamento já foi efetuado, por favor, desconsidere esta mensagem.\n\n` +
-                   `Qualquer dúvida, estamos à disposição!\nKida!`;
+             const tpl = allTemplates.find(t => t.id === 'planos_vencidos') ?? DEFAULT_TEMPLATES.find(t => t.id === 'planos_vencidos')!;
+             subject = tpl.subject;
+             body = applyTemplateVars(tpl.body, {
+                 nome: student.name.split(' ')[0],
+                 vencimento: expirationDate,
+             });
         }
 
         return `mailto:${student.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;

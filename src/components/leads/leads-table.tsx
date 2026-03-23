@@ -12,8 +12,11 @@ import { Button } from "@/components/ui/button"
 import { Trash2, MessageSquare, Save, CalendarPlus } from "lucide-react"
 import { Lead } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
-import { useFirestore, deleteDocumentNonBlocking, updateDocumentNonBlocking, addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase"
+import { useFirestore, deleteDocumentNonBlocking, updateDocumentNonBlocking, addDocumentNonBlocking, setDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase"
 import { doc, collection } from "firebase/firestore"
+import { MessageTemplate } from "@/lib/types"
+import { DEFAULT_TEMPLATES, getTemplateBody, applyTemplateVars } from "@/lib/message-templates"
+import { useMemo } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Checkbox } from "../ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,6 +42,17 @@ export function LeadsTable({
 }: LeadsTableProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
+
+  const templatesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'messageTemplates');
+  }, [firestore]);
+  const { data: dbTemplates } = useCollection<MessageTemplate>(templatesQuery);
+  const allTemplates = useMemo(() => {
+    const list = [...(dbTemplates || [])];
+    DEFAULT_TEMPLATES.forEach(def => { if (!list.find(t => t.id === def.id)) list.push(def); });
+    return list;
+  }, [dbTemplates]);
 
   const handleInputChange = (leadId: string, field: keyof Lead, value: string) => {
     setLeads(prevLeads => 
@@ -143,32 +157,8 @@ export function LeadsTable({
   };
   
   const generateWhatsAppMessage = (leadName: string) => {
-    const message = `Olá, ${leadName}! Tudo bem? 👋
-
-Aqui é o Professor Thiago, do Centro de Krav Magá Ipiranga.
-
-Recentemente, você entrou em contato com a Central de Atendimento para saber mais sobre nossa academia. Gostaria de te convidar para sentir na pele a segurança e a confiança que o Krav Magá proporciona através de uma aula experimental gratuita. 🛡️
-
-Você sabia que o Centro de Treinamento Krav Magá Ipiranga foi oficialmente premiado com o título "Self Defence School of the Year 2025 – South East Brazil", no GHP Active Lifestyle Awards 2025?
-
-O prêmio reconhece instituições que se destacam na promoção de saúde, bem-estar, estilo de vida ativo e segurança pessoal, avaliando critérios como impacto social, qualidade dos serviços, compromisso com os alunos, profissionalismo e contribuição para o desenvolvimento da comunidade.
-
-Com mais de 27 anos de experiência, somos o maior CT da região e estamos prontos para te ajudar a descobrir sua força.
-
-Horários disponíveis para iniciantes:
-🔹 Seg/Qua: 18h e 20h
-🔹 Ter/Qui: 19h e 20h
-🔹 Sáb: 10h30
-
-Podemos reservar sua vaga para esta semana?
-
-Basta responder por aqui ou clicar no link: 🔗 https://form.jotform.com/kravmagaipiranga/agende
-
-Qualquer dúvida, estou à disposição! 👊
-
-Professor Thiago
-kravmagaipiranga.com`;
-
+    const templateBody = getTemplateBody(allTemplates, 'leads_cat_cpkm');
+    const message = applyTemplateVars(templateBody, { nome: leadName.split(' ')[0] });
     return encodeURIComponent(message);
   };
 
