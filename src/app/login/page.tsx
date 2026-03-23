@@ -48,10 +48,11 @@ export default function LoginPage() {
       });
       router.push('/dashboard');
     } catch (error: any) {
-      const code = error?.code || '';
-      let description = 'Verifique seu e-mail e senha.';
+      const code = error?.code || 'desconhecido';
+      console.error('[Login Error]', code, error?.message);
+      let description = `Verifique seu e-mail e senha. (código: ${code})`;
       if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
-        description = 'E-mail ou senha incorretos.';
+        description = `E-mail ou senha incorretos. (código: ${code})`;
       } else if (code === 'auth/invalid-email') {
         description = 'Endereço de e-mail inválido.';
       } else if (code === 'auth/user-disabled') {
@@ -62,8 +63,6 @@ export default function LoginPage() {
         description = 'Erro de rede. Verifique sua conexão.';
       } else if (code === 'auth/unauthorized-domain') {
         description = 'Este domínio não está autorizado no Firebase. Adicione-o em Authentication → Settings → Authorized domains.';
-      } else if (code) {
-        description = `Erro: ${code}`;
       }
       toast({
         variant: 'destructive',
