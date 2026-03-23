@@ -149,8 +149,9 @@ export default function ConfiguracoesPage() {
   const [isSavingHandbook, setIsSavingHandbook] = useState(false);
 
   // Message Template State
-  const [editingTemplate, setEditingTemplate] = useState<Partial<MessageTemplate> | null>(null);
-  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [newTemplate, setNewTemplate] = useState<Partial<MessageTemplate> | null>(null);
+  const [localTemplates, setLocalTemplates] = useState<Record<string, MessageTemplate>>({});
+  const [savingTemplateId, setSavingTemplateId] = useState<string | null>(null);
 
   const paramsRef = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -194,6 +195,20 @@ export default function ConfiguracoesPage() {
       setLocalHandbook(contentMap);
     }
   }, [dbHandbook]);
+
+  useEffect(() => {
+    if (templates.length > 0) {
+      setLocalTemplates(prev => {
+        const updated = { ...prev };
+        templates.forEach(tpl => {
+          if (!updated[tpl.id]) {
+            updated[tpl.id] = { ...tpl };
+          }
+        });
+        return updated;
+      });
+    }
+  }, [templates]);
 
   const handleBackup = async () => {
     if (!firestore) return;
@@ -329,20 +344,39 @@ export default function ConfiguracoesPage() {
   };
 
   // Message Template Handlers
-  const handleSaveTemplate = async () => {
-    if (!firestore || !editingTemplate) return;
-    setIsSavingTemplate(true);
+  const handleSaveTemplate = async (id: string) => {
+    if (!firestore) return;
+    setSavingTemplateId(id);
     try {
-      const id = editingTemplate.id || uuidv4();
-      const dataToSave = { ...editingTemplate, id, subject: editingTemplate.subject || "Aviso Importante" };
+      const tpl = localTemplates[id];
+      const dataToSave = { ...tpl, id, subject: tpl.subject || "Aviso Importante" };
       await setDocumentNonBlocking(doc(firestore, 'messageTemplates', id), dataToSave, { merge: true });
-      toast({ title: "Modelo Salvo" });
-      setEditingTemplate(null);
+      toast({ title: "Modelo Salvo", description: `"${tpl.name}" foi atualizado.` });
     } catch (e) {
       toast({ variant: "destructive", title: "Erro ao Salvar" });
     } finally {
-      setIsSavingTemplate(false);
+      setSavingTemplateId(null);
     }
+  };
+
+  const handleSaveNewTemplate = async () => {
+    if (!firestore || !newTemplate) return;
+    setSavingTemplateId('new');
+    try {
+      const id = uuidv4();
+      const dataToSave = { ...newTemplate, id, subject: newTemplate.subject || "Aviso Importante" } as MessageTemplate;
+      await setDocumentNonBlocking(doc(firestore, 'messageTemplates', id), dataToSave, { merge: true });
+      toast({ title: "Modelo Criado" });
+      setNewTemplate(null);
+    } catch (e) {
+      toast({ variant: "destructive", title: "Erro ao Salvar" });
+    } finally {
+      setSavingTemplateId(null);
+    }
+  };
+
+  const updateLocalTemplate = (id: string, field: keyof MessageTemplate, value: string) => {
+    setLocalTemplates(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
   };
 
   return (
@@ -457,38 +491,129 @@ export default function ConfiguracoesPage() {
         </TabsContent>
 
         <TabsContent value="mensagens" className="space-y-6 pt-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div><CardTitle>Modelos de Mensagem</CardTitle></div>
-              <Button size="sm" onClick={() => setEditingTemplate({ name: "", subject: "", body: "" })}><Plus className="h-4 w-4 mr-2" /> Novo Modelo</Button>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {editingTemplate ? (
-                <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label>Nome do Modelo</Label><Input value={editingTemplate.name} onChange={e => setEditingTemplate({ ...editingTemplate, name: e.target.value })} /></div>
-                    <div className="space-y-2"><Label>Assunto (E-mail)</Label><Input value={editingTemplate.subject} onChange={e => setEditingTemplate({ ...editingTemplate, subject: e.target.value })} /></div>
-                  </div>
-                  <div className="space-y-2"><Label>Corpo da Mensagem</Label><Textarea rows={10} value={editingTemplate.body} onChange={e => setEditingTemplate({ ...editingTemplate, body: e.target.value })} /></div>
-                  <div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setEditingTemplate(null)}>Cancelar</Button><Button onClick={handleSaveTemplate} disabled={isSavingTemplate}>Salvar Modelo</Button></div>
-                </div>
-              ) : (
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold">Modelos de Mensagem</h2>
+              <p className="text-sm text-muted-foreground">Edite os modelos usados no WhatsApp e e-mail. Cada modelo é compartilhado entre os dois canais.</p>
+            </div>
+            <Button size="sm" onClick={() => setNewTemplate({ name: "", subject: "", body: "" })}>
+              <Plus className="h-4 w-4 mr-2" /> Novo Modelo
+            </Button>
+          </div>
+
+          {newTemplate && (
+            <Card className="border-blue-200 bg-blue-50/30">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2 text-blue-700">
+                  <Plus className="h-4 w-4" /> Novo Modelo
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {templates.map(tpl => (
-                    <div key={tpl.id} className="p-4 border rounded-lg group">
-                      <div className="flex items-center justify-between mb-2">
-                        <h5 className="font-bold text-sm">{tpl.name}</h5>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingTemplate(tpl)}><Edit3 className="h-3.5 w-3.5" /></Button>
+                  <div className="space-y-2">
+                    <Label>Nome do Modelo</Label>
+                    <Input
+                      placeholder="Ex: Cobrança, Aniversário..."
+                      value={newTemplate.name}
+                      onChange={e => setNewTemplate({ ...newTemplate, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1">Assunto <Badge variant="outline" className="text-[9px] ml-1">E-mail</Badge></Label>
+                    <Input
+                      placeholder="Ex: Aviso Importante - Krav Magá Ipiranga"
+                      value={newTemplate.subject}
+                      onChange={e => setNewTemplate({ ...newTemplate, subject: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    Corpo da Mensagem
+                    <Badge variant="outline" className="text-[9px]">WhatsApp</Badge>
+                    <Badge variant="outline" className="text-[9px]">E-mail</Badge>
+                  </Label>
+                  <Textarea
+                    rows={8}
+                    placeholder="Digite a mensagem. Use {{nome}}, {{vencimento}}, {{plano}}, {{valor}}, {{inicio}} como variáveis."
+                    value={newTemplate.body}
+                    onChange={e => setNewTemplate({ ...newTemplate, body: e.target.value })}
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" onClick={() => setNewTemplate(null)}>Cancelar</Button>
+                  <Button onClick={handleSaveNewTemplate} disabled={savingTemplateId === 'new'}>
+                    {savingTemplateId === 'new' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                    Criar Modelo
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {isLoadingTemplates ? (
+            <div className="space-y-4">
+              <Skeleton className="h-64 w-full" />
+              <Skeleton className="h-64 w-full" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {templates.map(tpl => {
+                const local = localTemplates[tpl.id];
+                if (!local) return null;
+                const isSaving = savingTemplateId === tpl.id;
+                return (
+                  <Card key={tpl.id}>
+                    <CardHeader className="pb-3 border-b bg-muted/20">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4 text-emerald-600" />
+                          <Input
+                            className="h-8 text-sm font-bold border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0 w-auto"
+                            value={local.name}
+                            onChange={e => updateLocalTemplate(tpl.id, 'name', e.target.value)}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[9px]">WhatsApp</Badge>
+                          <Badge variant="outline" className="text-[9px]">E-mail</Badge>
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2 italic">{tpl.body}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-4">
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-1 text-xs text-muted-foreground uppercase font-bold">
+                          Assunto <Badge variant="secondary" className="text-[8px] ml-1">apenas e-mail</Badge>
+                        </Label>
+                        <Input
+                          value={local.subject}
+                          onChange={e => updateLocalTemplate(tpl.id, 'subject', e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground uppercase font-bold">Corpo da Mensagem</Label>
+                        <Textarea
+                          rows={10}
+                          className="font-sans text-sm leading-relaxed"
+                          value={local.body}
+                          onChange={e => updateLocalTemplate(tpl.id, 'body', e.target.value)}
+                        />
+                        <p className="text-[10px] text-muted-foreground italic">
+                          Variáveis disponíveis: <code>{'{{nome}}'}</code>, <code>{'{{vencimento}}'}</code>, <code>{'{{plano}}'}</code>, <code>{'{{valor}}'}</code>, <code>{'{{inicio}}'}</code>
+                        </p>
+                      </div>
+                      <div className="flex justify-end">
+                        <Button size="sm" onClick={() => handleSaveTemplate(tpl.id)} disabled={isSaving}>
+                          {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                          Salvar "{local.name}"
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="seguranca" className="space-y-6 pt-4">
