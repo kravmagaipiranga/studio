@@ -48,11 +48,27 @@ export default function LoginPage() {
       });
       router.push('/dashboard');
     } catch (error: any) {
+      const code = error?.code || '';
+      let description = 'Verifique seu e-mail e senha.';
+      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+        description = 'E-mail ou senha incorretos.';
+      } else if (code === 'auth/invalid-email') {
+        description = 'Endereço de e-mail inválido.';
+      } else if (code === 'auth/user-disabled') {
+        description = 'Este usuário está desativado.';
+      } else if (code === 'auth/too-many-requests') {
+        description = 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+      } else if (code === 'auth/network-request-failed') {
+        description = 'Erro de rede. Verifique sua conexão.';
+      } else if (code === 'auth/unauthorized-domain') {
+        description = 'Este domínio não está autorizado no Firebase. Adicione-o em Authentication → Settings → Authorized domains.';
+      } else if (code) {
+        description = `Erro: ${code}`;
+      }
       toast({
         variant: 'destructive',
         title: 'Erro no Login',
-        description:
-          'Verifique seu e-mail e senha. Para o primeiro acesso, use as credenciais que você criou no painel do Firebase.',
+        description,
       });
     } finally {
       setIsLoading(false);
