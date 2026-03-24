@@ -81,7 +81,7 @@ const MENU_ITEMS = [
   { href: "/apostila", label: "Apostila", icon: BookOpen, color: "text-emerald-600" },
 ];
 
-const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/mes-das-mulheres/registro", "/gift-card"];
+const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/mes-das-mulheres/registro"];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

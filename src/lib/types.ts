@@ -183,21 +183,6 @@ export type Lead = {
   isNew?: boolean;
 };
 
-export type GiftCardOrder = {
-  id: string;
-  buyerName: string;
-  buyerEmail: string;
-  buyerPhone: string;
-  buyerCpf: string;
-  recipientName: string;
-  message?: string;
-  paymentMethod: 'Pix' | 'Boleto';
-  status: 'Pendente' | 'Pago' | 'Cancelado';
-  createdAt: string;
-  totalValue: number;
-  validationCode: string;
-};
-
 export type Attendance = {
   id: string;
   studentId?: string;
