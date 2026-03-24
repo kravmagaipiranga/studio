@@ -256,3 +256,8 @@ export type HandbookContent = {
   techniques: string[]; // Individual techniques parsed from content
   updatedAt: string;
 };
+
+export type RevenueData = {
+  month: string;
+  revenue: number;
+};

@@ -51,8 +51,8 @@ export function PublicRegistrationForm() {
       tshirtSize: "",
       pantsSize: "",
       emergencyContacts: "",
-      termsAccepted: false,
-      veracityDeclared: false,
+      termsAccepted: false as unknown as true,
+      veracityDeclared: false as unknown as true,
     },
   });
 

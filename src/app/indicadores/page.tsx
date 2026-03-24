@@ -301,9 +301,9 @@ export default function IndicadoresPage() {
               </>
            ) : (
               <>
-                  <TotalStudentsChart data={calculatedData} />
-                  <ConversionChart data={calculatedData} />
-                  <MovementChart data={calculatedData} />
+                  <TotalStudentsChart data={calculatedData as MonthlyIndicator[]} />
+                  <ConversionChart data={calculatedData as MonthlyIndicator[]} />
+                  <MovementChart data={calculatedData as MonthlyIndicator[]} />
               </>
            )}
       </div>

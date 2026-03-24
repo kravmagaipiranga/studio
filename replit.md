@@ -74,6 +74,9 @@ src/
 - **Gift Card** — página, formulário e embed HTML removidos (incompleto; sem envio de e-mail automatizado nem geração de PDF)
 - **Genkit / Google AI** — integração de IA removida (nunca foi utilizada na aplicação; não havia flows implementados)
 - **googleapis** — pacote removido (sem uso no código-fonte)
+- **firebase-admin** — pacote removido (sem uso no código-fonte; nenhuma API route server-side existente)
+- **dotenv** — pacote removido (Next.js carrega `.env.local` nativamente)
+- **patch-package** — pacote removido (sem patches configurados)
 
 ## Notas de segurança
 

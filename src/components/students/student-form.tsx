@@ -52,12 +52,12 @@ const formSchema = z.object({
   lastExamDate: z.string().optional(),
   readyForReview: z.boolean().optional(),
   belt: z.string().min(1, "A faixa é obrigatória"),
-  status: z.string().min(1, "O status do aluno é obrigatório"),
+  status: z.enum(["Ativo", "Inativo", "Pendente"]),
   
   tshirtSize: z.string().min(1, "Selecione um tamanho de camiseta."),
   pantsSize: z.string().min(1, "Selecione um tamanho de calça."),
 
-  planType: z.enum(["Mensal", "Trimestral", "Bolsa 50%", "Bolsa 100%", "Outros"]).optional(),
+  planType: z.enum(["Mensal", "Trimestral", "Bolsa 50%", "Bolsa 100%", "Outros", "Matrícula"]).optional(),
   planValue: z.preprocess(
     (a) => {
       if (typeof a === 'string' && a.trim() !== '') {
