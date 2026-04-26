@@ -132,7 +132,18 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
                 <AccordionItem value={exam.id} key={exam.id} className={cn("px-4", exam.isNew && "bg-muted/50")}>
                     <AccordionTrigger className="hover:no-underline py-3 text-sm">
                         <div className="grid grid-cols-[1fr_auto] sm:grid-cols-4 gap-2 w-full pr-4 items-center">
-                            <div className="text-left font-medium truncate">{exam.studentName || "Novo Registro"}</div>
+                            <div className="text-left font-medium truncate flex items-center gap-2">
+                                {beltEmojis[exam.targetBelt] && (
+                                    <span
+                                        className="text-base shrink-0"
+                                        title={`Faixa alvo: ${exam.targetBelt}`}
+                                        aria-label={`Faixa alvo: ${exam.targetBelt}`}
+                                    >
+                                        {beltEmojis[exam.targetBelt]}
+                                    </span>
+                                )}
+                                <span className="truncate">{exam.studentName || "Novo Registro"}</span>
+                            </div>
                             <div className="hidden sm:flex text-left text-muted-foreground items-center gap-2 truncate text-xs">
                                 {beltEmojis[exam.targetBelt] && <span>{beltEmojis[exam.targetBelt]}</span>}
                                 {exam.targetBelt || "Faixa..."}
