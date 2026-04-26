@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { ExamsTable } from "@/components/exams/exams-table";
 import { Button } from "@/components/ui/button";
-import { Download, PlusCircle, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Download, PlusCircle, Search, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import { Exam, Student } from "@/lib/types";
@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DateRange } from "react-day-picker";
 
 const beltOrder: Record<string, number> = {
     'Amarela': 1,
@@ -45,6 +46,8 @@ export default function ExamesPage() {
     const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState("");
     const [exams, setExams] = useState<Exam[]>([]);
+    const [beltFilter, setBeltFilter] = useState<string>("all");
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
     
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -71,7 +74,7 @@ export default function ExamesPage() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery]);
+    }, [searchQuery, beltFilter, dateRange]);
 
     const examCountsByBelt = useMemo(() => {
         const counts: Record<string, number> = {};
@@ -91,21 +94,56 @@ export default function ExamesPage() {
 
     const filteredAndSortedExams = useMemo(() => {
         if (!exams) return [];
-        
-        let filtered = exams.filter(exam =>
-            exam.studentName.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+
+        const fromTime = dateRange?.from ? new Date(dateRange.from).setHours(0, 0, 0, 0) : null;
+        const toTime = dateRange?.to ? new Date(dateRange.to).setHours(23, 59, 59, 999) : null;
+
+        let filtered = exams.filter(exam => {
+            // Name search
+            if (searchQuery && !exam.studentName.toLowerCase().includes(searchQuery.toLowerCase())) {
+                return false;
+            }
+            // Belt filter
+            if (beltFilter !== "all" && exam.targetBelt !== beltFilter) {
+                return false;
+            }
+            // Date range filter
+            if (fromTime !== null || toTime !== null) {
+                if (!exam.examDate) return false;
+                const examTime = new Date(exam.examDate).getTime();
+                if (isNaN(examTime)) return false;
+                if (fromTime !== null && examTime < fromTime) return false;
+                if (toTime !== null && examTime > toTime) return false;
+            }
+            return true;
+        });
 
         return filtered.sort((a, b) => {
+            // 1. Date (most recent first)
+            const dateA = a.examDate ? new Date(a.examDate).getTime() : 0;
+            const dateB = b.examDate ? new Date(b.examDate).getTime() : 0;
+            if (dateA !== dateB) {
+                return dateB - dateA;
+            }
+            // 2. Graduation/belt order
             const orderA = beltOrder[a.targetBelt] || 99;
             const orderB = beltOrder[b.targetBelt] || 99;
             if (orderA !== orderB) {
                 return orderA - orderB;
             }
+            // 3. Tiebreaker by student name
             return a.studentName.localeCompare(b.studentName);
         });
 
-    }, [exams, searchQuery]);
+    }, [exams, searchQuery, beltFilter, dateRange]);
+
+    const hasActiveFilters = searchQuery !== "" || beltFilter !== "all" || dateRange?.from !== undefined || dateRange?.to !== undefined;
+
+    const clearFilters = () => {
+        setSearchQuery("");
+        setBeltFilter("all");
+        setDateRange(undefined);
+    };
 
     // Pagination logic
     const totalPages = Math.ceil(filteredAndSortedExams.length / itemsPerPage);
@@ -161,8 +199,8 @@ export default function ExamesPage() {
                     </Button>
                 </div>
             </div>
-            <div className="flex items-center justify-between gap-4">
-                <div className="relative w-full max-w-sm">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div className="relative w-full md:max-w-sm">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         type="search"
@@ -172,7 +210,32 @@ export default function ExamesPage() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <DatePickerWithRange />
+                <div className="flex flex-wrap items-center gap-2">
+                    <Select value={beltFilter} onValueChange={setBeltFilter}>
+                        <SelectTrigger className="w-[200px]">
+                            <SelectValue placeholder="Filtrar por graduação" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todas as graduações</SelectItem>
+                            {Object.entries(beltInfo).map(([belt, { emoji }]) => (
+                                <SelectItem key={belt} value={belt}>
+                                    <span className="mr-2">{emoji}</span>{belt}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <DatePickerWithRange
+                        value={dateRange}
+                        onChange={setDateRange}
+                        placeholder="Filtrar por data do exame"
+                    />
+                    {hasActiveFilters && (
+                        <Button variant="ghost" size="sm" onClick={clearFilters}>
+                            <X className="mr-1 h-4 w-4" />
+                            Limpar filtros
+                        </Button>
+                    )}
+                </div>
             </div>
             <Card className="flex flex-col shadow-sm">
                 <CardContent className="p-0">

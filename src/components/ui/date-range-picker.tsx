@@ -16,18 +16,41 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
+interface DatePickerWithRangeProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onChange"> {
+  value?: DateRange | undefined
+  onChange?: (date: DateRange | undefined) => void
+  placeholder?: string
+  defaultToCurrentMonth?: boolean
+}
+
 export function DatePickerWithRange({
   className,
-}: React.HTMLAttributes<HTMLDivElement>) {
-  const [date, setDate] = React.useState<DateRange | undefined>()
+  value,
+  onChange,
+  placeholder = "Selecione um período",
+  defaultToCurrentMonth = true,
+}: DatePickerWithRangeProps) {
+  const isControlled = value !== undefined || onChange !== undefined
+  const [internalDate, setInternalDate] = React.useState<DateRange | undefined>()
 
   React.useEffect(() => {
-    const today = new Date()
-    setDate({
-      from: startOfMonth(today),
-      to: endOfMonth(today),
-    })
-  }, [])
+    if (!isControlled && defaultToCurrentMonth) {
+      const today = new Date()
+      setInternalDate({
+        from: startOfMonth(today),
+        to: endOfMonth(today),
+      })
+    }
+  }, [isControlled, defaultToCurrentMonth])
+
+  const date = isControlled ? value : internalDate
+  const setDate = (d: DateRange | undefined) => {
+    if (isControlled) {
+      onChange?.(d)
+    } else {
+      setInternalDate(d)
+    }
+  }
 
   return (
     <div className={cn("grid gap-2", className)}>
@@ -52,7 +75,7 @@ export function DatePickerWithRange({
                 format(date.from, "LLL dd, y", { locale: ptBR })
               )
             ) : (
-              <span>Selecione um período</span>
+              <span>{placeholder}</span>
             )}
           </Button>
         </PopoverTrigger>
