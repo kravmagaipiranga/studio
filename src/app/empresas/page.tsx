@@ -22,9 +22,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
+import { downloadCSV } from "@/lib/export-csv";
 
 export default function EmpresasPage() {
     const firestore = useFirestore();
+    const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState("");
     const [companies, setCompanies] = useState<Company[]>([]);
     const [isMounted, setIsMounted] = useState(false);
@@ -118,6 +121,35 @@ export default function EmpresasPage() {
         const start = (currentPage - 1) * itemsPerPage;
         return filteredAndSortedCompanies.slice(start, start + itemsPerPage);
     }, [filteredAndSortedCompanies, currentPage, itemsPerPage]);
+
+    const handleExportData = () => {
+        if (!filteredAndSortedCompanies || filteredAndSortedCompanies.length === 0) {
+            toast({
+                variant: "destructive",
+                title: "Nenhum dado para exportar",
+                description: "A seleção de filtros atual não retornou nenhum registro.",
+            });
+            return;
+        }
+        const headers = [
+            "ID", "Nome", "CNPJ", "Contato", "Telefone", "Email", "Endereço",
+            "Tipo de Trabalho", "Data do Evento", "Hora do Evento",
+            "Valor", "Data Pagamento", "Forma de Pagamento", "Status Pagamento",
+            "Observações", "Criado em"
+        ];
+        const rows = filteredAndSortedCompanies.map(c => [
+            c.id, c.name, c.cnpj ?? '', c.contactName ?? '', c.contactPhone ?? '',
+            c.contactEmail ?? '', c.address ?? '',
+            c.workType, c.eventDate ?? '', c.eventTime ?? '',
+            c.value, c.paymentDate ?? '', c.paymentMethod, c.paymentStatus,
+            c.notes ?? '', c.createdAt
+        ]);
+        downloadCSV('export_empresas', headers, rows);
+        toast({
+            title: "Exportação concluída!",
+            description: `${filteredAndSortedCompanies.length} registros foram exportados.`,
+        });
+    };
 
     const handleAddNewCompany = () => {
        const newCompany: Company = {
@@ -234,7 +266,7 @@ export default function EmpresasPage() {
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Novo Cliente Empresa
                     </Button>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={handleExportData}>
                         <Download className="mr-2 h-4 w-4" />
                         Exportar
                     </Button>

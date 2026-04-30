@@ -21,9 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { downloadCSV } from "@/lib/export-csv";
 
 export default function AulasPage() {
     const firestore = useFirestore();
+    const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState("");
     const [privateClasses, setPrivateClasses] = useState<PrivateClass[]>([]);
     
@@ -83,6 +86,32 @@ export default function AulasPage() {
         };
     }, [privateClasses]);
     
+    const handleExportData = () => {
+        if (!filteredClasses || filteredClasses.length === 0) {
+            toast({
+                variant: "destructive",
+                title: "Nenhum dado para exportar",
+                description: "A seleção de filtros atual não retornou nenhum registro.",
+            });
+            return;
+        }
+        const headers = [
+            "ID", "Nome do Aluno", "Data da Aula", "Hora",
+            "Nº de Aulas", "Preço por Aula", "Valor Total",
+            "Status Pagamento", "Data Pagamento", "Forma de Pagamento", "Observações"
+        ];
+        const rows = filteredClasses.map(c => [
+            c.id, c.studentName, c.classDate, c.classTime,
+            c.numberOfClasses, c.pricePerClass, c.paymentAmount,
+            c.paymentStatus, c.paymentDate ?? '', c.paymentMethod, c.notes ?? ''
+        ]);
+        downloadCSV('export_aulas_particulares', headers, rows);
+        toast({
+            title: "Exportação concluída!",
+            description: `${filteredClasses.length} registros foram exportados.`,
+        });
+    };
+
     const handleAddNewPrivateClass = () => {
        const newClass: PrivateClass = {
          id: `new_${uuidv4()}`,

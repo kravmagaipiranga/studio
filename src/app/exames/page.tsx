@@ -23,6 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DateRange } from "react-day-picker";
+import { useToast } from "@/hooks/use-toast";
+import { downloadCSV } from "@/lib/export-csv";
 
 const beltOrder: Record<string, number> = {
     'Amarela': 1,
@@ -44,6 +46,7 @@ const beltInfo: Record<string, { emoji: string; colorClass: string }> = {
 
 export default function ExamesPage() {
     const firestore = useFirestore();
+    const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState("");
     const [exams, setExams] = useState<Exam[]>([]);
     const [beltFilter, setBeltFilter] = useState<string>("all");
@@ -145,6 +148,32 @@ export default function ExamesPage() {
         setDateRange(undefined);
     };
 
+    const handleExportData = () => {
+        if (!filteredAndSortedExams || filteredAndSortedExams.length === 0) {
+            toast({
+                variant: "destructive",
+                title: "Nenhum dado para exportar",
+                description: "A seleção de filtros atual não retornou nenhum registro.",
+            });
+            return;
+        }
+        const headers = [
+            "ID", "ID Aluno", "Nome do Aluno", "CPF", "Idade",
+            "Data do Exame", "Faixa Alvo",
+            "Status Pagamento", "Data Pagamento", "Valor", "Forma de Pagamento"
+        ];
+        const rows = filteredAndSortedExams.map(e => [
+            e.id, e.studentId, e.studentName, e.studentCpf, e.studentAge,
+            e.examDate, e.targetBelt,
+            e.paymentStatus, e.paymentDate ?? '', e.paymentAmount, e.paymentMethod
+        ]);
+        downloadCSV('export_exames', headers, rows);
+        toast({
+            title: "Exportação concluída!",
+            description: `${filteredAndSortedExams.length} registros foram exportados.`,
+        });
+    };
+
     // Pagination logic
     const totalPages = Math.ceil(filteredAndSortedExams.length / itemsPerPage);
     const paginatedExams = useMemo(() => {
@@ -193,7 +222,7 @@ export default function ExamesPage() {
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Agendar Exame
                     </Button>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={handleExportData}>
                         <Download className="mr-2 h-4 w-4" />
                         Gerar Relatório
                     </Button>

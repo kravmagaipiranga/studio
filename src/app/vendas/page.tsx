@@ -21,9 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { downloadCSV } from "@/lib/export-csv";
 
 export default function VendasPage() {
     const firestore = useFirestore();
+    const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState("");
     const [sales, setSales] = useState<Sale[]>([]);
     
@@ -100,6 +103,30 @@ export default function VendasPage() {
         return filteredSales.slice(start, start + itemsPerPage);
     }, [filteredSales, currentPage, itemsPerPage]);
 
+    const handleExportData = () => {
+        if (!filteredSales || filteredSales.length === 0) {
+            toast({
+                variant: "destructive",
+                title: "Nenhum dado para exportar",
+                description: "A seleção de filtros atual não retornou nenhum registro.",
+            });
+            return;
+        }
+        const headers = [
+            "ID", "ID Aluno", "Nome do Aluno", "Item",
+            "Valor", "Data", "Forma de Pagamento", "Status Pagamento"
+        ];
+        const rows = filteredSales.map(s => [
+            s.id, s.studentId, s.studentName, s.item,
+            s.value, s.date, s.paymentMethod, s.paymentStatus
+        ]);
+        downloadCSV('export_vendas', headers, rows);
+        toast({
+            title: "Exportação concluída!",
+            description: `${filteredSales.length} registros foram exportados.`,
+        });
+    };
+
     const handleAddNewSale = () => {
         const newSale: Sale = {
             id: `new_${uuidv4()}`,
@@ -165,7 +192,7 @@ export default function VendasPage() {
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Nova Venda
                     </Button>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={handleExportData}>
                         <Download className="mr-2 h-4 w-4" />
                         Gerar Relatório
                     </Button>

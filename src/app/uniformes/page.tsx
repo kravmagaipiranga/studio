@@ -20,9 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { downloadCSV } from "@/lib/export-csv";
 
 export default function UniformesPage() {
     const firestore = useFirestore();
+    const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState("");
     const [uniformOrders, setUniformOrders] = useState<UniformOrder[]>([]);
     
@@ -76,6 +79,33 @@ export default function UniformesPage() {
         const start = (currentPage - 1) * itemsPerPage;
         return filteredOrders.slice(start, start + itemsPerPage);
     }, [filteredOrders, currentPage, itemsPerPage]);
+
+    const handleExportData = () => {
+        if (!filteredOrders || filteredOrders.length === 0) {
+            toast({
+                variant: "destructive",
+                title: "Nenhum dado para exportar",
+                description: "A seleção de filtros atual não retornou nenhum registro.",
+            });
+            return;
+        }
+        const headers = [
+            "ID", "ID Aluno", "Nome do Aluno", "Data do Pedido",
+            "Itens", "Valor Total",
+            "Status Pagamento", "Data Pagamento", "Material Retirado"
+        ];
+        const rows = filteredOrders.map(o => [
+            o.id, o.studentId, o.studentName, o.orderDate,
+            (o.items ?? []).map(i => `${i.quantity}x ${i.name} (${i.size})`).join(' | '),
+            o.totalValue,
+            o.paymentStatus, o.paymentDate ?? '', o.materialPickedUp
+        ]);
+        downloadCSV('export_uniformes', headers, rows);
+        toast({
+            title: "Exportação concluída!",
+            description: `${filteredOrders.length} registros foram exportados.`,
+        });
+    };
 
     const handleAddNewOrder = () => {
        const newOrder: UniformOrder = {
@@ -135,7 +165,7 @@ export default function UniformesPage() {
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Novo Pedido
                     </Button>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={handleExportData}>
                         <Download className="mr-2 h-4 w-4" />
                         Gerar Relatório
                     </Button>

@@ -21,9 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { downloadCSV } from "@/lib/export-csv";
 
 export default function AgendamentosPage() {
     const firestore = useFirestore();
+    const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState("");
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [isMounted, setIsMounted] = useState(false);
@@ -90,6 +93,30 @@ export default function AgendamentosPage() {
         return filteredAppointments.slice(start, start + itemsPerPage);
     }, [filteredAppointments, currentPage, itemsPerPage]);
 
+    const handleExportData = () => {
+        if (!filteredAppointments || filteredAppointments.length === 0) {
+            toast({
+                variant: "destructive",
+                title: "Nenhum dado para exportar",
+                description: "A seleção de filtros atual não retornou nenhum registro.",
+            });
+            return;
+        }
+        const headers = [
+            "ID", "Nome", "WhatsApp", "Email", "Data da Aula", "Hora",
+            "Observações", "Matriculou", "Compareceu", "Faltou"
+        ];
+        const rows = filteredAppointments.map(a => [
+            a.id, a.name, a.whatsapp, a.email, a.classDate, a.classTime,
+            a.notes ?? '', a.enrolled ?? false, a.attended ?? false, a.missed ?? false
+        ]);
+        downloadCSV('export_agendamentos', headers, rows);
+        toast({
+            title: "Exportação concluída!",
+            description: `${filteredAppointments.length} registros foram exportados.`,
+        });
+    };
+
     const handleAddNewAppointment = () => {
        const newAppointment: Appointment = {
          id: `new_${uuidv4()}`,
@@ -132,7 +159,7 @@ export default function AgendamentosPage() {
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Novo Agendamento
                     </Button>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={handleExportData}>
                         <Download className="mr-2 h-4 w-4" />
                         Gerar Relatório
                     </Button>
