@@ -3,11 +3,11 @@
 
 import { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { collection, query, orderBy } from "firebase/firestore";
+import { collection, query, orderBy, doc, updateDoc } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student, Payment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Search, Download, Upload, UserCheck, MoreHorizontal, UserPlus, GraduationCap, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { PlusCircle, Search, Download, Upload, UserCheck, MoreHorizontal, UserPlus, UserX, GraduationCap, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -105,6 +105,7 @@ function AlunosContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { toast } = useToast();
+    const [togglingId, setTogglingId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
     
@@ -244,6 +245,28 @@ function AlunosContent() {
         return filteredStudents.slice(start, start + itemsPerPage);
     }, [filteredStudents, currentPage, itemsPerPage]);
     
+    const handleToggleStatus = async (e: React.MouseEvent, student: Student) => {
+        e.stopPropagation();
+        if (!firestore || togglingId === student.id) return;
+        const newStatus = student.status === 'Ativo' ? 'Inativo' : 'Ativo';
+        setTogglingId(student.id);
+        try {
+            await updateDoc(doc(firestore, 'students', student.id), { status: newStatus });
+            toast({
+                title: newStatus === 'Ativo' ? "Aluno ativado" : "Aluno inativado",
+                description: `${student.name} foi marcado como ${newStatus}.`,
+            });
+        } catch {
+            toast({
+                variant: "destructive",
+                title: "Erro ao atualizar status",
+                description: "Não foi possível alterar o status do aluno. Tente novamente.",
+            });
+        } finally {
+            setTogglingId(null);
+        }
+    };
+
     const handleSelectStudent = (studentId: string) => {
         router.push(`/alunos/${studentId}/editar`);
     };
@@ -505,12 +528,12 @@ function AlunosContent() {
                                             {student.timeInBelt && <Badge variant="secondary">{student.timeInBelt}</Badge>}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <div className="flex items-center justify-end">
+                                            <div className="flex items-center justify-end gap-1">
                                                 {student.readyForReview && (
                                                     <TooltipProvider>
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
-                                                                <div onClick={(e) => e.stopPropagation()} className="mr-2">
+                                                                <div onClick={(e) => e.stopPropagation()} className="mr-1">
                                                                     <span>🥋</span>
                                                                 </div>
                                                             </TooltipTrigger>
@@ -520,6 +543,31 @@ function AlunosContent() {
                                                         </Tooltip>
                                                     </TooltipProvider>
                                                 )}
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                disabled={togglingId === student.id}
+                                                                onClick={(e) => handleToggleStatus(e, student)}
+                                                                className={cn(
+                                                                    student.status === 'Ativo'
+                                                                        ? "text-green-600 hover:text-red-600 hover:bg-red-50"
+                                                                        : "text-muted-foreground hover:text-green-600 hover:bg-green-50"
+                                                                )}
+                                                            >
+                                                                {student.status === 'Ativo'
+                                                                    ? <UserCheck className="h-4 w-4" />
+                                                                    : <UserX className="h-4 w-4" />
+                                                                }
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>{student.status === 'Ativo' ? 'Inativar aluno' : 'Ativar aluno'}</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
                                                 <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleSelectStudent(student.id); }}>
                                                     <MoreHorizontal className="h-4 w-4" />
                                                 </Button>
