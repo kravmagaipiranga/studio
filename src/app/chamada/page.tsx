@@ -14,7 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, parseISO, startOfMonth, endOfMonth, isSaturday, eachWeekOfInterval } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { CheckSquare, Trash2, UserCheck, Clock, UserPlus, Info, TrendingDown, Users, BookOpen, GraduationCap, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -68,8 +67,10 @@ function ChamadaContent() {
   const [isSubmittingTopic, setIsSubmittingTopic] = useState(false);
 
   // State for report filter
-  const [reportMonth, setReportMonth] = useState(format(new Date(), "MM"));
-  const [reportYear, setReportYear] = useState(format(new Date(), "yyyy"));
+  const [reportStartDate, setReportStartDate] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
+  const [reportEndDate, setReportEndDate] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
+  const [reportBeltFilter, setReportBeltFilter] = useState("todos");
+  const [reportStudentFilter, setReportStudentFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Pagination state
@@ -80,15 +81,24 @@ function ChamadaContent() {
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     if (tabParam === 'relatorio') setActiveTab('relatorio');
-    
+
     const searchParam = searchParams.get('search');
     if (searchParam) setSearchQuery(searchParam);
 
-    const monthParam = searchParams.get('month');
-    if (monthParam) setReportMonth(monthParam);
+    const startParam = searchParams.get('startDate');
+    const endParam = searchParams.get('endDate');
+    if (startParam) setReportStartDate(startParam);
+    if (endParam) setReportEndDate(endParam);
 
+    // Backwards compat: old month/year URL params
+    const monthParam = searchParams.get('month');
     const yearParam = searchParams.get('year');
-    if (yearParam) setReportYear(yearParam);
+    if (monthParam && yearParam && !startParam) {
+      const y = Number(yearParam);
+      const m = Number(monthParam) - 1;
+      setReportStartDate(format(startOfMonth(new Date(y, m)), "yyyy-MM-dd"));
+      setReportEndDate(format(endOfMonth(new Date(y, m)), "yyyy-MM-dd"));
+    }
   }, [searchParams]);
 
   // Determine class options based on date
@@ -114,7 +124,7 @@ function ChamadaContent() {
   // Reset pagination on filter or search change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, reportMonth, reportYear]);
+  }, [searchQuery, reportStartDate, reportEndDate, reportBeltFilter, reportStudentFilter]);
 
   // Data fetching
   const studentsQuery = useMemoFirebase(() => {
@@ -181,15 +191,12 @@ function ChamadaContent() {
 
   const reportQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    const monthStart = format(startOfMonth(new Date(Number(reportYear), Number(reportMonth) - 1)), "yyyy-MM-dd");
-    const monthEnd = format(endOfMonth(new Date(Number(reportYear), Number(reportMonth) - 1)), "yyyy-MM-dd");
-    
     return query(
       collection(firestore, "attendance"),
-      where("date", ">=", monthStart),
-      where("date", "<=", monthEnd)
+      where("date", ">=", reportStartDate),
+      where("date", "<=", reportEndDate)
     );
-  }, [firestore, reportMonth, reportYear]);
+  }, [firestore, reportStartDate, reportEndDate]);
 
   const { data: monthAttendance, isLoading: isLoadingReport } = useCollection<Attendance>(reportQuery);
 
@@ -287,15 +294,15 @@ function ChamadaContent() {
   const fullReportData = useMemo(() => {
     if (!students || !monthAttendance) return [];
 
-    const start = startOfMonth(new Date(Number(reportYear), Number(reportMonth) - 1));
-    const end = endOfMonth(new Date(Number(reportYear), Number(reportMonth) - 1));
-    const weeksInMonth = eachWeekOfInterval({ start, end }, { weekStartsOn: 1 }).length;
+    const start = parseISO(reportStartDate);
+    const end = parseISO(reportEndDate);
+    const weeksInPeriod = eachWeekOfInterval({ start, end }, { weekStartsOn: 1 }).length;
 
     const data = students.map(student => {
       const attendances = monthAttendance.filter(a => a.studentId === student.id);
       const count = attendances.reduce((acc, a) => acc + (a.type === "Sábado" ? 2 : 1), 0);
       const hasSaturday = attendances.some(a => a.type === "Sábado");
-      const target = hasSaturday ? weeksInMonth : (weeksInMonth * 2);
+      const target = hasSaturday ? weeksInPeriod : (weeksInPeriod * 2);
       const deficit = Math.max(0, target - count);
 
       return {
@@ -309,15 +316,22 @@ function ChamadaContent() {
     });
 
     return data;
-  }, [students, monthAttendance, reportMonth, reportYear]);
+  }, [students, monthAttendance, reportStartDate, reportEndDate]);
 
   const filteredReportData = useMemo(() => {
     let filtered = fullReportData;
+
+    if (reportBeltFilter !== 'todos') {
+      filtered = filtered.filter(d => d.belt?.toLowerCase() === reportBeltFilter.toLowerCase());
+    }
+    if (reportStudentFilter) {
+      filtered = filtered.filter(d => d.id === reportStudentFilter);
+    }
     if (searchQuery) {
-      filtered = fullReportData.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      filtered = filtered.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()));
     }
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
-  }, [fullReportData, searchQuery]);
+  }, [fullReportData, reportBeltFilter, reportStudentFilter, searchQuery]);
 
   const classEngagementData = useMemo(() => {
     if (!monthAttendance) return [];
@@ -348,6 +362,25 @@ function ChamadaContent() {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredReportData.slice(start, start + itemsPerPage);
   }, [filteredReportData, currentPage, itemsPerPage]);
+
+  const applyPeriodPreset = (preset: 'este-mes' | 'mes-passado' | 'ultimos-30') => {
+    const now = new Date();
+    if (preset === 'este-mes') {
+      setReportStartDate(format(startOfMonth(now), "yyyy-MM-dd"));
+      setReportEndDate(format(endOfMonth(now), "yyyy-MM-dd"));
+    } else if (preset === 'mes-passado') {
+      const last = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      setReportStartDate(format(startOfMonth(last), "yyyy-MM-dd"));
+      setReportEndDate(format(endOfMonth(last), "yyyy-MM-dd"));
+    } else if (preset === 'ultimos-30') {
+      const from = new Date(now);
+      from.setDate(now.getDate() - 30);
+      setReportStartDate(format(from, "yyyy-MM-dd"));
+      setReportEndDate(format(now, "yyyy-MM-dd"));
+    }
+  };
+
+  const hasActiveFilters = reportBeltFilter !== 'todos' || reportStudentFilter !== '' || searchQuery !== '';
 
   return (
     <div className="flex flex-col gap-6">
@@ -576,34 +609,138 @@ function ChamadaContent() {
         </TabsContent>
 
         <TabsContent value="relatorio" className="space-y-6 pt-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <Card className="border-dashed">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                Filtros do Relatório
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Period */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">Período</label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button size="sm" variant="outline" onClick={() => applyPeriodPreset('este-mes')}>Este mês</Button>
+                  <Button size="sm" variant="outline" onClick={() => applyPeriodPreset('mes-passado')}>Mês passado</Button>
+                  <Button size="sm" variant="outline" onClick={() => applyPeriodPreset('ultimos-30')}>Últimos 30 dias</Button>
+                  <div className="flex items-center gap-2 ml-2">
+                    <div className="flex items-center gap-1">
+                      <label className="text-xs text-muted-foreground whitespace-nowrap">De:</label>
+                      <Input
+                        type="date"
+                        value={reportStartDate}
+                        onChange={e => setReportStartDate(e.target.value)}
+                        className="h-8 w-36 text-sm"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <label className="text-xs text-muted-foreground whitespace-nowrap">Até:</label>
+                      <Input
+                        type="date"
+                        value={reportEndDate}
+                        onChange={e => setReportEndDate(e.target.value)}
+                        className="h-8 w-36 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Belt + Student + Text Search */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                    <GraduationCap className="h-3.5 w-3.5" /> Graduação
+                  </label>
+                  <Select value={reportBeltFilter} onValueChange={setReportBeltFilter}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas as faixas</SelectItem>
+                      {BELTS.map(belt => (
+                        <SelectItem key={belt.id} value={belt.id}>
+                          <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: belt.color }} />
+                            {belt.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                    <UserCheck className="h-3.5 w-3.5" /> Aluno específico
+                  </label>
+                  <Combobox
+                    options={[{ value: '', label: 'Todos os alunos' }, ...studentOptions]}
+                    value={reportStudentFilter}
+                    onChange={setReportStudentFilter}
+                    placeholder="Todos os alunos"
+                    searchPlaceholder="Buscar aluno..."
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                    <Search className="h-3.5 w-3.5" /> Busca por nome
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="search"
+                      placeholder="Buscar no relatório..."
+                      className="pl-8 h-9"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {hasActiveFilters && (
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-xs text-muted-foreground">Filtros ativos:</span>
+                  {reportBeltFilter !== 'todos' && (
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                      {BELTS.find(b => b.id === reportBeltFilter)?.name}
+                    </span>
+                  )}
+                  {reportStudentFilter && (
+                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                      {studentOptions.find(s => s.value === reportStudentFilter)?.label}
+                    </span>
+                  )}
+                  {searchQuery && (
+                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                      "{searchQuery}"
+                    </span>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 text-xs text-muted-foreground"
+                    onClick={() => {
+                      setReportBeltFilter('todos');
+                      setReportStudentFilter('');
+                      setSearchQuery('');
+                    }}
+                  >
+                    Limpar filtros
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold">Resumo Mensal</h2>
-              <p className="text-sm text-muted-foreground">Visualização de faltas e engajamento das turmas.</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Select value={reportMonth} onValueChange={setReportMonth}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 12 }).map((_, i) => (
-                    <SelectItem key={i} value={String(i + 1).padStart(2, "0")}>
-                      {format(new Date(2024, i, 1), "MMMM", { locale: ptBR })}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={reportYear} onValueChange={setReportYear}>
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {["2024", "2025", "2026"].map(y => (
-                    <SelectItem key={y} value={y}>{y}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <h2 className="text-xl font-bold">Resumo do Período</h2>
+              <p className="text-sm text-muted-foreground">
+                {format(parseISO(reportStartDate), "dd/MM/yyyy")} — {format(parseISO(reportEndDate), "dd/MM/yyyy")}
+                {' · '}{filteredReportData.length} aluno{filteredReportData.length !== 1 ? 's' : ''}
+              </p>
             </div>
           </div>
 
@@ -684,15 +821,16 @@ function ChamadaContent() {
 
           <Card>
             <CardHeader className="pb-3 border-b">
-              <div className="relative max-w-sm">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Buscar aluno no relatório..."
-                  className="pl-8"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2">
+                  <Users className="h-4 w-4" /> Frequência por Aluno
+                </CardTitle>
+                <span className="text-xs text-muted-foreground">
+                  {filteredReportData.length} aluno{filteredReportData.length !== 1 ? 's' : ''}
+                  {filteredReportData.filter(d => d.absences > 0).length > 0 && (
+                    <> · <span className="text-red-600 font-semibold">{filteredReportData.filter(d => d.absences > 0).length} com falta{filteredReportData.filter(d => d.absences > 0).length !== 1 ? 's' : ''}</span></>
+                  )}
+                </span>
               </div>
             </CardHeader>
             <CardContent className="p-0">
