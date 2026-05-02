@@ -251,7 +251,7 @@ export default function StudentPortalPage() {
   const beltKey = student.belt?.toLowerCase() ?? 'branca';
   const beltStyle = beltStyles[beltKey] ?? beltStyles.branca;
   const lastPayment = payments?.[0];
-  const credits = typeof student.paymentCredits === 'number' ? student.paymentCredits : 0;
+  const credits = parseFloat(student.paymentCredits ?? '0') || 0;
 
   return (
     <div className="min-h-screen bg-muted/40 pb-20">
