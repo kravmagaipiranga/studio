@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuth } from '@/lib/firebase-admin';
 
-const ADMIN_EMAILS = ['kravmagaipiranga@gmail.com'];
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? 'kravmagaipiranga@gmail.com')
+  .split(',')
+  .map(e => e.trim())
+  .filter(Boolean);
 
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');

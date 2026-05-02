@@ -77,7 +77,8 @@ service cloud.firestore {
 
     // Pedidos: criação por qualquer usuário autenticado; leitura/edição admin
     match /pedidos/{orderId} {
-      allow create: if isSignedIn();
+      // Criação apenas pelo próprio usuário autenticado (uid deve bater)
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
       allow read, update, delete: if isAdmin();
     }
 
