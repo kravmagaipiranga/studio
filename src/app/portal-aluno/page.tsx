@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   LogOut, User, CreditCard, CalendarCheck, GraduationCap, ShieldAlert,
   Coins, BookOpen, Home, Megaphone, ShoppingBag, Minus, Plus, ShoppingCart, UserRound,
+  Mail, MessageCircle, Globe, MapPin,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StudentPortalForm } from '@/components/students/student-portal-form';
@@ -406,6 +407,50 @@ export default function StudentPortalPage() {
                 </CardContent>
               </Card>
             )}
+
+            {/* ── CONTATOS ─────────────────────────────────────────────── */}
+            <div className="pt-1">
+              <div className="flex items-center gap-2 px-1 mb-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-semibold">Contatos</h2>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <a
+                  href="mailto:kravmagaipiranga@gmail.com"
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-xl border bg-card p-3 text-center hover:bg-muted/50 transition-colors"
+                >
+                  <Mail className="h-5 w-5 text-primary" />
+                  <span className="text-xs font-medium leading-tight">E-mail</span>
+                </a>
+                <a
+                  href="https://wa.me/551125896049?text=Ol%C3%A1%2C%20vim%20pelo%20portal%20do%20aluno!"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-xl border bg-card p-3 text-center hover:bg-muted/50 transition-colors"
+                >
+                  <MessageCircle className="h-5 w-5 text-green-600" />
+                  <span className="text-xs font-medium leading-tight">WhatsApp</span>
+                </a>
+                <a
+                  href="https://kravmagaipiranga.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-xl border bg-card p-3 text-center hover:bg-muted/50 transition-colors"
+                >
+                  <Globe className="h-5 w-5 text-blue-500" />
+                  <span className="text-xs font-medium leading-tight">Site</span>
+                </a>
+                <a
+                  href="https://maps.google.com/?q=Rua+Tabor,+482,+Ipiranga,+São+Paulo,+SP"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-xl border bg-card p-3 text-center hover:bg-muted/50 transition-colors"
+                >
+                  <MapPin className="h-5 w-5 text-red-500" />
+                  <span className="text-xs font-medium leading-tight">Rua Tabor, 482</span>
+                </a>
+              </div>
+            </div>
           </div>
         )}
 
