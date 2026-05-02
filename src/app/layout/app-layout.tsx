@@ -52,13 +52,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUser, useCollection, useFirestore, useMemoFirebase, useAuth } from "@/firebase";
-import { useEffect, useMemo, useState, Suspense } from "react";
+import { useEffect, useMemo, useState, useCallback, Suspense } from "react";
 import { FirebaseErrorListener } from "@/components/FirebaseErrorListener";
 import { collection } from "firebase/firestore";
 import type { Student, WomensMonthLead, Company } from "@/lib/types";
 import { signOut } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { subDays, isAfter, parseISO, addDays, isSameDay } from 'date-fns';
+import { ShieldAlert, Loader2 } from "lucide-react";
 
 const MENU_ITEMS = [
   { href: "/alunos", label: "Alunos", icon: Users },
@@ -90,10 +92,43 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const firestore = useFirestore();
   const [mounted, setMounted] = useState(false);
+  const [hasAdminClaim, setHasAdminClaim] = useState(true);
+  const [isActivating, setIsActivating] = useState(false);
+  const [activateMsg, setActivateMsg] = useState('');
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    user.getIdTokenResult().then(result => {
+      setHasAdminClaim(result.claims['admin'] === true);
+    }).catch(() => setHasAdminClaim(true));
+  }, [user]);
+
+  const handleActivateClaim = useCallback(async () => {
+    if (!user) return;
+    setIsActivating(true);
+    setActivateMsg('');
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch('/api/admin/activate', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json() as { success?: boolean; message?: string; error?: string };
+      if (data.success) {
+        setActivateMsg('✓ Permissão ativada! Faça logout e login novamente para aplicar.');
+      } else {
+        setActivateMsg(data.error ?? 'Erro desconhecido.');
+      }
+    } catch (e) {
+      setActivateMsg('Falha na conexão. Tente novamente.');
+    } finally {
+      setIsActivating(false);
+    }
+  }, [user]);
 
   const studentsCollection = useMemoFirebase(() => {
     if (!firestore || !user || !mounted) return null;
@@ -393,7 +428,35 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
         
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-6 bg-background">
-          <div className="mx-auto max-w-full">
+          <div className="mx-auto max-w-full space-y-4">
+            {!hasAdminClaim && (
+              <Alert variant="destructive" className="border-amber-400 bg-amber-50 text-amber-900">
+                <ShieldAlert className="h-4 w-4 !text-amber-700" />
+                <AlertTitle className="text-amber-900">Permissão de administrador não encontrada</AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <p className="text-sm">
+                    Suas regras do Firestore foram atualizadas e agora exigem o <em>custom claim</em> <code className="bg-amber-100 px-1 rounded">admin: true</code>.
+                    Clique abaixo para ativar permanentemente — depois faça logout e login novamente.
+                  </p>
+                  {activateMsg ? (
+                    <p className="text-sm font-semibold">{activateMsg}</p>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-amber-600 text-amber-800 hover:bg-amber-100"
+                      onClick={handleActivateClaim}
+                      disabled={isActivating}
+                    >
+                      {isActivating
+                        ? <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Ativando…</>
+                        : <><ShieldAlert className="mr-2 h-3 w-3" />Ativar permissão de admin</>
+                      }
+                    </Button>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
             {children}
           </div>
         </main>

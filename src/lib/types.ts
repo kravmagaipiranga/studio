@@ -29,6 +29,7 @@ export type Student = {
   planExpirationDate?: string;
   paymentCredits?: string;
   userId?: string;
+  photoUrl?: string;
 };
 
 export type Payment = {

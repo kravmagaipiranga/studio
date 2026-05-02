@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import {
   LogOut, User, CreditCard, CalendarCheck, GraduationCap, ShieldAlert,
-  Coins, BookOpen, Home, Megaphone, ShoppingBag, Minus, Plus, ShoppingCart,
+  Coins, BookOpen, Home, Megaphone, ShoppingBag, Minus, Plus, ShoppingCart, UserRound,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StudentPortalForm } from '@/components/students/student-portal-form';
@@ -53,9 +53,10 @@ function getInitials(name: string) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-type Tab = 'pagamentos' | 'presencas' | 'exames' | 'curriculo' | 'loja' | 'perfil';
+type Tab = 'inicio' | 'pagamentos' | 'presencas' | 'exames' | 'curriculo' | 'loja' | 'perfil';
 
 const NAV_ITEMS: { value: Tab; icon: React.ElementType; label: string }[] = [
+  { value: 'inicio',     icon: Home,           label: 'Início' },
   { value: 'pagamentos', icon: CreditCard,     label: 'Pgtos' },
   { value: 'presencas',  icon: CalendarCheck,  label: 'Pres.' },
   { value: 'exames',     icon: GraduationCap,  label: 'Exames' },
@@ -69,7 +70,7 @@ export default function StudentPortalPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<Tab>('pagamentos');
+  const [activeTab, setActiveTab] = useState<Tab>('inicio');
 
   // ── Student ──────────────────────────────────────────────────────────────
   const studentQuery = useMemoFirebase(() => {
@@ -289,10 +290,19 @@ export default function StudentPortalPage() {
             <div className="bg-primary/5 border-b px-4 py-4">
               <div className="flex items-center gap-3">
                 <div className={cn(
-                  'w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0',
-                  beltStyle.bg, beltStyle.text
+                  'w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-lg font-bold flex-shrink-0 border-2 border-white/40',
+                  !student.photoUrl && (beltStyle.bg + ' ' + beltStyle.text)
                 )}>
-                  {getInitials(student.name)}
+                  {student.photoUrl ? (
+                    <img
+                      src={student.photoUrl}
+                      alt={student.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  ) : (
+                    getInitials(student.name)
+                  )}
                 </div>
                 <div className="min-w-0">
                   <h2 className="text-base font-bold truncate">{student.name}</h2>
@@ -347,8 +357,8 @@ export default function StudentPortalPage() {
           </Card>
         )}
 
-        {/* ── AVISOS (sempre visíveis) ────────────────────────────────────── */}
-        {activeTab !== 'perfil' && (
+        {/* ── AVISOS (sempre visíveis nas abas secundárias) ───────────────── */}
+        {activeTab !== 'perfil' && activeTab !== 'inicio' && (
           isNoticesLoading ? (
             <div className="space-y-2">
               {[1, 2].map(i => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
@@ -388,6 +398,58 @@ export default function StudentPortalPage() {
               })}
             </div>
           ) : null
+        )}
+
+        {/* ── INÍCIO ─────────────────────────────────────────────────────── */}
+        {activeTab === 'inicio' && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 px-1">
+              <Megaphone className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold">Avisos da Academia</h2>
+              {notices.length > 0 && (
+                <span className="ml-auto text-[10px] bg-primary text-primary-foreground font-bold px-1.5 py-0.5 rounded-full">
+                  {notices.length}
+                </span>
+              )}
+            </div>
+            {isNoticesLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map(i => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+              </div>
+            ) : notices.length > 0 ? (
+              notices.map(notice => {
+                const ps = {
+                  normal:     { border: 'border-l-slate-400', bg: 'bg-slate-50',  badge: 'bg-slate-100 text-slate-700',  label: 'Normal' },
+                  importante: { border: 'border-l-amber-400', bg: 'bg-amber-50',  badge: 'bg-amber-100 text-amber-800',  label: 'Importante' },
+                  urgente:    { border: 'border-l-red-500',   bg: 'bg-red-50',    badge: 'bg-red-100 text-red-800',      label: 'Urgente' },
+                }[notice.priority] ?? { border: 'border-l-slate-400', bg: 'bg-slate-50', badge: 'bg-slate-100 text-slate-700', label: 'Normal' };
+                return (
+                  <Card key={notice.id} className={cn('border-l-4', ps.border, ps.bg)}>
+                    <CardHeader className="pb-1 pt-3 px-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-sm leading-snug">{notice.title}</CardTitle>
+                        {notice.priority !== 'normal' && (
+                          <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0', ps.badge)}>
+                            {ps.label}
+                          </span>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-3">
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{notice.content}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            ) : (
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-10 text-center gap-2">
+                  <Megaphone className="h-8 w-8 text-muted-foreground/30" />
+                  <p className="text-sm text-muted-foreground font-medium">Nenhum aviso no momento</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         {/* ── PERFIL ─────────────────────────────────────────────────────── */}
