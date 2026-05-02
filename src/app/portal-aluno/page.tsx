@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, limit } from 'firebase/firestore';
 import {
   Student, Payment, Attendance, Exam, HandbookContent, Notice, Product, StoreOrderItem,
 } from '@/lib/types';
@@ -84,23 +84,35 @@ export default function StudentPortalPage() {
   // ── Payments ─────────────────────────────────────────────────────────────
   const paymentsQuery = useMemoFirebase(() => {
     if (!firestore || !student) return null;
-    return query(collection(firestore, 'payments'), where('studentId', '==', student.id), orderBy('paymentDate', 'desc'));
+    return query(collection(firestore, 'payments'), where('studentId', '==', student.id));
   }, [firestore, student]);
-  const { data: payments, isLoading: isPaymentsLoading } = useCollection<Payment>(paymentsQuery);
+  const { data: paymentsRaw, isLoading: isPaymentsLoading } = useCollection<Payment>(paymentsQuery);
+  const payments = useMemo(() =>
+    (paymentsRaw ?? []).slice().sort((a, b) =>
+      (b.paymentDate ?? '').localeCompare(a.paymentDate ?? '')
+    ), [paymentsRaw]);
 
   // ── Attendance ────────────────────────────────────────────────────────────
   const attendanceQuery = useMemoFirebase(() => {
     if (!firestore || !student) return null;
-    return query(collection(firestore, 'attendance'), where('studentId', '==', student.id), orderBy('date', 'desc'), limit(100));
+    return query(collection(firestore, 'attendance'), where('studentId', '==', student.id), limit(100));
   }, [firestore, student]);
-  const { data: attendance, isLoading: isAttendanceLoading } = useCollection<Attendance>(attendanceQuery);
+  const { data: attendanceRaw, isLoading: isAttendanceLoading } = useCollection<Attendance>(attendanceQuery);
+  const attendance = useMemo(() =>
+    (attendanceRaw ?? []).slice().sort((a, b) =>
+      (b.date ?? '').localeCompare(a.date ?? '')
+    ), [attendanceRaw]);
 
   // ── Exams ─────────────────────────────────────────────────────────────────
   const examsQuery = useMemoFirebase(() => {
     if (!firestore || !student) return null;
-    return query(collection(firestore, 'exams'), where('studentId', '==', student.id), orderBy('examDate', 'desc'));
+    return query(collection(firestore, 'exams'), where('studentId', '==', student.id));
   }, [firestore, student]);
-  const { data: exams, isLoading: isExamsLoading } = useCollection<Exam>(examsQuery);
+  const { data: examsRaw, isLoading: isExamsLoading } = useCollection<Exam>(examsQuery);
+  const exams = useMemo(() =>
+    (examsRaw ?? []).slice().sort((a, b) =>
+      (b.examDate ?? '').localeCompare(a.examDate ?? '')
+    ), [examsRaw]);
 
   // ── Notices ───────────────────────────────────────────────────────────────
   const [notices, setNotices] = useState<Notice[]>([]);
