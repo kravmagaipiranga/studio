@@ -7,11 +7,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
-import { Save, Trash2 } from "lucide-react"
+import { Save, Trash2, Copy } from "lucide-react"
 import { Exam, Student } from "@/lib/types"
 import { Skeleton } from "../ui/skeleton"
 import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
+import { v4 as uuidv4 } from "uuid";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Combobox } from "../ui/combobox";
@@ -90,6 +91,20 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
     
     // Update local state to remove the 'isNew' flag and set the final ID
     setExams(prev => prev.map(ex => ex.id === examToSave.id ? { ...examData, id: finalId, isNew: false } : ex));
+  };
+
+  const handleDuplicateExam = (e: React.MouseEvent, exam: Exam) => {
+    e.stopPropagation();
+    const duplicate: Exam = {
+      ...exam,
+      id: `new_${uuidv4()}`,
+      isNew: true,
+    };
+    setExams(prev => [duplicate, ...prev]);
+    toast({
+      title: "Registro duplicado",
+      description: `Cópia de "${exam.studentName}" criada. Edite e salve.`,
+    });
   };
 
   const handleDeleteExam = (e: React.MouseEvent, examId: string, studentName: string) => {
@@ -238,15 +253,21 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
                                 </Select>
                             </div>
                         </div>
-                        <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+                        <div className="flex flex-col sm:flex-row justify-between gap-2 mt-6">
                             <Button variant="destructive" size="sm" className="w-full sm:w-auto" onClick={(e) => handleDeleteExam(e, exam.id, exam.studentName)}>
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Excluir
                             </Button>
-                            <Button size="sm" className="w-full sm:w-auto" onClick={() => handleSaveExam(exam)}>
-                                <Save className="h-4 w-4 mr-2" />
-                                Salvar
-                            </Button>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={(e) => handleDuplicateExam(e, exam)}>
+                                    <Copy className="h-4 w-4 mr-2" />
+                                    Duplicar
+                                </Button>
+                                <Button size="sm" className="w-full sm:w-auto" onClick={() => handleSaveExam(exam)}>
+                                    <Save className="h-4 w-4 mr-2" />
+                                    Salvar
+                                </Button>
+                            </div>
                         </div>
                     </AccordionContent>
                 </AccordionItem>
