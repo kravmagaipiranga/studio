@@ -411,15 +411,17 @@ export default function LojaAdminPage() {
 
       {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-lg flex flex-col" style={{ maxHeight: '92vh' }}>
+          <DialogHeader className="shrink-0">
             <DialogTitle>{editing ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
             <DialogDescription>
               Preencha os dados do produto. Variações são opcionais (tamanhos, cores, etc.).
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-3">
+
+          {/* Scrollable body */}
+          <div className="flex-1 overflow-y-auto pr-1 -mr-1">
+            <div className="grid grid-cols-2 gap-3 py-2">
               <div className="col-span-2 space-y-1.5">
                 <Label htmlFor="p-name">Nome do produto</Label>
                 <Input id="p-name" placeholder="Ex: Kimono Branco" value={form.name}
@@ -446,23 +448,26 @@ export default function LojaAdminPage() {
                   onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))} />
               </div>
 
-              {/* Variations */}
-              <div className="col-span-2 space-y-2">
-                <Label>Variações (opcional)</Label>
-                <p className="text-xs text-muted-foreground -mt-1">
-                  Ex: tamanhos (P, M, G, GG) ou cores (Preto, Branco). O aluno escolherá uma ao comprar.
-                </p>
+              {/* ── Variações ── */}
+              <div className="col-span-2 rounded-lg border bg-muted/30 p-3 space-y-2">
+                <div>
+                  <Label className="text-sm font-semibold">Variações</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Ex: tamanhos (P, M, G, GG) ou cores (Preto, Branco).<br />
+                    O aluno escolherá uma opção ao adicionar ao carrinho.
+                  </p>
+                </div>
                 {form.variations.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {form.variations.map(v => (
-                      <span key={v} className="inline-flex items-center gap-1 bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-md font-medium">
+                      <span key={v} className="inline-flex items-center gap-1 bg-background border text-sm px-2.5 py-1 rounded-full font-medium shadow-sm">
                         {v}
                         <button
                           type="button"
                           onClick={() => removeVariation(v)}
-                          className="hover:text-destructive transition-colors"
+                          className="text-muted-foreground hover:text-destructive transition-colors ml-0.5"
                         >
-                          <X className="h-3 w-3" />
+                          <X className="h-3.5 w-3.5" />
                         </button>
                       </span>
                     ))}
@@ -470,14 +475,14 @@ export default function LojaAdminPage() {
                 )}
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Ex: G ou Azul"
+                    placeholder="Digite e pressione Enter (ex: M ou Azul)"
                     value={form.newVariation}
                     onChange={e => setForm(f => ({ ...f, newVariation: e.target.value }))}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addVariation(); } }}
-                    className="flex-1"
+                    className="flex-1 bg-background"
                   />
-                  <Button type="button" variant="outline" size="sm" onClick={addVariation}
-                    disabled={!form.newVariation.trim()}>
+                  <Button type="button" variant="secondary" size="sm" onClick={addVariation}
+                    disabled={!form.newVariation.trim()} className="shrink-0">
                     <Plus className="h-4 w-4 mr-1" /> Adicionar
                   </Button>
                 </div>
@@ -492,13 +497,14 @@ export default function LojaAdminPage() {
               </div>
             </div>
           </div>
-          <DialogFooter>
+
+          <DialogFooter className="shrink-0 pt-2 border-t">
             <DialogClose asChild>
               <Button variant="outline" disabled={saving}>Cancelar</Button>
             </DialogClose>
             <Button onClick={handleSave}
               disabled={saving || !form.name.trim() || !form.price}>
-              {saving ? 'Salvando...' : editing ? 'Salvar' : 'Criar produto'}
+              {saving ? 'Salvando...' : editing ? 'Salvar alterações' : 'Criar produto'}
             </Button>
           </DialogFooter>
         </DialogContent>
