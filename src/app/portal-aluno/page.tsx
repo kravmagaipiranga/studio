@@ -53,10 +53,11 @@ function getInitials(name: string) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-type Tab = 'inicio' | 'pagamentos' | 'presencas' | 'exames' | 'curriculo' | 'loja' | 'perfil';
+type Tab = 'inicio' | 'avisos' | 'pagamentos' | 'presencas' | 'exames' | 'curriculo' | 'loja' | 'perfil';
 
 const NAV_ITEMS: { value: Tab; icon: React.ElementType; label: string }[] = [
   { value: 'inicio',     icon: Home,           label: 'Início' },
+  { value: 'avisos',     icon: Megaphone,      label: 'Avisos' },
   { value: 'pagamentos', icon: CreditCard,     label: 'Pgtos' },
   { value: 'presencas',  icon: CalendarCheck,  label: 'Pres.' },
   { value: 'exames',     icon: GraduationCap,  label: 'Exames' },
@@ -357,8 +358,8 @@ export default function StudentPortalPage() {
           </Card>
         )}
 
-        {/* ── AVISOS (sempre visíveis nas abas secundárias) ───────────────── */}
-        {activeTab !== 'perfil' && activeTab !== 'inicio' && (
+        {/* ── AVISOS (banner compacto nas abas secundárias, exceto perfil/inicio/avisos) ── */}
+        {activeTab !== 'perfil' && activeTab !== 'inicio' && activeTab !== 'avisos' && (
           isNoticesLoading ? (
             <div className="space-y-2">
               {[1, 2].map(i => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
@@ -446,6 +447,59 @@ export default function StudentPortalPage() {
                 <CardContent className="flex flex-col items-center justify-center py-10 text-center gap-2">
                   <Megaphone className="h-8 w-8 text-muted-foreground/30" />
                   <p className="text-sm text-muted-foreground font-medium">Nenhum aviso no momento</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* ── AVISOS (aba própria) ────────────────────────────────────────── */}
+        {activeTab === 'avisos' && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 px-1">
+              <Megaphone className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold">Avisos da Academia</h2>
+              {notices.length > 0 && (
+                <span className="ml-auto text-[10px] bg-primary text-primary-foreground font-bold px-1.5 py-0.5 rounded-full">
+                  {notices.length}
+                </span>
+              )}
+            </div>
+            {isNoticesLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+              </div>
+            ) : notices.length > 0 ? (
+              notices.map(notice => {
+                const ps = {
+                  normal:     { border: 'border-l-slate-400', bg: 'bg-slate-50',  badge: 'bg-slate-100 text-slate-700',  label: 'Normal' },
+                  importante: { border: 'border-l-amber-400', bg: 'bg-amber-50',  badge: 'bg-amber-100 text-amber-800',  label: 'Importante' },
+                  urgente:    { border: 'border-l-red-500',   bg: 'bg-red-50',    badge: 'bg-red-100 text-red-800',      label: 'Urgente' },
+                }[notice.priority] ?? { border: 'border-l-slate-400', bg: 'bg-slate-50', badge: 'bg-slate-100 text-slate-700', label: 'Normal' };
+                return (
+                  <Card key={notice.id} className={cn('border-l-4', ps.border, ps.bg)}>
+                    <CardHeader className="pb-1 pt-3 px-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-sm leading-snug">{notice.title}</CardTitle>
+                        {notice.priority !== 'normal' && (
+                          <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0', ps.badge)}>
+                            {ps.label}
+                          </span>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-3">
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{notice.content}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            ) : (
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-10 text-center gap-2">
+                  <Megaphone className="h-8 w-8 text-muted-foreground/30" />
+                  <p className="text-sm text-muted-foreground font-medium">Nenhum aviso no momento</p>
+                  <p className="text-xs text-muted-foreground/60">A academia publicará avisos aqui quando houver novidades.</p>
                 </CardContent>
               </Card>
             )}
@@ -816,27 +870,29 @@ export default function StudentPortalPage() {
 
       {/* ── Fixed Bottom Navigation ──────────────────────────────────────── */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 bg-background border-t">
-        <div className="max-w-2xl mx-auto flex">
-          {NAV_ITEMS.map(({ value, icon: Icon, label }) => {
-            const isActive = activeTab === value;
-            return (
-              <button
-                key={value}
-                onClick={() => setActiveTab(value)}
-                className={cn(
-                  'flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 px-1 transition-colors',
-                  isActive
-                    ? 'text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <Icon className={cn('h-5 w-5', isActive && 'stroke-[2.5]')} />
-                <span className={cn('text-[10px] leading-none font-medium', isActive && 'font-semibold')}>
-                  {label}
-                </span>
-              </button>
-            );
-          })}
+        <div className="max-w-2xl mx-auto overflow-x-auto scrollbar-none">
+          <div className="flex min-w-max mx-auto justify-center">
+            {NAV_ITEMS.map(({ value, icon: Icon, label }) => {
+              const isActive = activeTab === value;
+              return (
+                <button
+                  key={value}
+                  onClick={() => setActiveTab(value)}
+                  className={cn(
+                    'flex flex-col items-center justify-center gap-0.5 py-2.5 px-3.5 transition-colors',
+                    isActive
+                      ? 'text-primary'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <Icon className={cn('h-5 w-5', isActive && 'stroke-[2.5]')} />
+                  <span className={cn('text-[10px] leading-none font-medium whitespace-nowrap', isActive && 'font-semibold')}>
+                    {label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </nav>
 
