@@ -103,6 +103,21 @@ export default function StudentPortalPage() {
       (b.date ?? '').localeCompare(a.date ?? '')
     ), [attendanceRaw]);
 
+  // ── Attendance Report (últimos 3 meses) ──────────────────────────────────
+  const MONTHLY_TARGET = 8; // 2 aulas/semana × 4 semanas
+  const attendanceReport = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 3 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const yearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const monthRecords = (attendanceRaw ?? []).filter(a => (a.date ?? '').startsWith(yearMonth));
+      const score = monthRecords.reduce((acc, a) => acc + (a.type === 'Sábado' ? 2 : 1), 0);
+      const pct   = Math.min(100, Math.round((score / MONTHLY_TARGET) * 100));
+      const label = format(d, "MMMM 'de' yyyy", { locale: ptBR });
+      return { yearMonth, label, score, pct, total: MONTHLY_TARGET, records: monthRecords.length };
+    });
+  }, [attendanceRaw]);
+
   // ── Exams ─────────────────────────────────────────────────────────────────
   const examsQuery = useMemoFirebase(() => {
     if (!firestore || !student) return null;
@@ -546,39 +561,93 @@ export default function StudentPortalPage() {
 
         {/* ── PRESENÇAS ───────────────────────────────────────────────────── */}
         {activeTab === 'presencas' && (
-          <Card>
-            <CardHeader className="px-4 pb-2">
-              <CardTitle className="text-base">Registro de Presenças</CardTitle>
-              <CardDescription className="text-xs">
-                {attendance?.length ?? 0} check-ins registrados.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              {isAttendanceLoading ? (
-                <div className="p-4 space-y-3">
-                  {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
-                </div>
-              ) : attendance && attendance.length > 0 ? (
-                <div className="divide-y">
-                  {attendance.map(a => (
-                    <div key={a.id} className="flex items-center justify-between px-4 py-3">
-                      <div>
-                        <p className="font-medium text-sm">{formatDate(a.date)}</p>
-                        <p className="text-xs text-muted-foreground">{a.time}</p>
+          <div className="space-y-3">
+
+            {/* Relatório de frequência — últimos 3 meses */}
+            <Card>
+              <CardHeader className="px-4 pb-2 pt-4">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <CalendarCheck className="h-4 w-4 text-primary" />
+                  Frequência — Últimos 3 meses
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Meta: {MONTHLY_TARGET} pontos/mês · Aula semanal = 1pt · Sábado = 2pts
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 space-y-4">
+                {isAttendanceLoading ? (
+                  <div className="space-y-3">
+                    {[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
+                  </div>
+                ) : (
+                  attendanceReport.map(({ yearMonth, label, score, pct, total, records }) => {
+                    const barColor =
+                      pct >= 80 ? 'bg-green-500' :
+                      pct >= 50 ? 'bg-amber-400' : 'bg-red-400';
+                    const textColor =
+                      pct >= 80 ? 'text-green-700' :
+                      pct >= 50 ? 'text-amber-700' : 'text-red-600';
+                    const emoji =
+                      pct >= 100 ? '🏆' :
+                      pct >= 80  ? '✅' :
+                      pct >= 50  ? '⚠️' : '📉';
+                    return (
+                      <div key={yearMonth} className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-medium capitalize">{label}</span>
+                          <span className={cn('text-xs font-bold tabular-nums', textColor)}>
+                            {emoji} {score}/{total}pts
+                            <span className="font-normal text-muted-foreground ml-1">({records} aulas)</span>
+                          </span>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                          <div
+                            className={cn('h-full rounded-full transition-all', barColor)}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
                       </div>
-                      <Badge variant={a.type === 'Sábado' ? 'default' : 'secondary'} className="text-xs">
-                        {a.type}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-10 text-center text-sm text-muted-foreground italic">
-                  Nenhuma presença registrada ainda.
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Lista de check-ins */}
+            <Card>
+              <CardHeader className="px-4 pb-2">
+                <CardTitle className="text-base">Registro de Presenças</CardTitle>
+                <CardDescription className="text-xs">
+                  {attendance?.length ?? 0} check-ins registrados.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                {isAttendanceLoading ? (
+                  <div className="p-4 space-y-3">
+                    {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
+                  </div>
+                ) : attendance && attendance.length > 0 ? (
+                  <div className="divide-y">
+                    {attendance.map(a => (
+                      <div key={a.id} className="flex items-center justify-between px-4 py-3">
+                        <div>
+                          <p className="font-medium text-sm">{formatDate(a.date)}</p>
+                          <p className="text-xs text-muted-foreground">{a.time}</p>
+                        </div>
+                        <Badge variant={a.type === 'Sábado' ? 'default' : 'secondary'} className="text-xs">
+                          {a.type}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-10 text-center text-sm text-muted-foreground italic">
+                    Nenhuma presença registrada ainda.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* ── EXAMES ──────────────────────────────────────────────────────── */}
