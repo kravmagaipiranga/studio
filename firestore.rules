@@ -69,6 +69,19 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ─── LOJA ─────────────────────────────────────────────────────────────────
+    // Produtos: leitura pública; escrita apenas admin
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Pedidos: criação por qualquer usuário autenticado; leitura/edição admin
+    match /pedidos/{orderId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
     // ─── APOSTILA (Currículo) ─────────────────────────────────────────────────
     // Qualquer aluno autenticado pode ler — necessário para a aba Currículo
     match /handbook/{docId} {

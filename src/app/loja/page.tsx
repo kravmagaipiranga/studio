@@ -14,16 +14,13 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose,
 } from '@/components/ui/dialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Package, ClipboardList } from 'lucide-react';
+import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Package, ClipboardList, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -49,10 +46,13 @@ type ProductForm = {
   imageUrl: string;
   category: string;
   active: boolean;
+  variations: string[];
+  newVariation: string;
 };
 
 const EMPTY_FORM: ProductForm = {
-  name: '', description: '', price: '', imageUrl: '', category: '', active: true,
+  name: '', description: '', price: '', imageUrl: '', category: '',
+  active: true, variations: [], newVariation: '',
 };
 
 function formatDate(iso: string) {
@@ -65,7 +65,6 @@ export default function LojaAdminPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'produtos' | 'pedidos'>('produtos');
 
-  // Products
   const productsRef = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
   const { data: products, isLoading: isProductsLoading } = useCollection<Product>(productsRef);
   const sortedProducts = useMemo(
@@ -76,7 +75,6 @@ export default function LojaAdminPage() {
     [products]
   );
 
-  // Orders
   const ordersRef = useMemoFirebase(() => firestore ? collection(firestore, 'pedidos') : null, [firestore]);
   const { data: orders, isLoading: isOrdersLoading } = useCollection<StoreOrder>(ordersRef);
   const sortedOrders = useMemo(
@@ -86,7 +84,6 @@ export default function LojaAdminPage() {
     [orders]
   );
 
-  // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(EMPTY_FORM);
@@ -108,8 +105,20 @@ export default function LojaAdminPage() {
       imageUrl: p.imageUrl ?? '',
       category: p.category,
       active: p.active,
+      variations: p.variations ?? [],
+      newVariation: '',
     });
     setDialogOpen(true);
+  }
+
+  function addVariation() {
+    const v = form.newVariation.trim();
+    if (!v || form.variations.includes(v)) return;
+    setForm(f => ({ ...f, variations: [...f.variations, v], newVariation: '' }));
+  }
+
+  function removeVariation(v: string) {
+    setForm(f => ({ ...f, variations: f.variations.filter(x => x !== v) }));
   }
 
   async function handleSave() {
@@ -129,6 +138,7 @@ export default function LojaAdminPage() {
         imageUrl: form.imageUrl.trim(),
         category: form.category.trim(),
         active: form.active,
+        variations: form.variations,
       };
       if (editing) {
         await updateDoc(doc(firestore, 'products', editing.id), { ...data, updatedAt: now });
@@ -199,7 +209,6 @@ export default function LojaAdminPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <ShoppingBag className="h-6 w-6 text-indigo-600" />
@@ -215,7 +224,6 @@ export default function LojaAdminPage() {
         )}
       </div>
 
-      {/* Tab switcher */}
       <div className="flex gap-2 border-b">
         <button
           onClick={() => setActiveTab('produtos')}
@@ -286,8 +294,17 @@ export default function LojaAdminPage() {
                     R$ {Number(p.price).toFixed(2).replace('.', ',')}
                   </p>
                 </CardHeader>
-                <CardContent className="flex-1 pb-2">
-                  <p className="text-sm text-muted-foreground line-clamp-3">{p.description}</p>
+                <CardContent className="flex-1 pb-2 space-y-2">
+                  <p className="text-sm text-muted-foreground line-clamp-2">{p.description}</p>
+                  {p.variations && p.variations.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {p.variations.map(v => (
+                        <Badge key={v} variant="secondary" className="text-xs px-2 py-0.5">
+                          {v}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
                 <CardFooter className="flex items-center justify-between pt-3 border-t gap-2">
                   <div className="flex items-center gap-2">
@@ -355,7 +372,14 @@ export default function LojaAdminPage() {
                     <ul className="text-sm space-y-0.5">
                       {order.items.map((item, i) => (
                         <li key={i} className="flex justify-between text-muted-foreground">
-                          <span>{item.quantity}× {item.name}</span>
+                          <span>
+                            {item.quantity}× {item.name}
+                            {item.variation && (
+                              <Badge variant="outline" className="ml-1.5 text-[10px] px-1.5 py-0">
+                                {item.variation}
+                              </Badge>
+                            )}
+                          </span>
                           <span>R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}</span>
                         </li>
                       ))}
@@ -387,9 +411,12 @@ export default function LojaAdminPage() {
 
       {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
+            <DialogDescription>
+              Preencha os dados do produto. Variações são opcionais (tamanhos, cores, etc.).
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
@@ -418,6 +445,44 @@ export default function LojaAdminPage() {
                 <Input id="p-img" placeholder="https://..." value={form.imageUrl}
                   onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))} />
               </div>
+
+              {/* Variations */}
+              <div className="col-span-2 space-y-2">
+                <Label>Variações (opcional)</Label>
+                <p className="text-xs text-muted-foreground -mt-1">
+                  Ex: tamanhos (P, M, G, GG) ou cores (Preto, Branco). O aluno escolherá uma ao comprar.
+                </p>
+                {form.variations.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {form.variations.map(v => (
+                      <span key={v} className="inline-flex items-center gap-1 bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-md font-medium">
+                        {v}
+                        <button
+                          type="button"
+                          onClick={() => removeVariation(v)}
+                          className="hover:text-destructive transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ex: G ou Azul"
+                    value={form.newVariation}
+                    onChange={e => setForm(f => ({ ...f, newVariation: e.target.value }))}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addVariation(); } }}
+                    className="flex-1"
+                  />
+                  <Button type="button" variant="outline" size="sm" onClick={addVariation}
+                    disabled={!form.newVariation.trim()}>
+                    <Plus className="h-4 w-4 mr-1" /> Adicionar
+                  </Button>
+                </div>
+              </div>
+
               <div className="col-span-2 flex items-center gap-3">
                 <Switch id="p-active" checked={form.active}
                   onCheckedChange={v => setForm(f => ({ ...f, active: v }))} />

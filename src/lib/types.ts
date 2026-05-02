@@ -280,6 +280,7 @@ export type Product = {
   imageUrl?: string;
   category: string;
   active: boolean;
+  variations?: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -289,6 +290,7 @@ export type StoreOrderItem = {
   name: string;
   price: number;
   quantity: number;
+  variation?: string;
 };
 
 export type StoreOrder = {

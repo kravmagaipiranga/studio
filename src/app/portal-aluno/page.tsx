@@ -115,6 +115,7 @@ export default function StudentPortalPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [selectedVariations, setSelectedVariations] = useState<Record<string, string>>({});
   const [orderNotes, setOrderNotes] = useState('');
   const [isOrdering, setIsOrdering] = useState(false);
 
@@ -131,9 +132,15 @@ export default function StudentPortalPage() {
       .filter(([, qty]) => qty > 0)
       .map(([id, qty]) => {
         const p = products.find(p => p.id === id)!;
-        return { productId: id, name: p.name, price: p.price, quantity: qty };
+        return {
+          productId: id,
+          name: p.name,
+          price: p.price,
+          quantity: qty,
+          variation: selectedVariations[id],
+        };
       }),
-    [cart, products]
+    [cart, products, selectedVariations]
   );
 
   const cartTotal = useMemo(() =>
@@ -146,6 +153,10 @@ export default function StudentPortalPage() {
       const next = Math.max(0, (prev[productId] ?? 0) + delta);
       return { ...prev, [productId]: next };
     });
+  }
+
+  function selectVariation(productId: string, variation: string) {
+    setSelectedVariations(prev => ({ ...prev, [productId]: variation }));
   }
 
   async function handleOrder() {
@@ -623,6 +634,9 @@ export default function StudentPortalPage() {
                   <div className="grid grid-cols-2 gap-3">
                     {products.map(product => {
                       const qty = cart[product.id] ?? 0;
+                      const hasVariations = product.variations && product.variations.length > 0;
+                      const chosenVariation = selectedVariations[product.id];
+                      const canAdd = !hasVariations || !!chosenVariation;
                       return (
                         <Card key={product.id} className="flex flex-col overflow-hidden">
                           {product.imageUrl ? (
@@ -652,6 +666,31 @@ export default function StudentPortalPage() {
                             <p className="font-bold text-primary text-sm">
                               R$ {Number(product.price).toFixed(2).replace('.', ',')}
                             </p>
+
+                            {/* Variation selector */}
+                            {hasVariations && (
+                              <div className="flex flex-wrap gap-1">
+                                {product.variations!.map(v => (
+                                  <button
+                                    key={v}
+                                    type="button"
+                                    onClick={() => selectVariation(product.id, v)}
+                                    className={cn(
+                                      'text-[10px] font-semibold px-2 py-0.5 rounded border transition-colors',
+                                      chosenVariation === v
+                                        ? 'bg-primary text-primary-foreground border-primary'
+                                        : 'bg-background text-muted-foreground border-border hover:border-primary hover:text-foreground'
+                                    )}
+                                  >
+                                    {v}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            {hasVariations && !chosenVariation && (
+                              <p className="text-[10px] text-amber-600 font-medium">Selecione uma opção</p>
+                            )}
+
                             {/* Qty control */}
                             <div className="flex items-center gap-2 justify-between">
                               <Button
@@ -672,6 +711,7 @@ export default function StudentPortalPage() {
                                 variant="outline" size="icon"
                                 className="h-8 w-8 shrink-0"
                                 onClick={() => updateQty(product.id, 1)}
+                                disabled={!canAdd}
                               >
                                 <Plus className="h-3 w-3" />
                               </Button>
@@ -695,7 +735,14 @@ export default function StudentPortalPage() {
                         <div className="space-y-1">
                           {cartItems.map(item => (
                             <div key={item.productId} className="flex justify-between text-sm">
-                              <span className="text-indigo-800">{item.quantity}× {item.name}</span>
+                              <span className="text-indigo-800">
+                                {item.quantity}× {item.name}
+                                {item.variation && (
+                                  <span className="ml-1 text-[10px] font-semibold bg-indigo-200 text-indigo-800 px-1.5 py-0.5 rounded">
+                                    {item.variation}
+                                  </span>
+                                )}
+                              </span>
                               <span className="font-medium text-indigo-900">
                                 R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}
                               </span>
