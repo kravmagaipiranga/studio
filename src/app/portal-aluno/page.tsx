@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   LogOut, User, CreditCard, CalendarCheck, GraduationCap, ShieldAlert,
   Coins, BookOpen, Home, Megaphone, ShoppingBag, Minus, Plus, ShoppingCart, UserRound,
-  Mail, MessageCircle, Globe, MapPin,
+  Mail, MessageCircle, Globe, MapPin, Copy, Check,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StudentPortalForm } from '@/components/students/student-portal-form';
@@ -143,6 +143,7 @@ export default function StudentPortalPage() {
   const [selectedVariations, setSelectedVariations] = useState<Record<string, string>>({});
   const [orderNotes, setOrderNotes] = useState('');
   const [isOrdering, setIsOrdering] = useState(false);
+  const [pixCopied, setPixCopied] = useState(false);
 
   useEffect(() => {
     setIsProductsLoading(true);
@@ -479,6 +480,29 @@ export default function StudentPortalPage() {
 
         {/* ── PAGAMENTOS ──────────────────────────────────────────────────── */}
         {activeTab === 'pagamentos' && (
+          <div className="space-y-3">
+          {/* Chave Pix */}
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="px-4 py-3 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-0.5">Chave Pix da Academia</p>
+                <p className="text-sm font-mono font-medium truncate">thiago@kravmaga.org.br</p>
+              </div>
+              <Button
+                size="sm"
+                variant={pixCopied ? 'default' : 'outline'}
+                className={cn('shrink-0 gap-1.5', pixCopied && 'bg-green-600 hover:bg-green-700 border-green-600 text-white')}
+                onClick={() => {
+                  navigator.clipboard.writeText('thiago@kravmaga.org.br');
+                  setPixCopied(true);
+                  setTimeout(() => setPixCopied(false), 2500);
+                }}
+              >
+                {pixCopied ? <><Check className="h-3.5 w-3.5" /> Copiado!</> : <><Copy className="h-3.5 w-3.5" /> Copiar</>}
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="px-4 pb-2">
               <CardTitle className="text-base">Histórico de Pagamentos</CardTitle>
@@ -517,6 +541,7 @@ export default function StudentPortalPage() {
               )}
             </CardContent>
           </Card>
+          </div>
         )}
 
         {/* ── PRESENÇAS ───────────────────────────────────────────────────── */}
