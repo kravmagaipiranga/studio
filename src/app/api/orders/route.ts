@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore, getAdminAuth } from '@/lib/firebase-admin';
+import type { StoreOrderItem } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
@@ -11,23 +12,39 @@ export async function POST(request: NextRequest) {
     const adminAuth = getAdminAuth();
     const decoded = await adminAuth.verifyIdToken(authHeader.slice(7));
 
-    const body = await request.json();
+    const body = await request.json() as {
+      studentId?: string;
+      studentName?: string;
+      items?: StoreOrderItem[];
+      notes?: string;
+    };
+
     const { studentId, studentName, items, notes } = body;
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'Carrinho vazio.' }, { status: 400 });
     }
 
-    const total = (items as any[]).reduce(
-      (sum: number, item: any) => sum + Number(item.price) * Number(item.quantity),
+    if (!studentId) {
+      return NextResponse.json({ error: 'studentId é obrigatório.' }, { status: 400 });
+    }
+
+    // Verify the studentId actually belongs to the authenticated user
+    const db = getAdminFirestore();
+    const studentDoc = await db.collection('students').doc(studentId).get();
+    if (!studentDoc.exists || studentDoc.data()?.userId !== decoded.uid) {
+      return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
+    }
+
+    const total = items.reduce(
+      (sum, item) => sum + Number(item.price) * Number(item.quantity),
       0
     );
 
     const now = new Date().toISOString();
-    const db = getAdminFirestore();
     const ref = await db.collection('pedidos').add({
-      studentId: studentId ?? '',
-      studentName: studentName ?? '',
+      studentId,
+      studentName: studentName ?? studentDoc.data()?.name ?? '',
       uid: decoded.uid,
       items,
       total,
