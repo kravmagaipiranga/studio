@@ -261,3 +261,13 @@ export type RevenueData = {
   month: string;
   revenue: number;
 };
+
+export type Notice = {
+  id: string;
+  title: string;
+  content: string;
+  priority: 'normal' | 'importante' | 'urgente';
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};

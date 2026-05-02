@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
-import { Student, Payment, Attendance, Exam, HandbookContent } from '@/lib/types';
+import { Student, Payment, Attendance, Exam, HandbookContent, Notice } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LogOut, User, CreditCard, CalendarCheck, GraduationCap, ShieldAlert, Coins, BookOpen } from 'lucide-react';
+import { LogOut, User, CreditCard, CalendarCheck, GraduationCap, ShieldAlert, Coins, BookOpen, Home, Megaphone, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StudentPortalForm } from '@/components/students/student-portal-form';
 import { cn } from '@/lib/utils';
@@ -84,6 +84,17 @@ export default function StudentPortalPage() {
     return query(collection(firestore, 'exams'), where('studentId', '==', student.id), orderBy('examDate', 'desc'));
   }, [firestore, student]);
   const { data: exams, isLoading: isExamsLoading } = useCollection<Exam>(examsQuery);
+
+  // Active notices (for dashboard tab)
+  const noticesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'notices'),
+      where('active', '==', true),
+      orderBy('createdAt', 'desc')
+    );
+  }, [firestore]);
+  const { data: notices, isLoading: isNoticesLoading } = useCollection<Notice>(noticesQuery);
 
   // Handbook (curriculum for student's current belt)
   const handbookQuery = useMemoFirebase(() => {
@@ -215,8 +226,12 @@ export default function StudentPortalPage() {
         </Card>
 
         {/* Tabs */}
-        <Tabs defaultValue="perfil" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+        <Tabs defaultValue="inicio" className="w-full">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="inicio" className="text-xs sm:text-sm px-1">
+              <Home className="h-4 w-4 sm:mr-1 shrink-0" />
+              <span className="hidden sm:inline">Início</span>
+            </TabsTrigger>
             <TabsTrigger value="perfil" className="text-xs sm:text-sm px-1">
               <User className="h-4 w-4 sm:mr-1 shrink-0" />
               <span className="hidden sm:inline">Perfil</span>
@@ -238,6 +253,58 @@ export default function StudentPortalPage() {
               <span className="hidden sm:inline">Currículo</span>
             </TabsTrigger>
           </TabsList>
+
+          {/* Início / Dashboard */}
+          <TabsContent value="inicio" className="pt-4">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Megaphone className="h-5 w-5 text-primary" />
+                <h2 className="text-lg font-semibold">Avisos da Academia</h2>
+              </div>
+
+              {isNoticesLoading ? (
+                <div className="space-y-3">
+                  {[1, 2].map((i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}
+                </div>
+              ) : notices && notices.length > 0 ? (
+                <div className="space-y-3">
+                  {notices.map((notice) => {
+                    const priorityStyles = {
+                      normal:     { border: 'border-l-slate-400',  bg: 'bg-slate-50',   badge: 'bg-slate-100 text-slate-700',   label: 'Normal' },
+                      importante: { border: 'border-l-amber-400',  bg: 'bg-amber-50',   badge: 'bg-amber-100 text-amber-800',   label: 'Importante' },
+                      urgente:    { border: 'border-l-red-500',    bg: 'bg-red-50',     badge: 'bg-red-100 text-red-800',       label: 'Urgente' },
+                    }[notice.priority] ?? { border: 'border-l-slate-400', bg: 'bg-slate-50', badge: 'bg-slate-100 text-slate-700', label: 'Normal' };
+
+                    return (
+                      <Card key={notice.id} className={cn('border-l-4', priorityStyles.border, priorityStyles.bg)}>
+                        <CardHeader className="pb-2 pt-4">
+                          <div className="flex items-start justify-between gap-2">
+                            <CardTitle className="text-base">{notice.title}</CardTitle>
+                            {notice.priority !== 'normal' && (
+                              <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full shrink-0', priorityStyles.badge)}>
+                                {priorityStyles.label}
+                              </span>
+                            )}
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pb-4">
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{notice.content}</p>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <Card className="border-dashed">
+                  <CardContent className="flex flex-col items-center justify-center py-12 text-center gap-3">
+                    <Megaphone className="h-10 w-10 text-muted-foreground/30" />
+                    <p className="text-muted-foreground font-medium">Nenhum aviso no momento</p>
+                    <p className="text-sm text-muted-foreground/70">Fique tranquilo, não há comunicados pendentes.</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
 
           {/* Meu Perfil */}
           <TabsContent value="perfil" className="pt-4">

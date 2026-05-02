@@ -2,9 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { collection, query, where } from 'firebase/firestore';
+import { Notice } from '@/lib/types';
 import Link from 'next/link';
+import { Bell } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -28,7 +31,15 @@ export default function LoginAlunoPage() {
   const [isSendingReset, setIsSendingReset] = useState(false);
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
+
+  const activeNoticesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'notices'), where('active', '==', true));
+  }, [firestore]);
+  const { data: activeNotices } = useCollection<Notice>(activeNoticesQuery);
+  const noticesCount = activeNotices?.length ?? 0;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +100,22 @@ export default function LoginAlunoPage() {
           <h1 className="text-3xl font-bold">Krav Magá IPIRANGA</h1>
           <p className="text-muted-foreground">Portal do Aluno</p>
         </div>
+
+        {noticesCount > 0 && (
+          <div className="mb-5 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">
+            <div className="relative shrink-0">
+              <Bell className="h-5 w-5" />
+              <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white leading-none">
+                {noticesCount > 9 ? '9+' : noticesCount}
+              </span>
+            </div>
+            <p className="text-sm font-medium">
+              {noticesCount === 1
+                ? 'Há 1 aviso novo da academia. Faça login para ver.'
+                : `Há ${noticesCount} avisos novos da academia. Faça login para ver.`}
+            </p>
+          </div>
+        )}
 
         {!showForgotPassword ? (
           <form onSubmit={handleLogin}>

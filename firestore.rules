@@ -62,6 +62,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ─── AVISOS ───────────────────────────────────────────────────────────────
+    // Leitura pública (para o badge de notificação na tela de login dos alunos)
+    match /notices/{noticeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // ─── APOSTILA (Currículo) ─────────────────────────────────────────────────
     // Qualquer aluno autenticado pode ler — necessário para a aba Currículo
     match /handbook/{docId} {
