@@ -29,13 +29,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useDoc, useFirestore, useMemoFirebase, setDocumentNonBlocking } from "@/firebase"
+import { useDoc, useFirestore, useMemoFirebase, setDocumentNonBlocking, useAuth } from "@/firebase"
 import { Student } from "@/lib/types"
 import { Switch } from "../ui/switch"
 import { ScrollArea } from "../ui/scroll-area"
 import { Skeleton } from "../ui/skeleton"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion"
-import { Lightbulb } from "lucide-react"
+import { Lightbulb, KeyRound, Loader2 } from "lucide-react"
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group"
 
 const formSchema = z.object({
@@ -120,9 +120,11 @@ function StudentFormSkeleton() {
 export function StudentForm({ studentId, isEditing }: StudentFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const auth = useAuth();
   const router = useRouter();
   const [pasteData, setPasteData] = useState("");
   const [age, setAge] = useState<number | null>(null);
+  const [isCreatingAuth, setIsCreatingAuth] = useState(false);
 
   const studentRef = useMemoFirebase(() => {
     if (!firestore || !studentId) return null;
@@ -203,6 +205,74 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
       });
     }
   }, [student, isEditing, form]);
+
+  const handleCreatePortalAccess = async () => {
+    if (!studentId) return;
+
+    const email = form.getValues("email");
+    if (!email) {
+      toast({
+        variant: "destructive",
+        title: "Email não informado",
+        description: "O aluno precisa ter um email cadastrado para criar o acesso.",
+      });
+      return;
+    }
+
+    setIsCreatingAuth(true);
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        toast({
+          variant: "destructive",
+          title: "Sessão expirada",
+          description: "Faça login novamente para continuar.",
+        });
+        setIsCreatingAuth(false);
+        return;
+      }
+
+      const idToken = await currentUser.getIdToken();
+
+      const response = await fetch('/api/admin/create-student-auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ studentId, email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao criar acesso.');
+      }
+
+      form.setValue("userId", data.uid);
+
+      if (data.emailSent === false) {
+        toast({
+          title: "Acesso vinculado com aviso",
+          description: data.message,
+        });
+      } else {
+        toast({
+          title: "Acesso criado com sucesso!",
+          description: "Um email de redefinição de senha foi enviado para o aluno.",
+        });
+      }
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      toast({
+        variant: "destructive",
+        title: "Erro ao criar acesso",
+        description: err.message || "Não foi possível criar o acesso. Tente novamente.",
+      });
+    } finally {
+      setIsCreatingAuth(false);
+    }
+  };
 
   const handlePasteAndFill = () => {
     if (!pasteData) {
@@ -398,9 +468,32 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>User ID (para login do aluno)</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Cole o UID do Firebase Auth aqui" {...field} value={field.value ?? ''} />
-                            </FormControl>
+                            <div className="flex gap-2 items-start">
+                                <FormControl>
+                                    <Input placeholder="Cole o UID do Firebase Auth aqui" {...field} value={field.value ?? ''} />
+                                </FormControl>
+                                {isEditing && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={handleCreatePortalAccess}
+                                        disabled={isCreatingAuth}
+                                        className="shrink-0 whitespace-nowrap"
+                                    >
+                                        {isCreatingAuth ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Criando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <KeyRound className="mr-2 h-4 w-4" />
+                                                Criar acesso no portal
+                                            </>
+                                        )}
+                                    </Button>
+                                )}
+                            </div>
                              <FormMessage />
                         </FormItem>
                         )}
