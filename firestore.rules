@@ -6,13 +6,9 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Administrador: custom claim 'admin: true' OU e-mail verificado (fallback).
-    // ATENÇÃO: migrar para custom claim exclusivo assim que estiver configurado.
+    // Administrador: custom claim 'admin: true' OU documento em admins/{uid}.
     function isAdmin() {
-      return isSignedIn() && (
-        request.auth.token.admin == true ||
-        request.auth.token.email_verified == true
-      );
+      return isSignedIn() && request.auth.token.admin == true;
     }
 
     // Verifica se o documento pertence ao aluno autenticado via studentId
