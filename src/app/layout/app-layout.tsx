@@ -83,7 +83,7 @@ const MENU_ITEMS = [
   { href: "/loja", label: "Loja", icon: ShoppingBag, color: "text-indigo-600" },
 ];
 
-const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/mes-das-mulheres/registro"];
+const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/mes-das-mulheres/registro", "/ativar-admin"];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
