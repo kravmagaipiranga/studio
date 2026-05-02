@@ -27,10 +27,13 @@ async function checkAdminAccess(request: NextRequest): Promise<AdminCheckResult>
     const adminAuth = getAdminAuth();
     const decoded = await adminAuth.verifyIdToken(idToken);
 
-    if (decoded['admin'] === true) {
+    // Mirror the same admin check used in Firestore security rules:
+    // custom claim `admin: true`  OR  email_verified == true (fallback)
+    if (decoded['admin'] === true || decoded.email_verified === true) {
       return { status: 'ok', uid: decoded.uid };
     }
 
+    // Extra allowlist: document at admins/{uid} in Firestore
     const firestore = getAdminFirestore();
     const adminDoc = await firestore.collection('admins').doc(decoded.uid).get();
 
