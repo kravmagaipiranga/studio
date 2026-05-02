@@ -1,10 +1,10 @@
-
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -23,6 +23,9 @@ export default function LoginAlunoPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [isSendingReset, setIsSendingReset] = useState(false);
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
@@ -32,31 +35,50 @@ export default function LoginAlunoPage() {
     setIsLoading(true);
 
     if (!auth) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro de Autenticação',
-        description: 'O serviço de autenticação não está disponível.',
-      });
+      toast({ variant: 'destructive', title: 'Erro de Autenticação', description: 'O serviço de autenticação não está disponível.' });
       setIsLoading(false);
       return;
     }
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      toast({
-        title: 'Login bem-sucedido!',
-        description: 'Redirecionando para o seu portal...',
-      });
+      toast({ title: 'Login bem-sucedido!', description: 'Redirecionando para o seu portal...' });
       router.push('/portal-aluno');
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro no Login',
-        description:
-          'Verifique seu e-mail e senha. Se for seu primeiro acesso, use as credenciais fornecidas pelo administrador.',
-      });
+      const code = error?.code;
+      let description = 'Verifique seu e-mail e senha e tente novamente.';
+      if (code === 'auth/user-not-found' || code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
+        description = 'E-mail ou senha incorretos. Esqueceu sua senha? Use o link abaixo.';
+      } else if (code === 'auth/too-many-requests') {
+        description = 'Muitas tentativas. Tente novamente em alguns minutos.';
+      }
+      toast({ variant: 'destructive', title: 'Erro no Login', description });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auth || !resetEmail) return;
+    setIsSendingReset(true);
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      toast({
+        title: 'E-mail enviado!',
+        description: `Enviamos um link de redefinição de senha para ${resetEmail}. Verifique também sua caixa de spam.`,
+      });
+      setShowForgotPassword(false);
+      setResetEmail('');
+    } catch (error: any) {
+      const code = error?.code;
+      let description = 'Não foi possível enviar o e-mail. Tente novamente.';
+      if (code === 'auth/user-not-found' || code === 'auth/invalid-email') {
+        description = 'E-mail não encontrado. Verifique e tente novamente.';
+      }
+      toast({ variant: 'destructive', title: 'Erro', description });
+    } finally {
+      setIsSendingReset(false);
     }
   };
 
@@ -67,44 +89,95 @@ export default function LoginAlunoPage() {
           <h1 className="text-3xl font-bold">Krav Magá IPIRANGA</h1>
           <p className="text-muted-foreground">Portal do Aluno</p>
         </div>
-        <form onSubmit={handleLogin}>
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Acesso do Aluno</CardTitle>
-              <CardDescription>
-                Faça login para ver suas informações.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full" type="submit" disabled={isLoading}>
-                {isLoading ? 'Entrando...' : 'Entrar'}
-              </Button>
-            </CardFooter>
-          </Card>
-        </form>
+
+        {!showForgotPassword ? (
+          <form onSubmit={handleLogin}>
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl">Acesso do Aluno</CardTitle>
+                <CardDescription>Faça login para ver suas informações.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Senha</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-3">
+                <Button className="w-full" type="submit" disabled={isLoading}>
+                  {isLoading ? 'Entrando...' : 'Entrar'}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => { setShowForgotPassword(true); setResetEmail(email); }}
+                  className="text-xs text-muted-foreground hover:text-primary underline-offset-4 hover:underline transition-colors"
+                >
+                  Esqueci minha senha
+                </button>
+              </CardFooter>
+            </Card>
+          </form>
+        ) : (
+          <form onSubmit={handleForgotPassword}>
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle className="text-xl">Redefinir Senha</CardTitle>
+                <CardDescription>
+                  Digite o e-mail cadastrado e enviaremos um link para criar uma nova senha.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">Email cadastrado</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    required
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-3">
+                <Button className="w-full" type="submit" disabled={isSendingReset}>
+                  {isSendingReset ? 'Enviando...' : 'Enviar link de redefinição'}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(false)}
+                  className="text-xs text-muted-foreground hover:text-primary underline-offset-4 hover:underline transition-colors"
+                >
+                  ← Voltar ao login
+                </button>
+              </CardFooter>
+            </Card>
+          </form>
+        )}
+
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Ainda não tem cadastro?{' '}
+          <Link href="/register" className="text-primary hover:underline font-medium">
+            Faça sua matrícula
+          </Link>
+        </p>
       </div>
     </div>
   );
