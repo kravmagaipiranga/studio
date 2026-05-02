@@ -39,7 +39,8 @@ async function checkAdminAccess(request: NextRequest): Promise<AdminCheckResult>
     }
 
     return { status: 'ok', uid: decoded.uid };
-  } catch {
+  } catch (err) {
+    console.error('[create-student-auth] token verification failed:', err);
     return { status: 'unauthenticated' };
   }
 }
