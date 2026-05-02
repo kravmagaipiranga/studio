@@ -6,9 +6,8 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Admin: possui custom claim 'admin: true' OU e-mail verificado.
-    // ATENÇÃO: migrar para custom claim exclusivo assim que estiver configurado,
-    // pois e-mail verificado pode ser obtido por alunos.
+    // Administrador: custom claim 'admin: true' OU e-mail verificado (fallback).
+    // ATENÇÃO: migrar para custom claim exclusivo assim que estiver configurado.
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.admin == true ||
@@ -16,101 +15,61 @@ service cloud.firestore {
       );
     }
 
-    // Verifica se o documento pertence ao aluno autenticado,
-    // consultando o campo userId no documento do aluno referenciado por studentId
+    // Verifica se o documento pertence ao aluno autenticado via studentId
     function isOwnerViaStudentId(studentId) {
       return isSignedIn() &&
         get(/databases/$(database)/documents/students/$(studentId)).data.userId == request.auth.uid;
     }
 
-    // Coleção students
+    // ─── REGRA CORINGA ────────────────────────────────────────────────────────
+    // Administradores têm acesso total a qualquer coleção não coberta abaixo.
+    // As regras específicas abaixo têm precedência (OR lógico no Firestore).
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    // ─── ALUNOS ───────────────────────────────────────────────────────────────
     match /students/{studentId} {
       // Formulários públicos de captação podem criar alunos sem autenticação
       allow create: if true;
-      // Aluno lê apenas seu próprio documento; admin lê todos
-      allow read: if isAdmin() ||
-        (isSignedIn() && resource.data.userId == request.auth.uid);
-      // Aluno edita apenas seu próprio documento; admin edita todos
-      allow update: if isAdmin() ||
-        (isSignedIn() && resource.data.userId == request.auth.uid);
-      // Somente admin pode excluir
+      // Aluno lê e edita apenas o seu próprio documento; admin acessa todos
+      allow read:   if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow update: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow delete: if isAdmin();
     }
 
-    // Pagamentos: aluno lê apenas os seus; somente admin escreve
+    // ─── PAGAMENTOS ───────────────────────────────────────────────────────────
     match /payments/{paymentId} {
-      allow read: if isAdmin() || isOwnerViaStudentId(resource.data.studentId);
+      allow read:  if isAdmin() || isOwnerViaStudentId(resource.data.studentId);
       allow write: if isAdmin();
     }
 
-    // Presenças: aluno lê apenas as suas; somente admin escreve
+    // ─── PRESENÇAS ────────────────────────────────────────────────────────────
     match /attendance/{attendanceId} {
-      allow read: if isAdmin() || isOwnerViaStudentId(resource.data.studentId);
+      allow read:  if isAdmin() || isOwnerViaStudentId(resource.data.studentId);
       allow write: if isAdmin();
     }
 
-    // Exames: aluno lê apenas os seus; somente admin escreve
+    // ─── EXAMES ───────────────────────────────────────────────────────────────
     match /exams/{examId} {
-      allow read: if isAdmin() || isOwnerViaStudentId(resource.data.studentId);
+      allow read:  if isAdmin() || isOwnerViaStudentId(resource.data.studentId);
       allow write: if isAdmin();
     }
 
-    // Seminários: aluno lê apenas os seus; somente admin escreve
+    // ─── SEMINÁRIOS ───────────────────────────────────────────────────────────
     match /seminars/{seminarId} {
-      allow read: if isAdmin() || isOwnerViaStudentId(resource.data.studentId);
+      allow read:  if isAdmin() || isOwnerViaStudentId(resource.data.studentId);
       allow write: if isAdmin();
     }
 
-    // Coleções exclusivas do administrador
-    match /monthlyIndicators/{docId} {
-      allow read, write: if isAdmin();
-    }
-
-    match /tasks/{docId} {
-      allow read, write: if isAdmin();
-    }
-
-    match /appointments/{docId} {
-      allow read, write: if isAdmin();
-    }
-
-    match /leads/{docId} {
-      allow read, write: if isAdmin();
-    }
-
-    match /privateClasses/{docId} {
-      allow read, write: if isAdmin();
-    }
-
-    match /sales/{docId} {
-      allow read, write: if isAdmin();
-    }
-
-    match /uniformOrders/{docId} {
-      allow read, write: if isAdmin();
-    }
-
-    match /companies/{docId} {
-      allow read, write: if isAdmin();
-    }
-
-    match /messageTemplates/{docId} {
-      allow read, write: if isAdmin();
-    }
-
+    // ─── APOSTILA (Currículo) ─────────────────────────────────────────────────
+    // Qualquer aluno autenticado pode ler — necessário para a aba Currículo
     match /handbook/{docId} {
-      allow read, write: if isAdmin();
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
     }
 
-    match /parameters/{docId} {
-      allow read, write: if isAdmin();
-    }
-
-    match /taughtTechniques/{docId} {
-      allow read, write: if isAdmin();
-    }
-
-    // Formulários públicos — criação aberta, restante apenas admin
+    // ─── FORMULÁRIOS PÚBLICOS ─────────────────────────────────────────────────
     match /womensMonth/{leadId} {
       allow create: if true;
       allow read, update, delete: if isAdmin();
@@ -120,5 +79,6 @@ service cloud.firestore {
       allow create: if true;
       allow read, update, delete: if isAdmin();
     }
+
   }
 }
