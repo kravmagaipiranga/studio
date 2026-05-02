@@ -9,13 +9,15 @@ function getFirebaseAdmin() {
     return admin.app();
   }
 
-  // Try every possible env var name for project ID
+  // Try every possible env var name for project ID.
+  // FIREBASE_PROJECT_ID is explicitly forwarded via next.config.ts env field.
   const projectId =
+    process.env.FIREBASE_PROJECT_ID ||
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
     process.env.GCLOUD_PROJECT ||
-    process.env.FIREBASE_PROJECT_ID ||
     FALLBACK_PROJECT_ID;
 
+  // GOOGLE_CLIENT_EMAIL / GOOGLE_PRIVATE_KEY are forwarded via next.config.ts env.
   const clientEmail =
     process.env.GOOGLE_CLIENT_EMAIL ||
     process.env.FIREBASE_CLIENT_EMAIL;

@@ -432,28 +432,38 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {!hasAdminClaim && (
               <Alert variant="destructive" className="border-amber-400 bg-amber-50 text-amber-900">
                 <ShieldAlert className="h-4 w-4 !text-amber-700" />
-                <AlertTitle className="text-amber-900">Permissão de administrador não encontrada</AlertTitle>
-                <AlertDescription className="space-y-2">
+                <AlertTitle className="text-amber-900 font-bold">Acesso ao Firestore bloqueado — faça logout e login</AlertTitle>
+                <AlertDescription className="space-y-3">
                   <p className="text-sm">
-                    Suas regras do Firestore foram atualizadas e agora exigem o <em>custom claim</em> <code className="bg-amber-100 px-1 rounded">admin: true</code>.
-                    Clique abaixo para ativar permanentemente — depois faça logout e login novamente.
+                    Sua sessão está com um token antigo. A permissão <code className="bg-amber-100 px-1 rounded">admin: true</code> já foi ativada na sua conta —
+                    basta fazer <strong>logout e entrar novamente</strong> para restaurar o acesso completo.
                   </p>
-                  {activateMsg ? (
-                    <p className="text-sm font-semibold">{activateMsg}</p>
-                  ) : (
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="border-amber-600 text-amber-800 hover:bg-amber-100"
-                      onClick={handleActivateClaim}
-                      disabled={isActivating}
+                      className="bg-amber-700 hover:bg-amber-800 text-white border-0"
+                      onClick={async () => { if (auth) { await signOut(auth); router.push('/login'); } }}
                     >
-                      {isActivating
-                        ? <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Ativando…</>
-                        : <><ShieldAlert className="mr-2 h-3 w-3" />Ativar permissão de admin</>
-                      }
+                      <LogOut className="mr-2 h-3 w-3" /> Fazer logout agora
                     </Button>
-                  )}
+                    {!activateMsg && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-amber-500 text-amber-800 hover:bg-amber-100"
+                        onClick={handleActivateClaim}
+                        disabled={isActivating}
+                      >
+                        {isActivating
+                          ? <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Verificando…</>
+                          : <><ShieldAlert className="mr-2 h-3 w-3" />Re-ativar claim</>
+                        }
+                      </Button>
+                    )}
+                    {activateMsg && (
+                      <p className="text-sm font-semibold self-center">{activateMsg}</p>
+                    )}
+                  </div>
                 </AlertDescription>
               </Alert>
             )}
