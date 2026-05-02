@@ -53,10 +53,9 @@ function getInitials(name: string) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-type Tab = 'inicio' | 'pagamentos' | 'presencas' | 'exames' | 'curriculo' | 'loja' | 'perfil';
+type Tab = 'pagamentos' | 'presencas' | 'exames' | 'curriculo' | 'loja' | 'perfil';
 
 const NAV_ITEMS: { value: Tab; icon: React.ElementType; label: string }[] = [
-  { value: 'inicio',     icon: Home,          label: 'Início' },
   { value: 'pagamentos', icon: CreditCard,     label: 'Pgtos' },
   { value: 'presencas',  icon: CalendarCheck,  label: 'Pres.' },
   { value: 'exames',     icon: GraduationCap,  label: 'Exames' },
@@ -70,7 +69,7 @@ export default function StudentPortalPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<Tab>('inicio');
+  const [activeTab, setActiveTab] = useState<Tab>('pagamentos');
 
   // ── Student ──────────────────────────────────────────────────────────────
   const studentQuery = useMemoFirebase(() => {
@@ -348,30 +347,22 @@ export default function StudentPortalPage() {
           </Card>
         )}
 
-        {/* ── PERFIL ─────────────────────────────────────────────────────── */}
-        {activeTab === 'perfil' && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 px-1">
-              <User className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-semibold">Meu Perfil</h2>
+        {/* ── AVISOS (sempre visíveis) ────────────────────────────────────── */}
+        {activeTab !== 'perfil' && (
+          isNoticesLoading ? (
+            <div className="space-y-2">
+              {[1, 2].map(i => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
             </div>
-            <StudentPortalForm student={student} />
-          </div>
-        )}
-
-        {/* ── INÍCIO ─────────────────────────────────────────────────────── */}
-        {activeTab === 'inicio' && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 px-1">
-              <Megaphone className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-semibold">Avisos da Academia</h2>
-            </div>
-            {isNoticesLoading ? (
-              <div className="space-y-3">
-                {[1, 2].map(i => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+          ) : notices.length > 0 ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 px-1">
+                <Megaphone className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-semibold">Avisos da Academia</h2>
+                <span className="ml-auto text-[10px] bg-primary text-primary-foreground font-bold px-1.5 py-0.5 rounded-full">
+                  {notices.length}
+                </span>
               </div>
-            ) : notices.length > 0 ? (
-              notices.map(notice => {
+              {notices.map(notice => {
                 const ps = {
                   normal:     { border: 'border-l-slate-400', bg: 'bg-slate-50',  badge: 'bg-slate-100 text-slate-700',  label: 'Normal' },
                   importante: { border: 'border-l-amber-400', bg: 'bg-amber-50',  badge: 'bg-amber-100 text-amber-800',  label: 'Importante' },
@@ -394,15 +385,19 @@ export default function StudentPortalPage() {
                     </CardContent>
                   </Card>
                 );
-              })
-            ) : (
-              <Card className="border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-10 text-center gap-2">
-                  <Megaphone className="h-8 w-8 text-muted-foreground/30" />
-                  <p className="text-sm text-muted-foreground font-medium">Nenhum aviso no momento</p>
-                </CardContent>
-              </Card>
-            )}
+              })}
+            </div>
+          ) : null
+        )}
+
+        {/* ── PERFIL ─────────────────────────────────────────────────────── */}
+        {activeTab === 'perfil' && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 px-1">
+              <User className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold">Meu Perfil</h2>
+            </div>
+            <StudentPortalForm student={student} />
           </div>
         )}
 
