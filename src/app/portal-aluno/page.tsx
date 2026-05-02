@@ -357,49 +357,6 @@ export default function StudentPortalPage() {
           </Card>
         )}
 
-        {/* ── AVISOS (banner compacto nas abas secundárias) ───────────────── */}
-        {activeTab !== 'perfil' && activeTab !== 'inicio' && (
-          isNoticesLoading ? (
-            <div className="space-y-2">
-              {[1, 2].map(i => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
-            </div>
-          ) : notices.length > 0 ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 px-1">
-                <Megaphone className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-semibold">Avisos da Academia</h2>
-                <span className="ml-auto text-[10px] bg-primary text-primary-foreground font-bold px-1.5 py-0.5 rounded-full">
-                  {notices.length}
-                </span>
-              </div>
-              {notices.map(notice => {
-                const ps = {
-                  normal:     { border: 'border-l-slate-400', bg: 'bg-slate-50',  badge: 'bg-slate-100 text-slate-700',  label: 'Normal' },
-                  importante: { border: 'border-l-amber-400', bg: 'bg-amber-50',  badge: 'bg-amber-100 text-amber-800',  label: 'Importante' },
-                  urgente:    { border: 'border-l-red-500',   bg: 'bg-red-50',    badge: 'bg-red-100 text-red-800',      label: 'Urgente' },
-                }[notice.priority] ?? { border: 'border-l-slate-400', bg: 'bg-slate-50', badge: 'bg-slate-100 text-slate-700', label: 'Normal' };
-                return (
-                  <Card key={notice.id} className={cn('border-l-4', ps.border, ps.bg)}>
-                    <CardHeader className="pb-1 pt-3 px-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <CardTitle className="text-sm leading-snug">{notice.title}</CardTitle>
-                        {notice.priority !== 'normal' && (
-                          <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0', ps.badge)}>
-                            {ps.label}
-                          </span>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-3">
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{notice.content}</p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          ) : null
-        )}
-
         {/* ── INÍCIO ─────────────────────────────────────────────────────── */}
         {activeTab === 'inicio' && (
           <div className="space-y-3">
