@@ -1,4 +1,3 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -7,25 +6,119 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Regras para acesso administrativo (exige login)
-    // Permite leitura e escrita em qualquer documento se o usuário estiver logado
-    match /{document=**} {
-      allow read, write: if isSignedIn();
+    // Admin: possui custom claim 'admin: true' OU e-mail verificado.
+    // ATENÇÃO: migrar para custom claim exclusivo assim que estiver configurado,
+    // pois e-mail verificado pode ser obtido por alunos.
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.admin == true ||
+        request.auth.token.email_verified == true
+      );
     }
 
-    // Regras para acessos públicos (não exige login)
-    // Necessário para formulários externos de captação
-    
-    match /students/{studentId} {
-      allow create: if true; 
+    // Verifica se o documento pertence ao aluno autenticado,
+    // consultando o campo userId no documento do aluno referenciado por studentId
+    function isOwnerViaStudentId(studentId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/students/$(studentId)).data.userId == request.auth.uid;
     }
-    
+
+    // Coleção students
+    match /students/{studentId} {
+      // Formulários públicos de captação podem criar alunos sem autenticação
+      allow create: if true;
+      // Aluno lê apenas seu próprio documento; admin lê todos
+      allow read: if isAdmin() ||
+        (isSignedIn() && resource.data.userId == request.auth.uid);
+      // Aluno edita apenas seu próprio documento; admin edita todos
+      allow update: if isAdmin() ||
+        (isSignedIn() && resource.data.userId == request.auth.uid);
+      // Somente admin pode excluir
+      allow delete: if isAdmin();
+    }
+
+    // Pagamentos: aluno lê apenas os seus; somente admin escreve
+    match /payments/{paymentId} {
+      allow read: if isAdmin() || isOwnerViaStudentId(resource.data.studentId);
+      allow write: if isAdmin();
+    }
+
+    // Presenças: aluno lê apenas as suas; somente admin escreve
+    match /attendance/{attendanceId} {
+      allow read: if isAdmin() || isOwnerViaStudentId(resource.data.studentId);
+      allow write: if isAdmin();
+    }
+
+    // Exames: aluno lê apenas os seus; somente admin escreve
+    match /exams/{examId} {
+      allow read: if isAdmin() || isOwnerViaStudentId(resource.data.studentId);
+      allow write: if isAdmin();
+    }
+
+    // Seminários: aluno lê apenas os seus; somente admin escreve
+    match /seminars/{seminarId} {
+      allow read: if isAdmin() || isOwnerViaStudentId(resource.data.studentId);
+      allow write: if isAdmin();
+    }
+
+    // Coleções exclusivas do administrador
+    match /monthlyIndicators/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /tasks/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /appointments/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /leads/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /privateClasses/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /sales/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /uniformOrders/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /companies/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /messageTemplates/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /handbook/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /parameters/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /taughtTechniques/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Formulários públicos — criação aberta, restante apenas admin
     match /womensMonth/{leadId} {
       allow create: if true;
+      allow read, update, delete: if isAdmin();
     }
 
     match /giftCardOrders/{orderId} {
       allow create: if true;
+      allow read, update, delete: if isAdmin();
     }
   }
 }
