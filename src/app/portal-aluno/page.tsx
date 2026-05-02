@@ -1,18 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
-import { Student, Payment, Attendance, Exam } from '@/lib/types';
+import { Student, Payment, Attendance, Exam, HandbookContent } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LogOut, User, CreditCard, CalendarCheck, GraduationCap, ShieldAlert, Coins } from 'lucide-react';
+import { LogOut, User, CreditCard, CalendarCheck, GraduationCap, ShieldAlert, Coins, BookOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StudentPortalForm } from '@/components/students/student-portal-form';
 import { cn } from '@/lib/utils';
@@ -84,6 +84,15 @@ export default function StudentPortalPage() {
     return query(collection(firestore, 'exams'), where('studentId', '==', student.id), orderBy('examDate', 'desc'));
   }, [firestore, student]);
   const { data: exams, isLoading: isExamsLoading } = useCollection<Exam>(examsQuery);
+
+  // Handbook (curriculum for student's current belt)
+  const handbookQuery = useMemoFirebase(() => {
+    if (!firestore || !student) return null;
+    const beltId = student.belt?.toLowerCase() ?? 'branca';
+    return query(collection(firestore, 'handbook'), where('id', '==', beltId));
+  }, [firestore, student]);
+  const { data: handbookData, isLoading: isHandbookLoading } = useCollection<HandbookContent>(handbookQuery);
+  const handbook = useMemo(() => handbookData?.[0], [handbookData]);
 
   useEffect(() => {
     if (!isUserLoading && !user) router.push('/login-aluno');
@@ -207,25 +216,26 @@ export default function StudentPortalPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="perfil" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="perfil" className="text-xs sm:text-sm">
-              <User className="h-4 w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Meu Perfil</span>
-              <span className="sm:hidden">Perfil</span>
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="perfil" className="text-xs sm:text-sm px-1">
+              <User className="h-4 w-4 sm:mr-1 shrink-0" />
+              <span className="hidden sm:inline">Perfil</span>
             </TabsTrigger>
-            <TabsTrigger value="pagamentos" className="text-xs sm:text-sm">
-              <CreditCard className="h-4 w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Pagamentos</span>
-              <span className="sm:hidden">Pgtos</span>
+            <TabsTrigger value="pagamentos" className="text-xs sm:text-sm px-1">
+              <CreditCard className="h-4 w-4 sm:mr-1 shrink-0" />
+              <span className="hidden sm:inline">Pgtos</span>
             </TabsTrigger>
-            <TabsTrigger value="presencas" className="text-xs sm:text-sm">
-              <CalendarCheck className="h-4 w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Presenças</span>
-              <span className="sm:hidden">Pres.</span>
+            <TabsTrigger value="presencas" className="text-xs sm:text-sm px-1">
+              <CalendarCheck className="h-4 w-4 sm:mr-1 shrink-0" />
+              <span className="hidden sm:inline">Pres.</span>
             </TabsTrigger>
-            <TabsTrigger value="exames" className="text-xs sm:text-sm">
-              <GraduationCap className="h-4 w-4 mr-1 sm:mr-2" />
-              Exames
+            <TabsTrigger value="exames" className="text-xs sm:text-sm px-1">
+              <GraduationCap className="h-4 w-4 sm:mr-1 shrink-0" />
+              <span className="hidden sm:inline">Exames</span>
+            </TabsTrigger>
+            <TabsTrigger value="curriculo" className="text-xs sm:text-sm px-1">
+              <BookOpen className="h-4 w-4 sm:mr-1 shrink-0" />
+              <span className="hidden sm:inline">Currículo</span>
             </TabsTrigger>
           </TabsList>
 
@@ -379,6 +389,70 @@ export default function StudentPortalPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Currículo */}
+          <TabsContent value="curriculo" className="pt-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-start gap-3">
+                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5", beltStyle.bg, beltStyle.text)}>
+                    <BookOpen className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <CardTitle>Currículo — Faixa {student.belt}</CardTitle>
+                    <CardDescription>
+                      Matérias do programa da sua graduação atual.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isHandbookLoading ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full rounded-lg" />
+                    ))}
+                  </div>
+                ) : handbook && handbook.techniques && handbook.techniques.length > 0 ? (
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-sm text-muted-foreground">
+                        {handbook.techniques.length} matéria{handbook.techniques.length !== 1 ? 's' : ''} cadastrada{handbook.techniques.length !== 1 ? 's' : ''}
+                      </span>
+                      <span className={cn("text-xs font-bold px-3 py-1 rounded-full capitalize", beltStyle.bg, beltStyle.text)}>
+                        Faixa {student.belt}
+                      </span>
+                    </div>
+                    <ol className="space-y-2">
+                      {handbook.techniques.map((technique, index) => (
+                        <li
+                          key={index}
+                          className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors"
+                        >
+                          <span className={cn(
+                            "flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold",
+                            beltStyle.bg, beltStyle.text
+                          )}>
+                            {index + 1}
+                          </span>
+                          <span className="text-sm font-medium leading-relaxed pt-0.5">{technique}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </>
+                ) : (
+                  <div className="py-12 text-center">
+                    <BookOpen className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                    <p className="text-muted-foreground font-medium">Currículo não disponível</p>
+                    <p className="text-sm text-muted-foreground/70 mt-1">
+                      Nenhuma matéria foi cadastrada para a Faixa {student.belt} ainda.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
         </Tabs>
 
         <p className="text-center text-xs text-muted-foreground pb-4">
