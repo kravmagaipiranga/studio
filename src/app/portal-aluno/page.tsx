@@ -86,15 +86,22 @@ export default function StudentPortalPage() {
   const { data: exams, isLoading: isExamsLoading } = useCollection<Exam>(examsQuery);
 
   // Active notices (for dashboard tab)
+  // NOTE: no orderBy here — combining where + orderBy on different fields
+  // requires a composite index. We sort client-side instead.
   const noticesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
       collection(firestore, 'notices'),
-      where('active', '==', true),
-      orderBy('createdAt', 'desc')
+      where('active', '==', true)
     );
   }, [firestore]);
-  const { data: notices, isLoading: isNoticesLoading } = useCollection<Notice>(noticesQuery);
+  const { data: noticesRaw, isLoading: isNoticesLoading } = useCollection<Notice>(noticesQuery);
+  const notices = useMemo(
+    () => [...(noticesRaw ?? [])].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    ),
+    [noticesRaw]
+  );
 
   // Handbook (curriculum for student's current belt)
   const handbookQuery = useMemoFirebase(() => {
