@@ -33,6 +33,7 @@ import {
   MessageSquare,
   BookOpen,
   Megaphone,
+  ShoppingBag,
 } from "lucide-react";
 import {
   Sheet,
@@ -81,6 +82,7 @@ const MENU_ITEMS = [
   { href: "/register", label: "Cadastro Público", icon: UserPlus, target: "_blank" },
   { href: "/apostila", label: "Apostila", icon: BookOpen, color: "text-emerald-600" },
   { href: "/avisos", label: "Avisos", icon: Megaphone, color: "text-orange-500" },
+  { href: "/loja", label: "Loja", icon: ShoppingBag, color: "text-indigo-600" },
 ];
 
 const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/mes-das-mulheres/registro"];

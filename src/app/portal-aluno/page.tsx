@@ -5,14 +5,19 @@ import { useRouter } from 'next/navigation';
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
-import { Student, Payment, Attendance, Exam, HandbookContent, Notice } from '@/lib/types';
+import {
+  Student, Payment, Attendance, Exam, HandbookContent, Notice, Product, StoreOrderItem,
+} from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LogOut, User, CreditCard, CalendarCheck, GraduationCap, ShieldAlert, Coins, BookOpen, Home, Megaphone, AlertCircle } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  LogOut, User, CreditCard, CalendarCheck, GraduationCap, ShieldAlert,
+  Coins, BookOpen, Home, Megaphone, ShoppingBag, Minus, Plus, ShoppingCart,
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StudentPortalForm } from '@/components/students/student-portal-form';
 import { cn } from '@/lib/utils';
@@ -56,7 +61,7 @@ export default function StudentPortalPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  // Student
+  // ── Student ──────────────────────────────────────────────────────────────
   const studentQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(collection(firestore, 'students'), where('userId', '==', user.uid));
@@ -64,40 +69,40 @@ export default function StudentPortalPage() {
   const { data: studentData, isLoading: isStudentLoading } = useCollection<Student>(studentQuery);
   const student = useMemo(() => studentData?.[0], [studentData]);
 
-  // All payments
+  // ── Payments ─────────────────────────────────────────────────────────────
   const paymentsQuery = useMemoFirebase(() => {
     if (!firestore || !student) return null;
     return query(collection(firestore, 'payments'), where('studentId', '==', student.id), orderBy('paymentDate', 'desc'));
   }, [firestore, student]);
   const { data: payments, isLoading: isPaymentsLoading } = useCollection<Payment>(paymentsQuery);
 
-  // Attendance (last 100 check-ins)
+  // ── Attendance ────────────────────────────────────────────────────────────
   const attendanceQuery = useMemoFirebase(() => {
     if (!firestore || !student) return null;
     return query(collection(firestore, 'attendance'), where('studentId', '==', student.id), orderBy('date', 'desc'), limit(100));
   }, [firestore, student]);
   const { data: attendance, isLoading: isAttendanceLoading } = useCollection<Attendance>(attendanceQuery);
 
-  // Exams
+  // ── Exams ─────────────────────────────────────────────────────────────────
   const examsQuery = useMemoFirebase(() => {
     if (!firestore || !student) return null;
     return query(collection(firestore, 'exams'), where('studentId', '==', student.id), orderBy('examDate', 'desc'));
   }, [firestore, student]);
   const { data: exams, isLoading: isExamsLoading } = useCollection<Exam>(examsQuery);
 
-  // Active notices — fetched via API route (Admin SDK, bypasses Firestore rules)
+  // ── Notices (via API, bypasses Firestore rules) ───────────────────────────
   const [notices, setNotices] = useState<Notice[]>([]);
   const [isNoticesLoading, setIsNoticesLoading] = useState(true);
   useEffect(() => {
     setIsNoticesLoading(true);
     fetch('/api/notices')
-      .then((r) => r.json())
-      .then((data) => setNotices(data.notices ?? []))
+      .then(r => r.json())
+      .then(data => setNotices(data.notices ?? []))
       .catch(() => setNotices([]))
       .finally(() => setIsNoticesLoading(false));
   }, []);
 
-  // Handbook (curriculum for student's current belt)
+  // ── Handbook ──────────────────────────────────────────────────────────────
   const handbookQuery = useMemoFirebase(() => {
     if (!firestore || !student) return null;
     const beltId = student.belt?.toLowerCase() ?? 'branca';
@@ -106,6 +111,77 @@ export default function StudentPortalPage() {
   const { data: handbookData, isLoading: isHandbookLoading } = useCollection<HandbookContent>(handbookQuery);
   const handbook = useMemo(() => handbookData?.[0], [handbookData]);
 
+  // ── Products / Shop ───────────────────────────────────────────────────────
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isProductsLoading, setIsProductsLoading] = useState(true);
+  const [cart, setCart] = useState<Record<string, number>>({});
+  const [orderNotes, setOrderNotes] = useState('');
+  const [isOrdering, setIsOrdering] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/products')
+      .then(r => r.json())
+      .then(data => setProducts(data.products ?? []))
+      .catch(() => setProducts([]))
+      .finally(() => setIsProductsLoading(false));
+  }, []);
+
+  const cartItems = useMemo<StoreOrderItem[]>(() =>
+    Object.entries(cart)
+      .filter(([, qty]) => qty > 0)
+      .map(([id, qty]) => {
+        const p = products.find(p => p.id === id)!;
+        return { productId: id, name: p.name, price: p.price, quantity: qty };
+      }),
+    [cart, products]
+  );
+
+  const cartTotal = useMemo(() =>
+    cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [cartItems]
+  );
+
+  function updateQty(productId: string, delta: number) {
+    setCart(prev => {
+      const next = Math.max(0, (prev[productId] ?? 0) + delta);
+      return { ...prev, [productId]: next };
+    });
+  }
+
+  async function handleOrder() {
+    if (!student || !user || cartItems.length === 0) return;
+    setIsOrdering(true);
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          studentId: student.id,
+          studentName: student.name,
+          items: cartItems,
+          notes: orderNotes,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: 'Pedido realizado!', description: 'A academia receberá seu pedido em breve.' });
+        setCart({});
+        setOrderNotes('');
+      } else {
+        throw new Error(data.error || 'Erro ao fazer pedido.');
+      }
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Erro ao fazer pedido', description: err.message });
+    } finally {
+      setIsOrdering(false);
+    }
+  }
+
+  // ── Auth redirect ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isUserLoading && !user) router.push('/login-aluno');
   }, [isUserLoading, user, router]);
@@ -118,10 +194,11 @@ export default function StudentPortalPage() {
     }
   };
 
+  // ── Loading / error states ────────────────────────────────────────────────
   if (isUserLoading || isStudentLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted/40">
-        <div className="space-y-4 w-full max-w-3xl p-8">
+        <div className="space-y-4 w-full max-w-lg p-6">
           <Skeleton className="h-24 w-full rounded-xl" />
           <Skeleton className="h-64 w-full rounded-xl" />
         </div>
@@ -142,7 +219,7 @@ export default function StudentPortalPage() {
           <CardContent>
             <p className="text-muted-foreground mb-4">
               Não encontramos um perfil de aluno associado a este login.
-              Por favor, entre em contato com a administração.
+              Entre em contato com a administração.
             </p>
             <Button onClick={handleLogout} variant="destructive">
               <LogOut className="mr-2 h-4 w-4" /> Sair
@@ -160,195 +237,206 @@ export default function StudentPortalPage() {
 
   return (
     <div className="min-h-screen bg-muted/40">
-      {/* Header */}
+
+      {/* ── Sticky Header ─────────────────────────────────────────────────── */}
       <header className="bg-background border-b sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Krav Magá IPIRANGA</p>
-            <h1 className="text-lg font-bold leading-tight">Portal do Aluno</h1>
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold leading-tight">
+              Krav Magá IPIRANGA
+            </p>
+            <h1 className="text-base font-bold leading-tight truncate">Portal do Aluno</h1>
           </div>
-          <Button onClick={handleLogout} variant="outline" size="sm">
-            <LogOut className="mr-2 h-4 w-4" /> Sair
+          <Button onClick={handleLogout} variant="outline" size="sm" className="shrink-0">
+            <LogOut className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Sair</span>
           </Button>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+      <div className="max-w-2xl mx-auto p-4 space-y-4 pb-8">
 
-        {/* Student Hero Card */}
+        {/* ── Student Hero Card ──────────────────────────────────────────── */}
         <Card className="overflow-hidden">
-          <div className="bg-primary/5 border-b px-6 py-5">
-            <div className="flex items-center gap-4">
-              <div className={cn("w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0", beltStyle.bg, beltStyle.text)}>
+          <div className="bg-primary/5 border-b px-4 py-4">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                'w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0',
+                beltStyle.bg, beltStyle.text
+              )}>
                 {getInitials(student.name)}
               </div>
               <div className="min-w-0">
-                <h2 className="text-xl font-bold truncate">{student.name}</h2>
-                <div className="flex flex-wrap items-center gap-2 mt-1">
-                  <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full capitalize", beltStyle.bg, beltStyle.text)}>
+                <h2 className="text-base font-bold truncate">{student.name}</h2>
+                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                  <span className={cn(
+                    'text-xs font-bold px-2 py-0.5 rounded-full capitalize',
+                    beltStyle.bg, beltStyle.text
+                  )}>
                     Faixa {student.belt}
                   </span>
-                  <Badge variant={student.status === 'Ativo' ? 'default' : student.status === 'Inativo' ? 'secondary' : 'destructive'}>
+                  <Badge
+                    variant={student.status === 'Ativo' ? 'default' : student.status === 'Inativo' ? 'secondary' : 'destructive'}
+                    className="text-xs"
+                  >
                     {student.status}
                   </Badge>
                   {student.paymentStatus && (
-                    <Badge variant={student.paymentStatus === 'Pago' ? 'outline' : 'destructive'} className={student.paymentStatus === 'Pago' ? 'border-green-500 text-green-700' : ''}>
-                      Pagamento: {student.paymentStatus}
+                    <Badge
+                      variant={student.paymentStatus === 'Pago' ? 'outline' : 'destructive'}
+                      className={cn('text-xs', student.paymentStatus === 'Pago' ? 'border-green-500 text-green-700' : '')}
+                    >
+                      {student.paymentStatus}
                     </Badge>
                   )}
                 </div>
               </div>
             </div>
           </div>
-          <CardContent className="p-0">
-            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0">
-              <div className="p-4 text-center">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Plano</p>
-                <p className="text-base font-bold mt-1">{student.planType || '—'}</p>
-              </div>
-              <div className="p-4 text-center">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Validade</p>
-                <p className="text-base font-bold mt-1">{formatDate(lastPayment?.expirationDate ?? student.planExpirationDate)}</p>
-              </div>
-              <div className="p-4 text-center">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Últ. Pagamento</p>
-                <p className="text-base font-bold mt-1">{formatDate(lastPayment?.paymentDate ?? student.lastPaymentDate)}</p>
-              </div>
-              <div className="p-4 text-center">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide flex items-center justify-center gap-1">
-                  <Coins className="h-3 w-3" /> Créditos
-                </p>
-                <p className={cn("text-base font-bold mt-1", credits > 0 ? "text-green-600" : "")}>
-                  {credits > 0 ? `R$ ${credits.toFixed(2)}` : '—'}
-                </p>
-              </div>
+          <div className="grid grid-cols-2 divide-x divide-y">
+            <div className="p-3 text-center">
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Plano</p>
+              <p className="text-sm font-bold mt-0.5">{student.planType || '—'}</p>
             </div>
-          </CardContent>
+            <div className="p-3 text-center">
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Validade</p>
+              <p className="text-sm font-bold mt-0.5">
+                {formatDate(lastPayment?.expirationDate ?? student.planExpirationDate)}
+              </p>
+            </div>
+            <div className="p-3 text-center">
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Últ. Pgto</p>
+              <p className="text-sm font-bold mt-0.5">
+                {formatDate(lastPayment?.paymentDate ?? student.lastPaymentDate)}
+              </p>
+            </div>
+            <div className="p-3 text-center">
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide flex items-center justify-center gap-1">
+                <Coins className="h-3 w-3" /> Créditos
+              </p>
+              <p className={cn('text-sm font-bold mt-0.5', credits > 0 ? 'text-green-600' : '')}>
+                {credits > 0 ? `R$ ${credits.toFixed(2)}` : '—'}
+              </p>
+            </div>
+          </div>
         </Card>
 
-        {/* Tabs */}
+        {/* ── Tabs ──────────────────────────────────────────────────────── */}
         <Tabs defaultValue="inicio" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="inicio" className="text-xs sm:text-sm px-1">
-              <Home className="h-4 w-4 sm:mr-1 shrink-0" />
-              <span className="hidden sm:inline">Início</span>
-            </TabsTrigger>
-            <TabsTrigger value="perfil" className="text-xs sm:text-sm px-1">
-              <User className="h-4 w-4 sm:mr-1 shrink-0" />
-              <span className="hidden sm:inline">Perfil</span>
-            </TabsTrigger>
-            <TabsTrigger value="pagamentos" className="text-xs sm:text-sm px-1">
-              <CreditCard className="h-4 w-4 sm:mr-1 shrink-0" />
-              <span className="hidden sm:inline">Pgtos</span>
-            </TabsTrigger>
-            <TabsTrigger value="presencas" className="text-xs sm:text-sm px-1">
-              <CalendarCheck className="h-4 w-4 sm:mr-1 shrink-0" />
-              <span className="hidden sm:inline">Pres.</span>
-            </TabsTrigger>
-            <TabsTrigger value="exames" className="text-xs sm:text-sm px-1">
-              <GraduationCap className="h-4 w-4 sm:mr-1 shrink-0" />
-              <span className="hidden sm:inline">Exames</span>
-            </TabsTrigger>
-            <TabsTrigger value="curriculo" className="text-xs sm:text-sm px-1">
-              <BookOpen className="h-4 w-4 sm:mr-1 shrink-0" />
-              <span className="hidden sm:inline">Currículo</span>
-            </TabsTrigger>
-          </TabsList>
 
-          {/* Início / Dashboard */}
+          {/* Scrollable tab strip — works on any screen width */}
+          <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
+            <TabsList className="inline-flex w-max min-w-full h-auto p-1 gap-0.5 bg-muted rounded-xl">
+              {[
+                { value: 'inicio',     icon: Home,          label: 'Início' },
+                { value: 'perfil',     icon: User,          label: 'Perfil' },
+                { value: 'pagamentos', icon: CreditCard,    label: 'Pgtos' },
+                { value: 'presencas',  icon: CalendarCheck, label: 'Pres.' },
+                { value: 'exames',     icon: GraduationCap, label: 'Exames' },
+                { value: 'curriculo',  icon: BookOpen,      label: 'Currículo' },
+                { value: 'loja',       icon: ShoppingBag,   label: 'Loja' },
+              ].map(({ value, icon: Icon, label }) => (
+                <TabsTrigger
+                  key={value}
+                  value={value}
+                  className="flex flex-col items-center gap-0.5 min-w-[52px] flex-1 h-auto py-2 px-2 text-[10px] font-medium leading-none data-[state=active]:shadow-sm rounded-lg"
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span>{label}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+
+          {/* ── Início ─────────────────────────────────────────────────── */}
           <TabsContent value="inicio" className="pt-4">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Megaphone className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold">Avisos da Academia</h2>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-1">
+                <Megaphone className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-semibold">Avisos da Academia</h2>
               </div>
 
               {isNoticesLoading ? (
                 <div className="space-y-3">
-                  {[1, 2].map((i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}
+                  {[1, 2].map(i => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
                 </div>
-              ) : notices && notices.length > 0 ? (
-                <div className="space-y-3">
-                  {notices.map((notice) => {
-                    const priorityStyles = {
-                      normal:     { border: 'border-l-slate-400',  bg: 'bg-slate-50',   badge: 'bg-slate-100 text-slate-700',   label: 'Normal' },
-                      importante: { border: 'border-l-amber-400',  bg: 'bg-amber-50',   badge: 'bg-amber-100 text-amber-800',   label: 'Importante' },
-                      urgente:    { border: 'border-l-red-500',    bg: 'bg-red-50',     badge: 'bg-red-100 text-red-800',       label: 'Urgente' },
-                    }[notice.priority] ?? { border: 'border-l-slate-400', bg: 'bg-slate-50', badge: 'bg-slate-100 text-slate-700', label: 'Normal' };
+              ) : notices.length > 0 ? (
+                notices.map(notice => {
+                  const ps = {
+                    normal:     { border: 'border-l-slate-400', bg: 'bg-slate-50',  badge: 'bg-slate-100 text-slate-700',  label: 'Normal' },
+                    importante: { border: 'border-l-amber-400', bg: 'bg-amber-50',  badge: 'bg-amber-100 text-amber-800',  label: 'Importante' },
+                    urgente:    { border: 'border-l-red-500',   bg: 'bg-red-50',    badge: 'bg-red-100 text-red-800',      label: 'Urgente' },
+                  }[notice.priority] ?? { border: 'border-l-slate-400', bg: 'bg-slate-50', badge: 'bg-slate-100 text-slate-700', label: 'Normal' };
 
-                    return (
-                      <Card key={notice.id} className={cn('border-l-4', priorityStyles.border, priorityStyles.bg)}>
-                        <CardHeader className="pb-2 pt-4">
-                          <div className="flex items-start justify-between gap-2">
-                            <CardTitle className="text-base">{notice.title}</CardTitle>
-                            {notice.priority !== 'normal' && (
-                              <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full shrink-0', priorityStyles.badge)}>
-                                {priorityStyles.label}
-                              </span>
-                            )}
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pb-4">
-                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{notice.content}</p>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
+                  return (
+                    <Card key={notice.id} className={cn('border-l-4', ps.border, ps.bg)}>
+                      <CardHeader className="pb-1 pt-3 px-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <CardTitle className="text-sm leading-snug">{notice.title}</CardTitle>
+                          {notice.priority !== 'normal' && (
+                            <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0', ps.badge)}>
+                              {ps.label}
+                            </span>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-3">
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{notice.content}</p>
+                      </CardContent>
+                    </Card>
+                  );
+                })
               ) : (
                 <Card className="border-dashed">
-                  <CardContent className="flex flex-col items-center justify-center py-12 text-center gap-3">
-                    <Megaphone className="h-10 w-10 text-muted-foreground/30" />
-                    <p className="text-muted-foreground font-medium">Nenhum aviso no momento</p>
-                    <p className="text-sm text-muted-foreground/70">Fique tranquilo, não há comunicados pendentes.</p>
+                  <CardContent className="flex flex-col items-center justify-center py-10 text-center gap-2">
+                    <Megaphone className="h-8 w-8 text-muted-foreground/30" />
+                    <p className="text-sm text-muted-foreground font-medium">Nenhum aviso no momento</p>
                   </CardContent>
                 </Card>
               )}
             </div>
           </TabsContent>
 
-          {/* Meu Perfil */}
+          {/* ── Perfil ─────────────────────────────────────────────────── */}
           <TabsContent value="perfil" className="pt-4">
             <StudentPortalForm student={student} />
           </TabsContent>
 
-          {/* Pagamentos */}
+          {/* ── Pagamentos ─────────────────────────────────────────────── */}
           <TabsContent value="pagamentos" className="pt-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Histórico de Pagamentos</CardTitle>
-                <CardDescription>Todos os pagamentos registrados na sua conta.</CardDescription>
+              <CardHeader className="px-4 pb-2">
+                <CardTitle className="text-base">Histórico de Pagamentos</CardTitle>
+                <CardDescription className="text-xs">Todos os pagamentos registrados.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 {isPaymentsLoading ? (
-                  <div className="p-6 space-y-3">
-                    {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                  <div className="p-4 space-y-3">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
                   </div>
                 ) : payments && payments.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Valor</TableHead>
-                        <TableHead className="hidden sm:table-cell">Validade</TableHead>
-                        <TableHead className="hidden sm:table-cell">Método</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {payments.map((p) => (
-                        <TableRow key={p.id}>
-                          <TableCell className="font-medium">{formatDate(p.paymentDate)}</TableCell>
-                          <TableCell>{p.planType}</TableCell>
-                          <TableCell className="font-bold text-green-700">R$ {Number(p.amount).toFixed(2)}</TableCell>
-                          <TableCell className="hidden sm:table-cell">{formatDate(p.expirationDate)}</TableCell>
-                          <TableCell className="hidden sm:table-cell text-muted-foreground">{p.paymentMethod}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <div className="divide-y">
+                    {payments.map(p => (
+                      <div key={p.id} className="flex items-start justify-between gap-3 px-4 py-3.5">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm">{p.planType}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {formatDate(p.paymentDate)} · {p.paymentMethod}
+                          </p>
+                          {p.expirationDate && (
+                            <p className="text-xs text-muted-foreground">
+                              Válido até {formatDate(p.expirationDate)}
+                            </p>
+                          )}
+                        </div>
+                        <p className="font-bold text-green-700 text-sm shrink-0">
+                          R$ {Number(p.amount).toFixed(2).replace('.', ',')}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <div className="p-10 text-center text-muted-foreground italic">
+                  <div className="p-10 text-center text-sm text-muted-foreground italic">
                     Nenhum pagamento encontrado.
                   </div>
                 )}
@@ -356,45 +444,39 @@ export default function StudentPortalPage() {
             </Card>
           </TabsContent>
 
-          {/* Presenças */}
+          {/* ── Presenças ──────────────────────────────────────────────── */}
           <TabsContent value="presencas" className="pt-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Registro de Presenças</CardTitle>
-                <CardDescription>
-                  Seus últimos {attendance?.length ?? 0} check-ins registrados.
+              <CardHeader className="px-4 pb-2">
+                <CardTitle className="text-base">Registro de Presenças</CardTitle>
+                <CardDescription className="text-xs">
+                  {attendance?.length ?? 0} check-ins registrados.
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 {isAttendanceLoading ? (
-                  <div className="p-6 space-y-3">
-                    {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                  <div className="p-4 space-y-3">
+                    {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
                   </div>
                 ) : attendance && attendance.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Horário</TableHead>
-                        <TableHead>Tipo</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {attendance.map((a) => (
-                        <TableRow key={a.id}>
-                          <TableCell className="font-medium">{formatDate(a.date)}</TableCell>
-                          <TableCell>{a.time}</TableCell>
-                          <TableCell>
-                            <Badge variant={a.type === 'Sábado' ? 'default' : 'secondary'} className="text-xs">
-                              {a.type}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <div className="divide-y">
+                    {attendance.map(a => (
+                      <div key={a.id} className="flex items-center justify-between px-4 py-3">
+                        <div>
+                          <p className="font-medium text-sm">{formatDate(a.date)}</p>
+                          <p className="text-xs text-muted-foreground">{a.time}</p>
+                        </div>
+                        <Badge
+                          variant={a.type === 'Sábado' ? 'default' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {a.type}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <div className="p-10 text-center text-muted-foreground italic">
+                  <div className="p-10 text-center text-sm text-muted-foreground italic">
                     Nenhuma presença registrada ainda.
                   </div>
                 )}
@@ -402,55 +484,50 @@ export default function StudentPortalPage() {
             </Card>
           </TabsContent>
 
-          {/* Exames */}
+          {/* ── Exames ─────────────────────────────────────────────────── */}
           <TabsContent value="exames" className="pt-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Histórico de Exames</CardTitle>
-                <CardDescription>Seus exames de graduação realizados.</CardDescription>
+              <CardHeader className="px-4 pb-2">
+                <CardTitle className="text-base">Histórico de Exames</CardTitle>
+                <CardDescription className="text-xs">Exames de graduação realizados.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 {isExamsLoading ? (
-                  <div className="p-6 space-y-3">
-                    {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                  <div className="p-4 space-y-3">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
                   </div>
                 ) : exams && exams.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Graduação Almejada</TableHead>
-                        <TableHead>Pagamento</TableHead>
-                        <TableHead className="hidden sm:table-cell">Valor</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {exams.map((e) => (
-                        <TableRow key={e.id}>
-                          <TableCell className="font-medium">{formatDate(e.examDate)}</TableCell>
-                          <TableCell>
-                            <span className={cn(
-                              "text-xs font-bold px-2 py-1 rounded-full capitalize",
-                              beltStyles[e.targetBelt?.toLowerCase()]?.bg ?? 'bg-muted',
-                              beltStyles[e.targetBelt?.toLowerCase()]?.text ?? 'text-foreground'
-                            )}>
-                              Faixa {e.targetBelt}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={e.paymentStatus === 'Pago' ? 'outline' : 'destructive'} className={e.paymentStatus === 'Pago' ? 'border-green-500 text-green-700' : ''}>
-                              {e.paymentStatus}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell font-medium">
-                            {e.paymentAmount ? `R$ ${Number(e.paymentAmount).toFixed(2)}` : '—'}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <div className="divide-y">
+                    {exams.map(e => (
+                      <div key={e.id} className="flex items-start justify-between gap-3 px-4 py-3.5">
+                        <div>
+                          <span className={cn(
+                            'text-xs font-bold px-2 py-0.5 rounded-full capitalize inline-block',
+                            beltStyles[e.targetBelt?.toLowerCase()]?.bg ?? 'bg-muted',
+                            beltStyles[e.targetBelt?.toLowerCase()]?.text ?? 'text-foreground'
+                          )}>
+                            Faixa {e.targetBelt}
+                          </span>
+                          <p className="text-xs text-muted-foreground mt-1">{formatDate(e.examDate)}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <Badge
+                            variant={e.paymentStatus === 'Pago' ? 'outline' : 'destructive'}
+                            className={cn('text-xs', e.paymentStatus === 'Pago' ? 'border-green-500 text-green-700' : '')}
+                          >
+                            {e.paymentStatus}
+                          </Badge>
+                          {e.paymentAmount ? (
+                            <p className="text-xs font-medium text-muted-foreground mt-1">
+                              R$ {Number(e.paymentAmount).toFixed(2).replace('.', ',')}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <div className="p-10 text-center text-muted-foreground italic">
+                  <div className="p-10 text-center text-sm text-muted-foreground italic">
                     Nenhum exame registrado.
                   </div>
                 )}
@@ -458,62 +535,60 @@ export default function StudentPortalPage() {
             </Card>
           </TabsContent>
 
-          {/* Currículo */}
+          {/* ── Currículo ──────────────────────────────────────────────── */}
           <TabsContent value="curriculo" className="pt-4">
             <Card>
-              <CardHeader>
-                <div className="flex items-start gap-3">
-                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5", beltStyle.bg, beltStyle.text)}>
-                    <BookOpen className="h-5 w-5" />
+              <CardHeader className="px-4 pb-2">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    'w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0',
+                    beltStyle.bg, beltStyle.text
+                  )}>
+                    <BookOpen className="h-4 w-4" />
                   </div>
                   <div>
-                    <CardTitle>Currículo — Faixa {student.belt}</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-base">Currículo — Faixa {student.belt}</CardTitle>
+                    <CardDescription className="text-xs">
                       Matérias do programa da sua graduação atual.
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4">
                 {isHandbookLoading ? (
-                  <div className="space-y-3">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <Skeleton key={i} className="h-10 w-full rounded-lg" />
-                    ))}
+                  <div className="space-y-2">
+                    {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
                   </div>
-                ) : handbook && handbook.techniques && handbook.techniques.length > 0 ? (
+                ) : handbook?.techniques?.length ? (
                   <>
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-sm text-muted-foreground">
-                        {handbook.techniques.length} matéria{handbook.techniques.length !== 1 ? 's' : ''} cadastrada{handbook.techniques.length !== 1 ? 's' : ''}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs text-muted-foreground">
+                        {handbook.techniques.length} matéria{handbook.techniques.length !== 1 ? 's' : ''}
                       </span>
-                      <span className={cn("text-xs font-bold px-3 py-1 rounded-full capitalize", beltStyle.bg, beltStyle.text)}>
+                      <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full capitalize', beltStyle.bg, beltStyle.text)}>
                         Faixa {student.belt}
                       </span>
                     </div>
                     <ol className="space-y-2">
                       {handbook.techniques.map((technique, index) => (
-                        <li
-                          key={index}
-                          className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors"
-                        >
+                        <li key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
                           <span className={cn(
-                            "flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold",
+                            'flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold',
                             beltStyle.bg, beltStyle.text
                           )}>
                             {index + 1}
                           </span>
-                          <span className="text-sm font-medium leading-relaxed pt-0.5">{technique}</span>
+                          <span className="text-sm leading-relaxed pt-0.5">{technique}</span>
                         </li>
                       ))}
                     </ol>
                   </>
                 ) : (
-                  <div className="py-12 text-center">
-                    <BookOpen className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                    <p className="text-muted-foreground font-medium">Currículo não disponível</p>
-                    <p className="text-sm text-muted-foreground/70 mt-1">
-                      Nenhuma matéria foi cadastrada para a Faixa {student.belt} ainda.
+                  <div className="py-10 text-center">
+                    <BookOpen className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground font-medium">Currículo não disponível</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">
+                      Nenhuma matéria cadastrada para a Faixa {student.belt} ainda.
                     </p>
                   </div>
                 )}
@@ -521,10 +596,146 @@ export default function StudentPortalPage() {
             </Card>
           </TabsContent>
 
+          {/* ── Loja ───────────────────────────────────────────────────── */}
+          <TabsContent value="loja" className="pt-4">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 px-1">
+                <ShoppingBag className="h-4 w-4 text-indigo-600" />
+                <h2 className="text-sm font-semibold">Loja da Academia</h2>
+              </div>
+
+              {isProductsLoading ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-48 rounded-xl" />)}
+                </div>
+              ) : products.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="flex flex-col items-center justify-center py-12 text-center gap-2">
+                    <ShoppingBag className="h-8 w-8 text-muted-foreground/30" />
+                    <p className="text-sm text-muted-foreground font-medium">
+                      Nenhum produto disponível no momento
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  {/* Product grid */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {products.map(product => {
+                      const qty = cart[product.id] ?? 0;
+                      return (
+                        <Card key={product.id} className="flex flex-col overflow-hidden">
+                          {product.imageUrl ? (
+                            <div className="aspect-square bg-muted overflow-hidden">
+                              <img
+                                src={product.imageUrl}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                              />
+                            </div>
+                          ) : (
+                            <div className="aspect-square bg-muted/50 flex items-center justify-center">
+                              <ShoppingBag className="h-8 w-8 text-muted-foreground/30" />
+                            </div>
+                          )}
+                          <CardContent className="flex flex-col gap-2 p-3 flex-1">
+                            <div className="flex-1">
+                              <p className="font-semibold text-sm leading-tight line-clamp-2">{product.name}</p>
+                              {product.category && (
+                                <p className="text-[10px] text-muted-foreground mt-0.5">{product.category}</p>
+                              )}
+                              {product.description && (
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
+                              )}
+                            </div>
+                            <p className="font-bold text-primary text-sm">
+                              R$ {Number(product.price).toFixed(2).replace('.', ',')}
+                            </p>
+                            {/* Qty control */}
+                            <div className="flex items-center gap-2 justify-between">
+                              <Button
+                                variant="outline" size="icon"
+                                className="h-8 w-8 shrink-0"
+                                onClick={() => updateQty(product.id, -1)}
+                                disabled={qty === 0}
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className={cn(
+                                'text-sm font-bold min-w-[1.5rem] text-center',
+                                qty > 0 ? 'text-primary' : 'text-muted-foreground'
+                              )}>
+                                {qty}
+                              </span>
+                              <Button
+                                variant="outline" size="icon"
+                                className="h-8 w-8 shrink-0"
+                                onClick={() => updateQty(product.id, 1)}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+
+                  {/* Cart summary */}
+                  {cartItems.length > 0 && (
+                    <Card className="border-indigo-200 bg-indigo-50">
+                      <CardHeader className="px-4 pt-4 pb-2">
+                        <div className="flex items-center gap-2">
+                          <ShoppingCart className="h-4 w-4 text-indigo-600" />
+                          <CardTitle className="text-sm text-indigo-900">Seu pedido</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-4 space-y-3">
+                        <div className="space-y-1">
+                          {cartItems.map(item => (
+                            <div key={item.productId} className="flex justify-between text-sm">
+                              <span className="text-indigo-800">{item.quantity}× {item.name}</span>
+                              <span className="font-medium text-indigo-900">
+                                R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex justify-between font-bold text-indigo-900 pt-2 border-t border-indigo-200">
+                          <span>Total</span>
+                          <span>R$ {cartTotal.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                        <Textarea
+                          placeholder="Observações (tamanho, cor, etc.)"
+                          value={orderNotes}
+                          onChange={e => setOrderNotes(e.target.value)}
+                          rows={2}
+                          className="text-sm bg-white border-indigo-200 resize-none"
+                        />
+                        <Button
+                          onClick={handleOrder}
+                          disabled={isOrdering}
+                          className="w-full bg-indigo-600 hover:bg-indigo-700"
+                        >
+                          <ShoppingCart className="mr-2 h-4 w-4" />
+                          {isOrdering ? 'Enviando pedido...' : 'Fazer pedido'}
+                        </Button>
+                        <p className="text-[10px] text-indigo-600 text-center leading-snug">
+                          Seu pedido será confirmado pela academia em breve.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+            </div>
+          </TabsContent>
+
         </Tabs>
 
-        <p className="text-center text-xs text-muted-foreground pb-4">
-          Krav Magá IPIRANGA · Portal do Aluno · Dados em tempo real
+        <p className="text-center text-[10px] text-muted-foreground pb-2">
+          Krav Magá IPIRANGA · Portal do Aluno
         </p>
       </div>
     </div>

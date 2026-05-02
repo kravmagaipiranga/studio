@@ -60,7 +60,39 @@ src/
 | Créditos | `/creditos` |
 | Lista de Tarefas | `/lista-de-tarefas` |
 | Apostila | `/apostila` |
+| Avisos | `/avisos` |
+| Loja (admin) | `/loja` |
 | Configurações | `/configuracoes` |
+
+## Portal do Aluno (`/portal-aluno`)
+
+Interface mobile-first para alunos autenticados. Tabs: Início (avisos), Perfil, Pagamentos, Presenças, Exames, Currículo, Loja.
+
+- Dados de avisos, produtos e pedidos buscados via API routes (`/api/notices`, `/api/products`, `/api/orders`) usando Firebase Admin SDK — ignora regras do Firestore, não requer deploy de regras.
+- Pagamentos, presenças e exames: layout card/lista (sem tabelas) — funciona bem em celular.
+- Tab Loja: grade de produtos 2 colunas, controle de quantidade por item, resumo de pedido com campo de observações, POST autenticado em `/api/orders` → coleção `pedidos`.
+
+## Coleções Firestore relevantes
+
+| Coleção | Descrição |
+|---|---|
+| `students` | Alunos |
+| `payments` | Pagamentos |
+| `attendance` | Presenças |
+| `exams` | Exames de graduação |
+| `handbook` | Apostila por faixa |
+| `notices` | Avisos para alunos (leitura pública via API) |
+| `products` | Produtos da loja (leitura via API, escrita admin) |
+| `pedidos` | Pedidos dos alunos via portal |
+
+## API Routes server-side (Admin SDK)
+
+| Rota | Método | Descrição |
+|---|---|---|
+| `/api/notices` | GET | Avisos ativos (público) |
+| `/api/products` | GET | Produtos ativos (público) |
+| `/api/orders` | POST | Criar pedido (requer Bearer token) |
+| `/api/admin/create-student-auth` | POST | Criar acesso de aluno (requer admin) |
 
 ## Integrações externas
 

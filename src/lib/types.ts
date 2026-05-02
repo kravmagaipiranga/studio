@@ -271,3 +271,35 @@ export type Notice = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type Product = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl?: string;
+  category: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type StoreOrderItem = {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+};
+
+export type StoreOrder = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  uid: string;
+  items: StoreOrderItem[];
+  total: number;
+  status: 'pendente' | 'confirmado' | 'entregue' | 'cancelado';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+};
