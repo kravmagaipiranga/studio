@@ -1,11 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useAuth } from '@/firebase';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
-import { collection, query, where } from 'firebase/firestore';
-import { Notice } from '@/lib/types';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
 
@@ -29,17 +27,17 @@ export default function LoginAlunoPage() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [isSendingReset, setIsSendingReset] = useState(false);
+  const [noticesCount, setNoticesCount] = useState(0);
   const router = useRouter();
   const auth = useAuth();
-  const firestore = useFirestore();
   const { toast } = useToast();
 
-  const activeNoticesQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'notices'), where('active', '==', true));
-  }, [firestore]);
-  const { data: activeNotices } = useCollection<Notice>(activeNoticesQuery);
-  const noticesCount = activeNotices?.length ?? 0;
+  useEffect(() => {
+    fetch('/api/notices')
+      .then((r) => r.json())
+      .then((data) => setNoticesCount((data.notices ?? []).length))
+      .catch(() => setNoticesCount(0));
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

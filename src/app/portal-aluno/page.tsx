@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
@@ -85,23 +85,17 @@ export default function StudentPortalPage() {
   }, [firestore, student]);
   const { data: exams, isLoading: isExamsLoading } = useCollection<Exam>(examsQuery);
 
-  // Active notices (for dashboard tab)
-  // NOTE: no orderBy here — combining where + orderBy on different fields
-  // requires a composite index. We sort client-side instead.
-  const noticesQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(
-      collection(firestore, 'notices'),
-      where('active', '==', true)
-    );
-  }, [firestore]);
-  const { data: noticesRaw, isLoading: isNoticesLoading } = useCollection<Notice>(noticesQuery);
-  const notices = useMemo(
-    () => [...(noticesRaw ?? [])].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    ),
-    [noticesRaw]
-  );
+  // Active notices — fetched via API route (Admin SDK, bypasses Firestore rules)
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [isNoticesLoading, setIsNoticesLoading] = useState(true);
+  useEffect(() => {
+    setIsNoticesLoading(true);
+    fetch('/api/notices')
+      .then((r) => r.json())
+      .then((data) => setNotices(data.notices ?? []))
+      .catch(() => setNotices([]))
+      .finally(() => setIsNoticesLoading(false));
+  }, []);
 
   // Handbook (curriculum for student's current belt)
   const handbookQuery = useMemoFirebase(() => {
