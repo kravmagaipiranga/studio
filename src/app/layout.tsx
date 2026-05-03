@@ -14,6 +14,22 @@ const ptSans = PT_Sans({
 export const metadata: Metadata = {
   title: "Krav Magá IPIRANGA - Gestão",
   description: "Gestão de alunos e financeira para Krav Magá IPIRANGA",
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "KM Ipiranga",
+  },
 };
 
 export default function RootLayout({

@@ -1,38 +1,29 @@
 import { ImageResponse } from 'next/og'
 
-// Route segment config
 export const runtime = 'edge'
-
-// Image metadata
-export const size = {
-  width: 32,
-  height: 32,
-}
+export const size = { width: 32, height: 32 }
 export const contentType = 'image/png'
 
-// Image generation
 export default function Icon() {
   return new ImageResponse(
     (
       <div
         style={{
-          fontSize: 18,
-          background: 'black',
           width: '100%',
           height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'white',
+          background: '#000',
           borderRadius: '50%',
+          fontSize: 14,
+          color: '#fff',
           fontWeight: 700,
         }}
       >
         KM
       </div>
     ),
-    {
-      ...size,
-    }
+    { ...size }
   )
 }
