@@ -49,8 +49,8 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
         if (exam.id === examId) {
           const updatedExam = { ...exam, [field]: value };
 
-          // If a new student is selected for a new row, populate their data
-          if (field === 'studentId' && exam.isNew) {
+          // When a student is selected, always populate their data
+          if (field === 'studentId') {
             const selectedStudent = allStudents.find(s => s.id === value);
             if (selectedStudent) {
               updatedExam.studentName = selectedStudent.name;
@@ -173,7 +173,6 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                            <div className="space-y-2">
                                 <label className="text-xs font-semibold text-muted-foreground">Aluno</label>
-                                {exam.isNew ? (
                                 <Combobox
                                     options={studentOptions}
                                     value={exam.studentId}
@@ -182,9 +181,6 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
                                     searchPlaceholder="Buscar aluno..."
                                     notFoundText="Nenhum aluno encontrado."
                                 />
-                                ) : (
-                                <Input disabled value={exam.studentName} />
-                                )}
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-muted-foreground">Data do Exame</label>
