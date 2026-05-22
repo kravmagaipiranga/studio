@@ -130,6 +130,7 @@ export default function AgendamentosPage() {
          enrolled: false,
          attended: false,
          missed: false,
+         rescheduled: false,
        };
        setAppointments(prev => [newAppointment, ...prev]);
     };

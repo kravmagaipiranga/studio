@@ -94,6 +94,7 @@ export type Appointment = {
   enrolled?: boolean;
   attended?: boolean;
   missed?: boolean;
+  rescheduled?: boolean;
 };
 
 export type PrivateClass = {

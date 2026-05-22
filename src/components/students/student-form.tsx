@@ -198,7 +198,9 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
         readyForReview: student.readyForReview || false,
         generalNotes: student.generalNotes || "",
         medicalHistory: student.medicalHistory || "",
-        planType: student.planType || 'Mensal',
+        planType: (['Mensal','Trimestral','Bolsa 50%','Bolsa 100%','Outros','Matrícula'] as const).includes(student.planType as any)
+          ? student.planType as 'Mensal' | 'Trimestral' | 'Bolsa 50%' | 'Bolsa 100%' | 'Outros' | 'Matrícula'
+          : 'Mensal',
         planValue: student.planValue ?? 330,
         paymentPreference: student.paymentPreference || [],
         fikmAnnuityPaid: student.fikmAnnuityPaid || false,

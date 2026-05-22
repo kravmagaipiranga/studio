@@ -59,7 +59,7 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
     )
   }
   
-  const handleStatusChange = (appointmentId: string, status: 'attended' | 'missed' | 'enrolled') => {
+  const handleStatusChange = (appointmentId: string, status: 'attended' | 'missed' | 'enrolled' | 'rescheduled') => {
       setAppointments(prev =>
         prev.map(item => {
           if (item.id === appointmentId) {
@@ -67,7 +67,8 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
               ...item,
               attended: status === 'attended',
               missed: status === 'missed',
-              enrolled: status === 'enrolled'
+              enrolled: status === 'enrolled',
+              rescheduled: status === 'rescheduled'
             }
           }
           return item
@@ -79,6 +80,7 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
     if (item.enrolled) return "Matriculado"
     if (item.attended) return "Compareceu"
     if (item.missed) return "Faltou"
+    if (item.rescheduled) return "Reagendado"
     return "Agendado"
   }
 
@@ -294,6 +296,9 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
                               </ToggleGroupItem>
                               <ToggleGroupItem value="missed" className="text-[10px] px-2">
                                   Faltou
+                              </ToggleGroupItem>
+                              <ToggleGroupItem value="rescheduled" className="text-[10px] px-2">
+                                  Reagendado
                               </ToggleGroupItem>
                               <ToggleGroupItem value="enrolled" className="text-[10px] px-2">
                                   Matrícula
