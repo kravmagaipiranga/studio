@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { collection, doc } from 'firebase/firestore'
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { differenceInYears, parseISO } from "date-fns"
 
@@ -52,7 +52,7 @@ const formSchema = z.object({
   lastExamDate: z.string().optional(),
   readyForReview: z.boolean().optional(),
   belt: z.string().min(1, "A faixa é obrigatória"),
-  status: z.enum(["Ativo", "Inativo", "Pendente"]),
+  status: z.enum(["Ativo", "Inativo", "Pendente", "Particular"]),
   
   tshirtSize: z.string().min(1, "Selecione um tamanho de camiseta."),
   pantsSize: z.string().min(1, "Selecione um tamanho de calça."),
@@ -132,6 +132,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
   }, [firestore, studentId]);
 
   const { data: student, isLoading } = useDoc<Student>(studentRef);
+  const hasResetRef = useRef(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -178,7 +179,8 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
   }, [dobValue]);
 
   useEffect(() => {
-    if (isEditing && student) {
+    if (isEditing && student && !hasResetRef.current) {
+      hasResetRef.current = true;
       form.reset({
         name: student.name || "",
         dob: student.dob ? student.dob.split('T')[0] : '',
@@ -528,6 +530,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                                     <SelectItem value="Ativo">Ativo</SelectItem>
                                     <SelectItem value="Inativo">Inativo</SelectItem>
                                     <SelectItem value="Pendente">Pendente</SelectItem>
+                                    <SelectItem value="Particular">Particular</SelectItem>
                                 </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -599,6 +602,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                                     <SelectItem value="Bolsa 50%">Bolsa 50%</SelectItem>
                                     <SelectItem value="Bolsa 100%">Bolsa 100%</SelectItem>
                                     <SelectItem value="Outros">Outros</SelectItem>
+                                    <SelectItem value="Matrícula">Matrícula</SelectItem>
                                 </SelectContent>
                                 </Select>
                                 <FormMessage />

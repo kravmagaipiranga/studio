@@ -84,6 +84,16 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
     const docRef = doc(firestore, 'exams', finalId);
     setDocumentNonBlocking(docRef, { ...examData, id: finalId }, { merge: true });
 
+    // Auto-update student's lastExamDate if this exam date is more recent
+    if (examToSave.studentId && examToSave.examDate) {
+      const relatedStudent = allStudents.find(s => s.id === examToSave.studentId);
+      const shouldUpdate = !relatedStudent?.lastExamDate || examToSave.examDate > relatedStudent.lastExamDate;
+      if (shouldUpdate) {
+        const studentDocRef = doc(firestore, 'students', examToSave.studentId);
+        setDocumentNonBlocking(studentDocRef, { lastExamDate: examToSave.examDate }, { merge: true });
+      }
+    }
+
     toast({
         title: "Exame Salvo!",
         description: `A inscrição de ${examData.studentName} foi salva com sucesso.`

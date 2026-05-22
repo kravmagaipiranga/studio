@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   LogOut, User, CreditCard, CalendarCheck, GraduationCap, ShieldAlert,
   Coins, BookOpen, Home, Megaphone, ShoppingBag, Minus, Plus, ShoppingCart, UserRound,
-  Mail, MessageCircle, Globe, MapPin, Copy, Check,
+  Mail, MessageCircle, Globe, MapPin, Copy, Check, Shield,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StudentPortalForm } from '@/components/students/student-portal-form';
@@ -128,6 +128,18 @@ export default function StudentPortalPage() {
     (examsRaw ?? []).slice().sort((a, b) =>
       (b.examDate ?? '').localeCompare(a.examDate ?? '')
     ), [examsRaw]);
+
+  // ── FIKM Annuity ──────────────────────────────────────────────────────────
+  const fikmLabel = useMemo(() => {
+    if (!student?.fikmAnnuityPaid || !student?.fikmAnnuityPaymentDate) return null;
+    try {
+      const d = parseISO(student.fikmAnnuityPaymentDate);
+      const validUntil = new Date(d.getFullYear() + 1, d.getMonth(), 1);
+      return format(validUntil, "MMM/yyyy", { locale: ptBR });
+    } catch {
+      return null;
+    }
+  }, [student]);
 
   // ── Notices ───────────────────────────────────────────────────────────────
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -389,6 +401,23 @@ export default function StudentPortalPage() {
         {/* ── INÍCIO ─────────────────────────────────────────────────────── */}
         {activeTab === 'inicio' && (
           <div className="space-y-3">
+
+            {/* ── Card Anuidade FIKM ──────────────────────────────────────── */}
+            <Card className={cn(
+              'border-l-4',
+              fikmLabel ? 'border-l-green-500 bg-green-50' : 'border-l-slate-300 bg-slate-50'
+            )}>
+              <CardContent className="flex items-center gap-3 px-4 py-3">
+                <Shield className={cn('h-5 w-5 shrink-0', fikmLabel ? 'text-green-600' : 'text-slate-400')} />
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Anuidade FIKM</p>
+                  <p className={cn('text-sm font-bold mt-0.5', fikmLabel ? 'text-green-700' : 'text-slate-500')}>
+                    {fikmLabel ? `Pago: validade até ${fikmLabel}` : 'Não filiado'}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="flex items-center gap-2 px-1">
               <Megaphone className="h-4 w-4 text-primary" />
               <h2 className="text-sm font-semibold">Avisos da Academia</h2>

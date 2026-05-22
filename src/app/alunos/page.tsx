@@ -338,7 +338,8 @@ function AlunosContent() {
     const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
         'Ativo': 'default',
         'Inativo': 'secondary',
-        'Pendente': 'destructive'
+        'Pendente': 'destructive',
+        'Particular': 'outline',
     }
     
     const generalFilters: FilterType[] = ['Todos', 'Ativo', 'Inativo', 'Vencido'];

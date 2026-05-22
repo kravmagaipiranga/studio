@@ -4,7 +4,7 @@ export type Student = {
   name: string;
   email: string;
   registrationDate: string;
-  status: 'Ativo' | 'Inativo' | 'Pendente';
+  status: 'Ativo' | 'Inativo' | 'Pendente' | 'Particular';
   paymentStatus: 'Pago' | 'Vencido' | 'Pendente';
   dueDate?: string;
   dob: string;
