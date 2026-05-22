@@ -21,7 +21,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { StudentPortalForm } from '@/components/students/student-portal-form';
 import { cn } from '@/lib/utils';
-import { format, isBefore, parseISO } from 'date-fns';
+import { format, isBefore, isValid, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const beltStyles: Record<string, { bg: string; text: string }> = {
@@ -133,7 +133,10 @@ export default function StudentPortalPage() {
   const fikmExpiry = useMemo(() => {
     if (!student?.fikmAnnuityPaid || !student?.fikmAnnuityPaymentDate) return null;
     try {
-      const d = parseISO(student.fikmAnnuityPaymentDate);
+      const raw = student.fikmAnnuityPaymentDate as any;
+      // Firestore pode retornar Timestamp (com .toDate()) ou string ISO
+      const d: Date = raw?.toDate ? raw.toDate() : parseISO(raw);
+      if (!isValid(d)) return null;
       return new Date(d.getFullYear() + 1, d.getMonth(), 1);
     } catch {
       return null;
