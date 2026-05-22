@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { collection, query, where, limit } from 'firebase/firestore';
+import { collection, query, where, limit, doc } from 'firebase/firestore';
 import {
   Student, Payment, Attendance, Exam, HandbookContent, Notice, Product, StoreOrderItem,
 } from '@/lib/types';
@@ -21,7 +21,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { StudentPortalForm } from '@/components/students/student-portal-form';
 import { cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
+import { format, isBefore, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const beltStyles: Record<string, { bg: string; text: string }> = {
@@ -130,16 +130,31 @@ export default function StudentPortalPage() {
     ), [examsRaw]);
 
   // ── FIKM Annuity ──────────────────────────────────────────────────────────
-  const fikmLabel = useMemo(() => {
+  const fikmExpiry = useMemo(() => {
     if (!student?.fikmAnnuityPaid || !student?.fikmAnnuityPaymentDate) return null;
     try {
       const d = parseISO(student.fikmAnnuityPaymentDate);
-      const validUntil = new Date(d.getFullYear() + 1, d.getMonth(), 1);
-      return format(validUntil, "MMM/yyyy", { locale: ptBR });
+      return new Date(d.getFullYear() + 1, d.getMonth(), 1);
     } catch {
       return null;
     }
   }, [student]);
+
+  const fikmIsExpired = useMemo(
+    () => !!fikmExpiry && isBefore(fikmExpiry, new Date()),
+    [fikmExpiry],
+  );
+
+  const fikmLabel = useMemo(
+    () => (fikmExpiry && !fikmIsExpired ? format(fikmExpiry, "MMM/yyyy", { locale: ptBR }) : null),
+    [fikmExpiry, fikmIsExpired],
+  );
+
+  // Quando a anuidade vencer, zera o campo no cadastro do aluno automaticamente
+  useEffect(() => {
+    if (!firestore || !student?.id || !fikmIsExpired) return;
+    updateDocumentNonBlocking(doc(firestore, 'students', student.id), { fikmAnnuityPaid: false });
+  }, [firestore, student?.id, fikmIsExpired]);
 
   // ── Notices ───────────────────────────────────────────────────────────────
   const [notices, setNotices] = useState<Notice[]>([]);
