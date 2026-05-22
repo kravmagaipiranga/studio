@@ -285,6 +285,7 @@ export type Product = {
   active: boolean;
   variations?: string[];
   externalUrl?: string;
+  sortOrder?: number;
   createdAt: string;
   updatedAt: string;
 };

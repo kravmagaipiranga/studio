@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { collection, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { Product, StoreOrder } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -20,7 +20,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Package, ClipboardList, X, ExternalLink } from 'lucide-react';
+import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Package, ClipboardList, X, ExternalLink, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -69,10 +69,13 @@ export default function LojaAdminPage() {
   const productsRef = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
   const { data: products, isLoading: isProductsLoading } = useCollection<Product>(productsRef);
   const sortedProducts = useMemo(
-    () => [...(products ?? [])].sort((a, b) =>
-      (a.category ?? '').localeCompare(b.category ?? '', 'pt-BR') ||
-      a.name.localeCompare(b.name, 'pt-BR')
-    ),
+    () => [...(products ?? [])].sort((a, b) => {
+      const sa = a.sortOrder ?? Infinity;
+      const sb = b.sortOrder ?? Infinity;
+      if (sa !== sb) return sa - sb;
+      return (a.category ?? '').localeCompare(b.category ?? '', 'pt-BR') ||
+        a.name.localeCompare(b.name, 'pt-BR');
+    }),
     [products]
   );
 
@@ -90,6 +93,42 @@ export default function LojaAdminPage() {
   const [form, setForm] = useState<ProductForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [reorderMode, setReorderMode] = useState(false);
+  const [reorderList, setReorderList] = useState<Product[]>([]);
+  const [savingOrder, setSavingOrder] = useState(false);
+
+  function enterReorderMode() {
+    setReorderList([...sortedProducts]);
+    setReorderMode(true);
+  }
+
+  function moveItem(index: number, direction: -1 | 1) {
+    const next = index + direction;
+    if (next < 0 || next >= reorderList.length) return;
+    setReorderList(prev => {
+      const arr = [...prev];
+      [arr[index], arr[next]] = [arr[next], arr[index]];
+      return arr;
+    });
+  }
+
+  async function saveOrder() {
+    if (!firestore) return;
+    setSavingOrder(true);
+    try {
+      const batch = writeBatch(firestore);
+      reorderList.forEach((p, i) => {
+        batch.update(doc(firestore, 'products', p.id), { sortOrder: i, updatedAt: new Date().toISOString() });
+      });
+      await batch.commit();
+      toast({ title: 'Ordem salva com sucesso!' });
+      setReorderMode(false);
+    } catch {
+      toast({ variant: 'destructive', title: 'Erro ao salvar ordem.' });
+    } finally {
+      setSavingOrder(false);
+    }
+  }
 
   function openCreate() {
     setEditing(null);
@@ -220,10 +259,15 @@ export default function LojaAdminPage() {
             <p className="text-sm text-muted-foreground">Gerencie produtos e pedidos dos alunos.</p>
           </div>
         </div>
-        {activeTab === 'produtos' && (
-          <Button onClick={openCreate}>
-            <Plus className="mr-2 h-4 w-4" /> Novo Produto
-          </Button>
+        {activeTab === 'produtos' && !reorderMode && (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={enterReorderMode} disabled={sortedProducts.length < 2}>
+              <GripVertical className="mr-2 h-4 w-4" /> Reordenar
+            </Button>
+            <Button onClick={openCreate}>
+              <Plus className="mr-2 h-4 w-4" /> Novo Produto
+            </Button>
+          </div>
         )}
       </div>
 
@@ -263,6 +307,56 @@ export default function LojaAdminPage() {
         isProductsLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map(i => <Skeleton key={i} className="h-56 rounded-xl" />)}
+          </div>
+        ) : reorderMode ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-sm text-amber-800 font-medium">Use as setas para definir a ordem de exibição no portal do aluno.</p>
+              <div className="flex gap-2 shrink-0 ml-4">
+                <Button variant="outline" size="sm" onClick={() => setReorderMode(false)} disabled={savingOrder}>
+                  Cancelar
+                </Button>
+                <Button size="sm" onClick={saveOrder} disabled={savingOrder}>
+                  {savingOrder ? 'Salvando...' : 'Salvar ordem'}
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {reorderList.map((p, index) => (
+                <div key={p.id} className={cn(
+                  'flex items-center gap-3 p-3 rounded-lg border bg-card shadow-sm',
+                  !p.active && 'opacity-60'
+                )}>
+                  <div className="flex flex-col gap-0.5 shrink-0">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveItem(index, -1)} disabled={index === 0}>
+                      <ArrowUp className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveItem(index, 1)} disabled={index === reorderList.length - 1}>
+                      <ArrowDown className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <span className="text-xs font-bold text-muted-foreground w-6 text-center shrink-0">{index + 1}</span>
+                  {p.imageUrl ? (
+                    <img src={p.imageUrl} alt={p.name} className="h-10 w-10 rounded object-cover shrink-0"
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  ) : (
+                    <div className="h-10 w-10 rounded bg-muted flex items-center justify-center shrink-0">
+                      <Package className="h-4 w-4 text-muted-foreground/40" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{p.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{p.category || '—'} · R$ {Number(p.price).toFixed(2).replace('.', ',')}</p>
+                  </div>
+                  {p.externalUrl && (
+                    <Badge className="text-[10px] bg-blue-100 text-blue-700 border-blue-200 shrink-0">
+                      <ExternalLink className="h-2.5 w-2.5 mr-1" /> Externo
+                    </Badge>
+                  )}
+                  {!p.active && <Badge variant="outline" className="text-[10px] shrink-0">Oculto</Badge>}
+                </div>
+              ))}
+            </div>
           </div>
         ) : sortedProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground gap-3">
