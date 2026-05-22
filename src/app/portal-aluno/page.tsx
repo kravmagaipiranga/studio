@@ -180,6 +180,19 @@ export default function StudentPortalPage() {
   const { data: handbookData, isLoading: isHandbookLoading } = useCollection<HandbookContent>(handbookQuery);
   const handbook = useMemo(() => handbookData?.[0], [handbookData]);
 
+  const beltId = useMemo(() => student?.belt?.toLowerCase() ?? 'branca', [student]);
+
+  const toggleTechnique = (technique: string) => {
+    if (!firestore || !student?.id) return;
+    const current = student.curriculumChecked?.[beltId] ?? [];
+    const updated = current.includes(technique)
+      ? current.filter(t => t !== technique)
+      : [...current, technique];
+    updateDocumentNonBlocking(doc(firestore, 'students', student.id), {
+      [`curriculumChecked.${beltId}`]: updated,
+    });
+  };
+
   // ── Products / Shop ───────────────────────────────────────────────────────
   const [products, setProducts] = useState<Product[]>([]);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
@@ -771,29 +784,57 @@ export default function StudentPortalPage() {
                   {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
                 </div>
               ) : handbook?.techniques?.length ? (
-                <>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs text-muted-foreground">
-                      {handbook.techniques.length} matéria{handbook.techniques.length !== 1 ? 's' : ''}
-                    </span>
-                    <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full capitalize', beltStyle.bg, beltStyle.text)}>
-                      Faixa {student.belt}
-                    </span>
-                  </div>
-                  <ol className="space-y-2">
-                    {handbook.techniques.map((technique, index) => (
-                      <li key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                        <span className={cn(
-                          'flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold',
-                          beltStyle.bg, beltStyle.text
-                        )}>
-                          {index + 1}
+                (() => {
+                  const checked = student.curriculumChecked?.[beltId] ?? [];
+                  const doneCount = handbook.techniques.filter(t => checked.includes(t)).length;
+                  const pct = Math.round((doneCount / handbook.techniques.length) * 100);
+                  return (
+                    <>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs text-muted-foreground">
+                          <span className="font-semibold text-foreground">{doneCount}</span> de {handbook.techniques.length} matéria{handbook.techniques.length !== 1 ? 's' : ''} treinada{doneCount !== 1 ? 's' : ''}
                         </span>
-                        <span className="text-sm leading-relaxed pt-0.5">{technique}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </>
+                        <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full capitalize', beltStyle.bg, beltStyle.text)}>
+                          {pct}%
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-muted mb-4 overflow-hidden">
+                        <div
+                          className={cn('h-full rounded-full transition-all duration-300', beltStyle.bg)}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <ul className="divide-y divide-border">
+                        {handbook.techniques.map((technique, index) => {
+                          const isChecked = checked.includes(technique);
+                          return (
+                            <li key={index}>
+                              <button
+                                onClick={() => toggleTechnique(technique)}
+                                className="w-full flex items-center gap-3 py-3 text-left hover:bg-muted/40 transition-colors px-1 rounded"
+                              >
+                                <span className={cn(
+                                  'flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
+                                  isChecked
+                                    ? 'border-transparent bg-green-500'
+                                    : 'border-muted-foreground/40 bg-background'
+                                )}>
+                                  {isChecked && <Check className="h-3 w-3 text-white" />}
+                                </span>
+                                <span className={cn(
+                                  'text-sm leading-snug',
+                                  isChecked && 'text-muted-foreground line-through'
+                                )}>
+                                  {technique}
+                                </span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </>
+                  );
+                })()
               ) : (
                 <div className="py-10 text-center">
                   <BookOpen className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />

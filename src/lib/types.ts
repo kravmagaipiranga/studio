@@ -30,6 +30,7 @@ export type Student = {
   paymentCredits?: string;
   userId?: string;
   photoUrl?: string;
+  curriculumChecked?: Record<string, string[]>;
 };
 
 export type Payment = {
