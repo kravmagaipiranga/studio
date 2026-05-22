@@ -284,6 +284,7 @@ export type Product = {
   category: string;
   active: boolean;
   variations?: string[];
+  externalUrl?: string;
   createdAt: string;
   updatedAt: string;
 };

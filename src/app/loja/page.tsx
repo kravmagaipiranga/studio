@@ -20,7 +20,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Package, ClipboardList, X } from 'lucide-react';
+import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Package, ClipboardList, X, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -48,11 +48,12 @@ type ProductForm = {
   active: boolean;
   variations: string[];
   newVariation: string;
+  externalUrl: string;
 };
 
 const EMPTY_FORM: ProductForm = {
   name: '', description: '', price: '', imageUrl: '', category: '',
-  active: true, variations: [], newVariation: '',
+  active: true, variations: [], newVariation: '', externalUrl: '',
 };
 
 function formatDate(iso: string) {
@@ -107,6 +108,7 @@ export default function LojaAdminPage() {
       active: p.active,
       variations: p.variations ?? [],
       newVariation: '',
+      externalUrl: p.externalUrl ?? '',
     });
     setDialogOpen(true);
   }
@@ -139,6 +141,7 @@ export default function LojaAdminPage() {
         category: form.category.trim(),
         active: form.active,
         variations: form.variations,
+        externalUrl: form.externalUrl.trim(),
       };
       if (editing) {
         await updateDoc(doc(firestore, 'products', editing.id), { ...data, updatedAt: now });
@@ -286,9 +289,16 @@ export default function LojaAdminPage() {
                 <CardHeader className="pb-1 pt-3">
                   <div className="flex items-start justify-between gap-2">
                     <CardTitle className="text-base leading-snug">{p.name}</CardTitle>
-                    <Badge variant="outline" className="shrink-0 text-xs text-muted-foreground">
-                      {p.category || '—'}
-                    </Badge>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <Badge variant="outline" className="text-xs text-muted-foreground">
+                        {p.category || '—'}
+                      </Badge>
+                      {p.externalUrl && (
+                        <Badge className="text-[10px] bg-blue-100 text-blue-700 border-blue-200 gap-1">
+                          <ExternalLink className="h-2.5 w-2.5" /> Externo
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   <p className="text-lg font-bold text-primary">
                     R$ {Number(p.price).toFixed(2).replace('.', ',')}
@@ -446,6 +456,16 @@ export default function LojaAdminPage() {
                 <Label htmlFor="p-img">URL da imagem (opcional)</Label>
                 <Input id="p-img" placeholder="https://..." value={form.imageUrl}
                   onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))} />
+              </div>
+              <div className="col-span-2 rounded-lg border border-blue-200 bg-blue-50/50 p-3 space-y-1.5">
+                <Label htmlFor="p-ext" className="flex items-center gap-1.5 text-sm font-semibold text-blue-800">
+                  <ExternalLink className="h-3.5 w-3.5" /> Link externo (opcional)
+                </Label>
+                <p className="text-xs text-blue-700/70">
+                  Se preenchido, o aluno será redirecionado para este site ao clicar no produto — sem passar pelo carrinho interno.
+                </p>
+                <Input id="p-ext" placeholder="https://loja.parceira.com.br/produto" value={form.externalUrl}
+                  onChange={e => setForm(f => ({ ...f, externalUrl: e.target.value }))} className="bg-white" />
               </div>
 
               {/* ── Variações ── */}

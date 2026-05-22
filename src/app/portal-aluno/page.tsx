@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   LogOut, User, CreditCard, CalendarCheck, GraduationCap, ShieldAlert,
   Coins, BookOpen, Home, Megaphone, ShoppingBag, Minus, Plus, ShoppingCart, UserRound,
-  Mail, MessageCircle, Globe, MapPin, Copy, Check, Shield,
+  Mail, MessageCircle, Globe, MapPin, Copy, Check, Shield, ExternalLink,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StudentPortalForm } from '@/components/students/student-portal-form';
@@ -929,23 +929,31 @@ export default function StudentPortalPage() {
                               ))}
                             </div>
                           )}
-                          {hasVariations && !chosenVariation && (
+                          {!product.externalUrl && hasVariations && !chosenVariation && (
                             <p className="text-[10px] text-amber-600 font-medium">Selecione uma opção</p>
                           )}
-                          <div className="flex items-center gap-2 justify-between">
-                            <Button variant="outline" size="icon" className="h-8 w-8 shrink-0"
-                              onClick={() => updateQty(product.id, -1)} disabled={qty === 0}>
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className={cn('text-sm font-bold min-w-[1.5rem] text-center',
-                              qty > 0 ? 'text-primary' : 'text-muted-foreground')}>
-                              {qty}
-                            </span>
-                            <Button variant="outline" size="icon" className="h-8 w-8 shrink-0"
-                              onClick={() => updateQty(product.id, 1)} disabled={!canAdd}>
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
+                          {product.externalUrl ? (
+                            <a href={product.externalUrl} target="_blank" rel="noopener noreferrer" className="block w-full">
+                              <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1.5 text-blue-700 border-blue-300 hover:bg-blue-50">
+                                <ExternalLink className="h-3 w-3" /> Comprar
+                              </Button>
+                            </a>
+                          ) : (
+                            <div className="flex items-center gap-2 justify-between">
+                              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0"
+                                onClick={() => updateQty(product.id, -1)} disabled={qty === 0}>
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className={cn('text-sm font-bold min-w-[1.5rem] text-center',
+                                qty > 0 ? 'text-primary' : 'text-muted-foreground')}>
+                                {qty}
+                              </span>
+                              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0"
+                                onClick={() => updateQty(product.id, 1)} disabled={!canAdd}>
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                     );
