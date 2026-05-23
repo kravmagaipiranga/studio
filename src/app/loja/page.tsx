@@ -230,6 +230,20 @@ export default function LojaAdminPage() {
         status: next,
         updatedAt: new Date().toISOString(),
       });
+      if (next === 'confirmado' || next === 'entregue') {
+        const summary = order.items
+          .map(i => `${i.name}${i.variation ? ` (${i.variation})` : ''} ×${i.quantity}`)
+          .join(', ');
+        await addDoc(collection(firestore, 'notificacoes_aluno'), {
+          studentId: order.studentId,
+          uid: order.uid,
+          type: next === 'confirmado' ? 'pedido_confirmado' : 'pedido_entregue',
+          orderId: order.id,
+          orderSummary: summary,
+          dismissed: false,
+          createdAt: new Date().toISOString(),
+        });
+      }
     } catch {
       toast({ variant: 'destructive', title: 'Erro ao atualizar pedido.' });
     }

@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { collection, query, where, limit, doc } from 'firebase/firestore';
+import { collection, query, where, limit, doc, updateDoc } from 'firebase/firestore';
 import {
-  Student, Payment, Attendance, Exam, HandbookContent, Notice, Product, StoreOrderItem,
+  Student, Payment, Attendance, Exam, HandbookContent, Notice, Product, StoreOrderItem, StudentNotification,
 } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   LogOut, User, CreditCard, CalendarCheck, GraduationCap, ShieldAlert,
   Coins, BookOpen, Home, Megaphone, ShoppingBag, Minus, Plus, ShoppingCart, UserRound,
-  Mail, MessageCircle, Globe, MapPin, Copy, Check, Shield, ExternalLink,
+  Mail, MessageCircle, Globe, MapPin, Copy, Check, Shield, ExternalLink, X, PackageCheck, PackageOpen,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StudentPortalForm } from '@/components/students/student-portal-form';
@@ -170,6 +170,28 @@ export default function StudentPortalPage() {
       .catch(() => setNotices([]))
       .finally(() => setIsNoticesLoading(false));
   }, []);
+
+  // ── Student Notifications (pedidos) ──────────────────────────────────────
+  const notificationsQuery = useMemoFirebase(() => {
+    if (!firestore || !student) return null;
+    return query(collection(firestore, 'notificacoes_aluno'), where('studentId', '==', student.id));
+  }, [firestore, student]);
+  const { data: notificationsRaw } = useCollection<StudentNotification>(notificationsQuery);
+  const activeNotifications = useMemo(
+    () => (notificationsRaw ?? [])
+      .filter(n => !n.dismissed)
+      .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '')),
+    [notificationsRaw]
+  );
+
+  async function dismissNotification(notifId: string) {
+    if (!firestore) return;
+    try {
+      await updateDoc(doc(firestore, 'notificacoes_aluno', notifId), { dismissed: true });
+    } catch {
+      /* silently ignore */
+    }
+  }
 
   // ── Handbook ──────────────────────────────────────────────────────────────
   const handbookQuery = useMemoFirebase(() => {
@@ -448,6 +470,62 @@ export default function StudentPortalPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* ── Notificações de pedido ──────────────────────────────── */}
+            {activeNotifications.length > 0 && (
+              <div className="space-y-2">
+                {activeNotifications.map(notif => {
+                  const isConfirmed = notif.type === 'pedido_confirmado';
+                  return (
+                    <div
+                      key={notif.id}
+                      className={cn(
+                        'flex items-start gap-3 rounded-xl border px-4 py-3',
+                        isConfirmed
+                          ? 'border-blue-200 bg-blue-50'
+                          : 'border-green-200 bg-green-50'
+                      )}
+                    >
+                      <div className={cn(
+                        'mt-0.5 shrink-0 rounded-full p-1.5',
+                        isConfirmed ? 'bg-blue-100' : 'bg-green-100'
+                      )}>
+                        {isConfirmed
+                          ? <PackageCheck className="h-4 w-4 text-blue-600" />
+                          : <PackageOpen className="h-4 w-4 text-green-600" />
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn(
+                          'text-sm font-semibold',
+                          isConfirmed ? 'text-blue-800' : 'text-green-800'
+                        )}>
+                          {isConfirmed ? 'Pedido confirmado!' : 'Pedido entregue!'}
+                        </p>
+                        <p className={cn(
+                          'text-xs mt-0.5 leading-snug',
+                          isConfirmed ? 'text-blue-700' : 'text-green-700'
+                        )}>
+                          {notif.orderSummary}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => dismissNotification(notif.id)}
+                        aria-label="Fechar notificação"
+                        className={cn(
+                          'shrink-0 rounded-full p-1 transition-colors',
+                          isConfirmed
+                            ? 'text-blue-400 hover:bg-blue-100 hover:text-blue-700'
+                            : 'text-green-400 hover:bg-green-100 hover:text-green-700'
+                        )}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             <div className="flex items-center gap-2 px-1">
               <Megaphone className="h-4 w-4 text-primary" />

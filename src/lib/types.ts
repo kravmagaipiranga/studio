@@ -310,3 +310,14 @@ export type StoreOrder = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type StudentNotification = {
+  id: string;
+  studentId: string;
+  uid: string;
+  type: 'pedido_confirmado' | 'pedido_entregue';
+  orderId: string;
+  orderSummary: string;
+  dismissed: boolean;
+  createdAt: string;
+};
