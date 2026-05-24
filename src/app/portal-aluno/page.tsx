@@ -173,10 +173,12 @@ export default function StudentPortalPage() {
   }, []);
 
   // ── Plan Expiry ───────────────────────────────────────────────────────────
-  const isPlanExpired = useMemo(
-    () => student?.status === 'Ativo' && student?.paymentStatus === 'Vencido',
-    [student]
-  );
+  const planBlock = useMemo<'vencido' | 'inativo' | null>(() => {
+    if (!student) return null;
+    if (student.status === 'Inativo') return 'inativo';
+    if (student.status === 'Ativo' && student.paymentStatus === 'Vencido') return 'vencido';
+    return null;
+  }, [student]);
 
   // ── Student Notifications (pedidos) ──────────────────────────────────────
   const notificationsQuery = useMemoFirebase(() => {
@@ -478,14 +480,16 @@ export default function StudentPortalPage() {
               </CardContent>
             </Card>
 
-            {/* ── Plano Vencido ───────────────────────────────────────── */}
-            {isPlanExpired && (
+            {/* ── Plano Vencido / Inativo ─────────────────────────────── */}
+            {planBlock && (
               <div className="flex items-start gap-3 rounded-xl border-2 border-red-300 bg-red-50 px-4 py-3.5">
                 <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-red-800">Seu plano está vencido</p>
                   <p className="text-xs text-red-700 mt-0.5 leading-snug">
-                    Renove sua mensalidade para continuar acessando o currículo e o histórico de exames.
+                    {planBlock === 'inativo'
+                      ? 'Faça a sua Rematrícula para ter acesso ao currículo e ao histórico de exames.'
+                      : 'Renove sua mensalidade para continuar acessando o currículo e o histórico de exames.'}
                   </p>
                   <button
                     onClick={() => setActiveTab('pagamentos')}
@@ -816,14 +820,16 @@ export default function StudentPortalPage() {
 
         {/* ── EXAMES ──────────────────────────────────────────────────────── */}
         {activeTab === 'exames' && (
-          isPlanExpired ? (
+          planBlock ? (
             <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
               <div className="rounded-full bg-red-100 p-4">
                 <Lock className="h-8 w-8 text-red-400" />
               </div>
               <p className="text-base font-semibold text-foreground">Acesso bloqueado</p>
               <p className="text-sm text-muted-foreground max-w-xs">
-                O histórico de exames está disponível apenas para alunos com plano ativo.
+                {planBlock === 'inativo'
+                  ? 'Faça a sua Rematrícula para ter acesso ao histórico de exames.'
+                  : 'O histórico de exames está disponível apenas para alunos com plano ativo.'}
               </p>
               <Button size="sm" variant="destructive" onClick={() => setActiveTab('pagamentos')}>
                 Ver pagamentos
@@ -882,14 +888,16 @@ export default function StudentPortalPage() {
 
         {/* ── CURRÍCULO ───────────────────────────────────────────────────── */}
         {activeTab === 'curriculo' && (
-          isPlanExpired ? (
+          planBlock ? (
             <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
               <div className="rounded-full bg-red-100 p-4">
                 <Lock className="h-8 w-8 text-red-400" />
               </div>
               <p className="text-base font-semibold text-foreground">Acesso bloqueado</p>
               <p className="text-sm text-muted-foreground max-w-xs">
-                O currículo está disponível apenas para alunos com plano ativo.
+                {planBlock === 'inativo'
+                  ? 'Faça a sua Rematrícula para ter acesso ao currículo.'
+                  : 'O currículo está disponível apenas para alunos com plano ativo.'}
               </p>
               <Button size="sm" variant="destructive" onClick={() => setActiveTab('pagamentos')}>
                 Ver pagamentos
