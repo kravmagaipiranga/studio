@@ -17,6 +17,7 @@ import {
   LogOut, User, CreditCard, CalendarCheck, GraduationCap, ShieldAlert,
   Coins, BookOpen, Home, Megaphone, ShoppingBag, Minus, Plus, ShoppingCart, UserRound,
   Mail, MessageCircle, Globe, MapPin, Copy, Check, Shield, ExternalLink, X, PackageCheck, PackageOpen,
+  Lock, AlertTriangle,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StudentPortalForm } from '@/components/students/student-portal-form';
@@ -170,6 +171,12 @@ export default function StudentPortalPage() {
       .catch(() => setNotices([]))
       .finally(() => setIsNoticesLoading(false));
   }, []);
+
+  // ── Plan Expiry ───────────────────────────────────────────────────────────
+  const isPlanExpired = useMemo(
+    () => student?.status === 'Ativo' && student?.paymentStatus === 'Vencido',
+    [student]
+  );
 
   // ── Student Notifications (pedidos) ──────────────────────────────────────
   const notificationsQuery = useMemoFirebase(() => {
@@ -470,6 +477,25 @@ export default function StudentPortalPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* ── Plano Vencido ───────────────────────────────────────── */}
+            {isPlanExpired && (
+              <div className="flex items-start gap-3 rounded-xl border-2 border-red-300 bg-red-50 px-4 py-3.5">
+                <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-red-800">Seu plano está vencido</p>
+                  <p className="text-xs text-red-700 mt-0.5 leading-snug">
+                    Renove sua mensalidade para continuar acessando o currículo e o histórico de exames.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('pagamentos')}
+                    className="mt-2 text-xs font-semibold text-red-700 underline underline-offset-2 hover:text-red-900 transition-colors"
+                  >
+                    Ver pagamentos →
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* ── Notificações de pedido ──────────────────────────────── */}
             {activeNotifications.length > 0 && (
@@ -790,6 +816,20 @@ export default function StudentPortalPage() {
 
         {/* ── EXAMES ──────────────────────────────────────────────────────── */}
         {activeTab === 'exames' && (
+          isPlanExpired ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+              <div className="rounded-full bg-red-100 p-4">
+                <Lock className="h-8 w-8 text-red-400" />
+              </div>
+              <p className="text-base font-semibold text-foreground">Acesso bloqueado</p>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                O histórico de exames está disponível apenas para alunos com plano ativo.
+              </p>
+              <Button size="sm" variant="destructive" onClick={() => setActiveTab('pagamentos')}>
+                Ver pagamentos
+              </Button>
+            </div>
+          ) : (
           <Card>
             <CardHeader className="px-4 pb-2">
               <CardTitle className="text-base">Histórico de Exames</CardTitle>
@@ -837,10 +877,25 @@ export default function StudentPortalPage() {
               )}
             </CardContent>
           </Card>
+          )
         )}
 
         {/* ── CURRÍCULO ───────────────────────────────────────────────────── */}
         {activeTab === 'curriculo' && (
+          isPlanExpired ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+              <div className="rounded-full bg-red-100 p-4">
+                <Lock className="h-8 w-8 text-red-400" />
+              </div>
+              <p className="text-base font-semibold text-foreground">Acesso bloqueado</p>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                O currículo está disponível apenas para alunos com plano ativo.
+              </p>
+              <Button size="sm" variant="destructive" onClick={() => setActiveTab('pagamentos')}>
+                Ver pagamentos
+              </Button>
+            </div>
+          ) : (
           <Card>
             <CardHeader className="px-4 pb-2">
               <div className="flex items-center gap-3">
@@ -924,6 +979,7 @@ export default function StudentPortalPage() {
               )}
             </CardContent>
           </Card>
+          )
         )}
 
         {/* ── LOJA ────────────────────────────────────────────────────────── */}
