@@ -270,6 +270,7 @@ export default function ExamesPage() {
                 <CardContent className="p-0">
                     <ExamsTable 
                         exams={paginatedExams}
+                        allExams={exams}
                         setExams={setExams}
                         allStudents={students || []}
                         isLoading={isLoading}

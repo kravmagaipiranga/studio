@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge"
 
 interface ExamsTableProps {
   exams: Exam[];
+  allExams: Exam[];
   setExams: React.Dispatch<React.SetStateAction<Exam[]>>;
   allStudents: Student[];
   isLoading: boolean;
@@ -37,9 +38,22 @@ const beltEmojis: Record<string, string> = {
     'Preta': '⚫',
 };
 
-export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTableProps) {
+export function ExamsTable({ exams, allExams, setExams, allStudents, isLoading }: ExamsTableProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
+
+  function syncLastExamDate(studentId: string, examsToConsider: Exam[]) {
+    if (!firestore || !studentId) return;
+    const studentExams = examsToConsider.filter(
+      e => e.studentId === studentId && !e.id.startsWith('new_') && e.examDate
+    );
+    const mostRecent = studentExams.reduce<string>(
+      (latest, e) => (e.examDate > latest ? e.examDate : latest),
+      ''
+    );
+    const studentDocRef = doc(firestore, 'students', studentId);
+    setDocumentNonBlocking(studentDocRef, { lastExamDate: mostRecent }, { merge: true });
+  }
   
   const studentOptions = allStudents.slice().sort((a,b) => a.name.localeCompare(b.name)).map(s => ({ value: s.id, label: s.name }));
 
@@ -84,14 +98,13 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
     const docRef = doc(firestore, 'exams', finalId);
     setDocumentNonBlocking(docRef, { ...examData, id: finalId }, { merge: true });
 
-    // Auto-update student's lastExamDate if this exam date is more recent
-    if (examToSave.studentId && examToSave.examDate) {
-      const relatedStudent = allStudents.find(s => s.id === examToSave.studentId);
-      const shouldUpdate = !relatedStudent?.lastExamDate || examToSave.examDate > relatedStudent.lastExamDate;
-      if (shouldUpdate) {
-        const studentDocRef = doc(firestore, 'students', examToSave.studentId);
-        setDocumentNonBlocking(studentDocRef, { lastExamDate: examToSave.examDate }, { merge: true });
-      }
+    // Sync student's lastExamDate: rebuild from all exams, replacing old entry with saved one
+    if (examToSave.studentId) {
+      const savedEntry = { ...examData, id: finalId };
+      const updatedAll = allExams
+        .filter(e => e.id !== examToSave.id)
+        .concat(savedEntry as Exam);
+      syncLastExamDate(examToSave.studentId, updatedAll);
     }
 
     toast({
@@ -120,19 +133,28 @@ export function ExamsTable({ exams, setExams, allStudents, isLoading }: ExamsTab
   const handleDeleteExam = (e: React.MouseEvent, examId: string, studentName: string) => {
     e.stopPropagation();
     if (!firestore) return;
-    
+
     const isNewRow = examId.startsWith('new_');
     if (isNewRow) {
-        setExams(prev => prev.filter(ex => ex.id !== examId));
-        return;
+      setExams(prev => prev.filter(ex => ex.id !== examId));
+      return;
     }
 
+    const examBeingDeleted = allExams.find(ex => ex.id === examId);
     const docRef = doc(firestore, 'exams', examId);
     deleteDocumentNonBlocking(docRef);
+
+    // Sync student's lastExamDate after removal
+    if (examBeingDeleted?.studentId) {
+      const remainingExams = allExams.filter(e => e.id !== examId);
+      syncLastExamDate(examBeingDeleted.studentId, remainingExams);
+    }
+
+    setExams(prev => prev.filter(ex => ex.id !== examId));
     toast({
-        title: "Inscrição Removida",
-        description: `A inscrição de ${studentName} foi removida.`
-    })
+      title: "Inscrição Removida",
+      description: `A inscrição de ${studentName} foi removida.`,
+    });
   };
 
   const getStatusVariant = (status: 'Pago' | 'Pendente'): 'default' | 'destructive' => {
