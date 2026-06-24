@@ -51,6 +51,21 @@ type ProductForm = {
   externalUrl: string;
 };
 
+type OrderItemForm = {
+  name: string;
+  price: string;
+  quantity: string;
+  variation: string;
+};
+
+type OrderEditForm = {
+  studentName: string;
+  status: StoreOrder['status'];
+  orderPaymentStatus: StoreOrder['orderPaymentStatus'];
+  notes: string;
+  items: OrderItemForm[];
+};
+
 const EMPTY_FORM: ProductForm = {
   name: '', description: '', price: '', imageUrl: '', category: '',
   active: true, variations: [], newVariation: '', externalUrl: '',
@@ -96,6 +111,13 @@ export default function LojaAdminPage() {
   const [reorderMode, setReorderMode] = useState(false);
   const [reorderList, setReorderList] = useState<Product[]>([]);
   const [savingOrder, setSavingOrder] = useState(false);
+
+  const [orderEditOpen, setOrderEditOpen] = useState(false);
+  const [editingOrderDoc, setEditingOrderDoc] = useState<StoreOrder | null>(null);
+  const [orderForm, setOrderForm] = useState<OrderEditForm>({
+    studentName: '', status: 'pendente', orderPaymentStatus: 'devedor', notes: '', items: [],
+  });
+  const [savingOrderEdit, setSavingOrderEdit] = useState(false);
 
   function enterReorderMode() {
     setReorderList([...sortedProducts]);
@@ -272,6 +294,60 @@ export default function LojaAdminPage() {
       toast({ title: next === 'pago' ? 'Pagamento registrado!' : 'Pedido marcado como devedor.' });
     } catch {
       toast({ variant: 'destructive', title: 'Erro ao atualizar pagamento.' });
+    }
+  }
+
+  function openEditOrder(order: StoreOrder) {
+    setEditingOrderDoc(order);
+    setOrderForm({
+      studentName: order.studentName,
+      status: order.status,
+      orderPaymentStatus: order.orderPaymentStatus ?? 'devedor',
+      notes: order.notes ?? '',
+      items: order.items.map(it => ({
+        name: it.name,
+        price: String(it.price),
+        quantity: String(it.quantity),
+        variation: it.variation ?? '',
+      })),
+    });
+    setOrderEditOpen(true);
+  }
+
+  function orderItemTotal() {
+    return orderForm.items.reduce((acc, it) => {
+      const p = parseFloat(it.price.replace(',', '.')) || 0;
+      const q = parseInt(it.quantity) || 0;
+      return acc + p * q;
+    }, 0);
+  }
+
+  async function saveOrderEdit() {
+    if (!firestore || !editingOrderDoc) return;
+    setSavingOrderEdit(true);
+    try {
+      const items = orderForm.items.map(it => ({
+        name: it.name.trim(),
+        price: parseFloat(it.price.replace(',', '.')) || 0,
+        quantity: Math.max(1, parseInt(it.quantity) || 1),
+        ...(it.variation.trim() ? { variation: it.variation.trim() } : {}),
+      }));
+      const total = items.reduce((s, it) => s + it.price * it.quantity, 0);
+      await updateDoc(doc(firestore, 'pedidos', editingOrderDoc.id), {
+        studentName: orderForm.studentName.trim() || editingOrderDoc.studentName,
+        status: orderForm.status,
+        orderPaymentStatus: orderForm.orderPaymentStatus,
+        notes: orderForm.notes.trim(),
+        items,
+        total,
+        updatedAt: new Date().toISOString(),
+      });
+      toast({ title: 'Pedido atualizado!' });
+      setOrderEditOpen(false);
+    } catch {
+      toast({ variant: 'destructive', title: 'Erro ao salvar pedido.' });
+    } finally {
+      setSavingOrderEdit(false);
     }
   }
 
@@ -529,6 +605,9 @@ export default function LojaAdminPage() {
                     )}
                   </CardContent>
                   <CardFooter className="border-t pt-3 gap-2 flex-wrap">
+                    <Button size="sm" variant="outline" onClick={() => openEditOrder(order)}>
+                      <Pencil className="h-3.5 w-3.5 mr-1.5" /> Editar pedido
+                    </Button>
                     {order.orderPaymentStatus === 'devedor' ? (
                       <Button size="sm" variant="outline"
                         className="border-green-500 text-green-700 hover:bg-green-50"
@@ -666,6 +745,141 @@ export default function LojaAdminPage() {
             <Button onClick={handleSave}
               disabled={saving || !form.name.trim() || !form.price}>
               {saving ? 'Salvando...' : editing ? 'Salvar alterações' : 'Criar produto'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Order Edit Dialog */}
+      <Dialog open={orderEditOpen} onOpenChange={setOrderEditOpen}>
+        <DialogContent className="max-w-lg flex flex-col" style={{ maxHeight: '92vh' }}>
+          <DialogHeader className="shrink-0">
+            <DialogTitle>Editar pedido</DialogTitle>
+            <DialogDescription>Altere os dados do pedido. O total será recalculado automaticamente.</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto pr-1 -mr-1 space-y-4 py-2">
+            {/* Nome do aluno */}
+            <div className="space-y-1.5">
+              <Label htmlFor="o-student">Nome do aluno</Label>
+              <Input id="o-student" value={orderForm.studentName}
+                onChange={e => setOrderForm(f => ({ ...f, studentName: e.target.value }))} />
+            </div>
+
+            {/* Status + Pagamento */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="o-status">Status do pedido</Label>
+                <select
+                  id="o-status"
+                  value={orderForm.status}
+                  onChange={e => setOrderForm(f => ({ ...f, status: e.target.value as StoreOrder['status'] }))}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="pendente">Pendente</option>
+                  <option value="confirmado">Confirmado</option>
+                  <option value="entregue">Entregue</option>
+                  <option value="cancelado">Cancelado</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="o-payment">Pagamento</Label>
+                <select
+                  id="o-payment"
+                  value={orderForm.orderPaymentStatus}
+                  onChange={e => setOrderForm(f => ({ ...f, orderPaymentStatus: e.target.value as StoreOrder['orderPaymentStatus'] }))}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="devedor">Devedor</option>
+                  <option value="pago">Pago</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Itens */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Itens do pedido</Label>
+                <Button type="button" size="sm" variant="outline"
+                  onClick={() => setOrderForm(f => ({
+                    ...f,
+                    items: [...f.items, { name: '', price: '', quantity: '1', variation: '' }],
+                  }))}>
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar item
+                </Button>
+              </div>
+              {orderForm.items.map((item, idx) => (
+                <div key={idx} className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-medium text-muted-foreground">Item {idx + 1}</p>
+                    <button type="button"
+                      onClick={() => setOrderForm(f => ({ ...f, items: f.items.filter((_, i) => i !== idx) }))}
+                      className="text-muted-foreground hover:text-destructive transition-colors">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="col-span-2 space-y-1">
+                      <Label className="text-xs">Nome</Label>
+                      <Input className="h-8 text-sm bg-background" value={item.name}
+                        onChange={e => setOrderForm(f => {
+                          const items = [...f.items];
+                          items[idx] = { ...items[idx], name: e.target.value };
+                          return { ...f, items };
+                        })} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Preço unit. (R$)</Label>
+                      <Input className="h-8 text-sm bg-background" placeholder="0,00" value={item.price}
+                        onChange={e => setOrderForm(f => {
+                          const items = [...f.items];
+                          items[idx] = { ...items[idx], price: e.target.value };
+                          return { ...f, items };
+                        })} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Quantidade</Label>
+                      <Input className="h-8 text-sm bg-background" type="number" min={1} value={item.quantity}
+                        onChange={e => setOrderForm(f => {
+                          const items = [...f.items];
+                          items[idx] = { ...items[idx], quantity: e.target.value };
+                          return { ...f, items };
+                        })} />
+                    </div>
+                    <div className="col-span-2 space-y-1">
+                      <Label className="text-xs">Variação (opcional)</Label>
+                      <Input className="h-8 text-sm bg-background" placeholder="Ex: M, Azul..." value={item.variation}
+                        onChange={e => setOrderForm(f => {
+                          const items = [...f.items];
+                          items[idx] = { ...items[idx], variation: e.target.value };
+                          return { ...f, items };
+                        })} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {orderForm.items.length > 0 && (
+                <p className="text-sm font-semibold text-right pr-1">
+                  Total: R$ {orderItemTotal().toFixed(2).replace('.', ',')}
+                </p>
+              )}
+            </div>
+
+            {/* Observações */}
+            <div className="space-y-1.5">
+              <Label htmlFor="o-notes">Observações</Label>
+              <Textarea id="o-notes" rows={3} placeholder="Observações do aluno ou do admin..."
+                value={orderForm.notes}
+                onChange={e => setOrderForm(f => ({ ...f, notes: e.target.value }))} />
+            </div>
+          </div>
+
+          <DialogFooter className="shrink-0 pt-2 border-t">
+            <DialogClose asChild>
+              <Button variant="outline" disabled={savingOrderEdit}>Cancelar</Button>
+            </DialogClose>
+            <Button onClick={saveOrderEdit} disabled={savingOrderEdit || orderForm.items.length === 0}>
+              {savingOrderEdit ? 'Salvando...' : 'Salvar alterações'}
             </Button>
           </DialogFooter>
         </DialogContent>
