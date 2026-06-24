@@ -202,18 +202,27 @@ export default function StudentPortalPage() {
     }
   }
 
-  // ── Unpaid orders (devedor) ───────────────────────────────────────────────
-  const ordersQuery = useMemoFirebase(() => {
-    if (!firestore || !student) return null;
-    return query(collection(firestore, 'pedidos'), where('studentId', '==', student.id));
-  }, [firestore, student]);
-  const { data: studentOrdersRaw } = useCollection<StoreOrder>(ordersQuery);
-  const hasUnpaidOrders = useMemo(
-    () => (studentOrdersRaw ?? []).some(
-      o => o.orderPaymentStatus === 'devedor' && o.status !== 'cancelado'
-    ),
-    [studentOrdersRaw]
-  );
+  // ── Unpaid orders (devedor) — via Admin SDK API route ────────────────────
+  const [studentOrders, setStudentOrders] = useState<StoreOrder[]>([]);
+  const [hasUnpaidOrders, setHasUnpaidOrders] = useState(false);
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    user.getIdToken().then(token =>
+      fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.json())
+        .then(data => {
+          if (cancelled) return;
+          const orders: StoreOrder[] = data.orders ?? [];
+          setStudentOrders(orders);
+          setHasUnpaidOrders(orders.some(
+            o => o.orderPaymentStatus === 'devedor' && o.status !== 'cancelado'
+          ));
+        })
+        .catch(() => { if (!cancelled) { setStudentOrders([]); setHasUnpaidOrders(false); } })
+    );
+    return () => { cancelled = true; };
+  }, [user]);
 
   // ── Handbook ──────────────────────────────────────────────────────────────
   const handbookQuery = useMemoFirebase(() => {

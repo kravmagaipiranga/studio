@@ -2,6 +2,33 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore, getAdminAuth } from '@/lib/firebase-admin';
 import type { StoreOrderItem } from '@/lib/types';
 
+export async function GET(request: NextRequest) {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
+  }
+  try {
+    const adminAuth = getAdminAuth();
+    const decoded = await adminAuth.verifyIdToken(authHeader.slice(7));
+    const db = getAdminFirestore();
+
+    // find the student doc that belongs to this user
+    const studentSnap = await db.collection('students').where('userId', '==', decoded.uid).limit(1).get();
+    if (studentSnap.empty) {
+      return NextResponse.json({ orders: [] });
+    }
+    const studentId = studentSnap.docs[0].id;
+
+    const snap = await db.collection('pedidos').where('studentId', '==', studentId).get();
+    const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    return NextResponse.json({ orders });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[api/orders GET] error:', message);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
