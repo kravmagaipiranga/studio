@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { signOut } from 'firebase/auth';
@@ -17,7 +17,7 @@ import {
   LogOut, User, CreditCard, CalendarCheck, GraduationCap, ShieldAlert,
   Coins, BookOpen, Home, Megaphone, ShoppingBag, Minus, Plus, ShoppingCart, UserRound,
   Mail, MessageCircle, Globe, MapPin, Copy, Check, Shield, ExternalLink, X, PackageCheck, PackageOpen,
-  Lock, AlertTriangle, Wallet,
+  Lock, AlertTriangle, Wallet, ClipboardList,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StudentPortalForm } from '@/components/students/student-portal-form';
@@ -202,27 +202,33 @@ export default function StudentPortalPage() {
     }
   }
 
-  // ── Unpaid orders (devedor) — via Admin SDK API route ────────────────────
+  // ── Student orders — via Admin SDK API route ─────────────────────────────
   const [studentOrders, setStudentOrders] = useState<StoreOrder[]>([]);
   const [hasUnpaidOrders, setHasUnpaidOrders] = useState(false);
-  useEffect(() => {
+  const [isOrdersLoading, setIsOrdersLoading] = useState(false);
+
+  const refreshOrders = useCallback(async () => {
     if (!user) return;
-    let cancelled = false;
-    user.getIdToken().then(token =>
-      fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } })
-        .then(r => r.json())
-        .then(data => {
-          if (cancelled) return;
-          const orders: StoreOrder[] = data.orders ?? [];
-          setStudentOrders(orders);
-          setHasUnpaidOrders(orders.some(
-            o => o.orderPaymentStatus === 'devedor' && o.status !== 'cancelado'
-          ));
-        })
-        .catch(() => { if (!cancelled) { setStudentOrders([]); setHasUnpaidOrders(false); } })
-    );
-    return () => { cancelled = true; };
+    setIsOrdersLoading(true);
+    try {
+      const token = await user.getIdToken();
+      const data = await fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
+      const orders: StoreOrder[] = (data.orders ?? []).slice().sort(
+        (a: StoreOrder, b: StoreOrder) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setStudentOrders(orders);
+      setHasUnpaidOrders(orders.some(o => o.orderPaymentStatus === 'devedor' && o.status !== 'cancelado'));
+    } catch {
+      setStudentOrders([]);
+      setHasUnpaidOrders(false);
+    } finally {
+      setIsOrdersLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    refreshOrders();
+  }, [refreshOrders]);
 
   // ── Handbook ──────────────────────────────────────────────────────────────
   const handbookQuery = useMemoFirebase(() => {
@@ -313,6 +319,7 @@ export default function StudentPortalPage() {
         toast({ title: 'Pedido realizado!', description: 'A academia receberá seu pedido em breve.' });
         setCart({});
         setOrderNotes('');
+        refreshOrders();
       } else {
         throw new Error(data.error || 'Erro ao fazer pedido.');
       }
@@ -1193,7 +1200,87 @@ export default function StudentPortalPage() {
                 )}
               </>
             )}
+          {/* ── Meus Pedidos ───────────────────────────────────────────── */}
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center gap-2 px-1">
+              <ClipboardList className="h-4 w-4 text-indigo-600" />
+              <h2 className="text-sm font-semibold">Meus pedidos</h2>
+            </div>
+
+            {isOrdersLoading ? (
+              <div className="space-y-2">
+                {[1, 2].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+              </div>
+            ) : studentOrders.length === 0 ? (
+              <div className="rounded-xl border border-dashed py-8 flex flex-col items-center gap-2 text-center">
+                <PackageOpen className="h-7 w-7 text-muted-foreground/30" />
+                <p className="text-xs text-muted-foreground">Você ainda não fez nenhum pedido.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {studentOrders.map(order => {
+                  const statusStyle: Record<StoreOrder['status'], { label: string; cls: string }> = {
+                    pendente:   { label: 'Pendente',   cls: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+                    confirmado: { label: 'Confirmado', cls: 'bg-blue-100 text-blue-800 border-blue-200' },
+                    entregue:   { label: 'Entregue',   cls: 'bg-green-100 text-green-800 border-green-200' },
+                    cancelado:  { label: 'Cancelado',  cls: 'bg-red-100 text-red-800 border-red-200' },
+                  };
+                  const st = statusStyle[order.status] ?? statusStyle.pendente;
+                  let dateStr = '';
+                  try { dateStr = format(parseISO(order.createdAt), "dd/MM/yyyy 'às' HH:mm"); } catch { dateStr = order.createdAt; }
+                  return (
+                    <Card key={order.id} className={cn(order.status === 'cancelado' && 'opacity-60')}>
+                      <CardHeader className="pb-2 pt-3 px-4">
+                        <div className="flex items-start justify-between gap-2 flex-wrap">
+                          <p className="text-xs text-muted-foreground">{dateStr}</p>
+                          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                            <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0', st.cls)}>
+                              {st.label}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className={cn('text-[10px] px-1.5 py-0',
+                                order.orderPaymentStatus === 'pago'
+                                  ? 'bg-green-50 text-green-700 border-green-300'
+                                  : 'bg-orange-50 text-orange-700 border-orange-300'
+                              )}
+                            >
+                              {order.orderPaymentStatus === 'pago' ? 'Pago' : 'Aguard. pagamento'}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-3 space-y-1">
+                        {order.items.map((item, i) => (
+                          <div key={i} className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              {item.quantity}× {item.name}
+                              {item.variation && (
+                                <span className="ml-1 text-[10px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+                                  {item.variation}
+                                </span>
+                              )}
+                            </span>
+                            <span className="font-medium">
+                              R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}
+                            </span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between font-bold pt-1.5 border-t text-sm">
+                          <span>Total</span>
+                          <span>R$ {Number(order.total).toFixed(2).replace('.', ',')}</span>
+                        </div>
+                        {order.notes && (
+                          <p className="text-xs text-muted-foreground italic pt-0.5">Obs: {order.notes}</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </div>
+        </div>
         )}
 
         <p className="text-center text-[10px] text-muted-foreground pb-2">
