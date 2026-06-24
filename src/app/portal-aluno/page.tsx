@@ -6,7 +6,7 @@ import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser, updateD
 import { signOut } from 'firebase/auth';
 import { collection, query, where, limit, doc, updateDoc } from 'firebase/firestore';
 import {
-  Student, Payment, Attendance, Exam, HandbookContent, Notice, Product, StoreOrderItem, StudentNotification,
+  Student, Payment, Attendance, Exam, HandbookContent, Notice, Product, StoreOrderItem, StudentNotification, StoreOrder,
 } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +17,7 @@ import {
   LogOut, User, CreditCard, CalendarCheck, GraduationCap, ShieldAlert,
   Coins, BookOpen, Home, Megaphone, ShoppingBag, Minus, Plus, ShoppingCart, UserRound,
   Mail, MessageCircle, Globe, MapPin, Copy, Check, Shield, ExternalLink, X, PackageCheck, PackageOpen,
-  Lock, AlertTriangle,
+  Lock, AlertTriangle, Wallet,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StudentPortalForm } from '@/components/students/student-portal-form';
@@ -201,6 +201,19 @@ export default function StudentPortalPage() {
       /* silently ignore */
     }
   }
+
+  // ── Unpaid orders (devedor) ───────────────────────────────────────────────
+  const ordersQuery = useMemoFirebase(() => {
+    if (!firestore || !student) return null;
+    return query(collection(firestore, 'pedidos'), where('studentId', '==', student.id));
+  }, [firestore, student]);
+  const { data: studentOrdersRaw } = useCollection<StoreOrder>(ordersQuery);
+  const hasUnpaidOrders = useMemo(
+    () => (studentOrdersRaw ?? []).some(
+      o => o.orderPaymentStatus === 'devedor' && o.status !== 'cancelado'
+    ),
+    [studentOrdersRaw]
+  );
 
   // ── Handbook ──────────────────────────────────────────────────────────────
   const handbookQuery = useMemoFirebase(() => {
@@ -479,6 +492,25 @@ export default function StudentPortalPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* ── Pagamento Pendente na Loja ──────────────────────────── */}
+            {hasUnpaidOrders && (
+              <div className="flex items-start gap-3 rounded-xl border-2 border-orange-300 bg-orange-50 px-4 py-3.5">
+                <Wallet className="h-5 w-5 text-orange-500 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-orange-800">Pagamento pendente na loja</p>
+                  <p className="text-xs text-orange-700 mt-0.5 leading-snug">
+                    Você possui um ou mais pedidos aguardando pagamento. Entre em contato com a academia para regularizar.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('loja')}
+                    className="mt-2 text-xs font-semibold text-orange-700 underline underline-offset-2 hover:text-orange-900 transition-colors"
+                  >
+                    Ver meus pedidos →
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* ── Plano Vencido / Inativo ─────────────────────────────── */}
             {planBlock && (

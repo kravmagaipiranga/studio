@@ -561,8 +561,17 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                                 <FormItem>
                                 <FormLabel>Último Exame de Faixa</FormLabel>
                                 <FormControl>
-                                    <Input type="date" {...field} value={field.value ?? ''} />
+                                    <Input
+                                        type="date"
+                                        {...field}
+                                        value={field.value ?? ''}
+                                        disabled
+                                        className="bg-muted cursor-not-allowed"
+                                    />
                                 </FormControl>
+                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                    Sincronizado automaticamente pela página de Exames.
+                                </p>
                                 <FormMessage />
                                 </FormItem>
                             )}

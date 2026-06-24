@@ -306,6 +306,7 @@ export type StoreOrder = {
   items: StoreOrderItem[];
   total: number;
   status: 'pendente' | 'confirmado' | 'entregue' | 'cancelado';
+  orderPaymentStatus: 'pago' | 'devedor';
   notes?: string;
   createdAt: string;
   updatedAt: string;

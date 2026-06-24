@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       items,
       total,
       status: 'pendente',
+      orderPaymentStatus: 'devedor',
       notes: notes ?? '',
       createdAt: now,
       updatedAt: now,

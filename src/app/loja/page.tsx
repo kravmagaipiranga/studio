@@ -261,6 +261,20 @@ export default function LojaAdminPage() {
     }
   }
 
+  async function toggleOrderPayment(order: StoreOrder) {
+    if (!firestore) return;
+    const next: StoreOrder['orderPaymentStatus'] = order.orderPaymentStatus === 'pago' ? 'devedor' : 'pago';
+    try {
+      await updateDoc(doc(firestore, 'pedidos', order.id), {
+        orderPaymentStatus: next,
+        updatedAt: new Date().toISOString(),
+      });
+      toast({ title: next === 'pago' ? 'Pagamento registrado!' : 'Pedido marcado como devedor.' });
+    } catch {
+      toast({ variant: 'destructive', title: 'Erro ao atualizar pagamento.' });
+    }
+  }
+
   const pendingCount = orders?.filter(o => o.status === 'pendente').length ?? 0;
 
   return (
@@ -476,9 +490,17 @@ export default function LojaAdminPage() {
                         <p className="font-semibold">{order.studentName}</p>
                         <p className="text-xs text-muted-foreground">{formatDate(order.createdAt)}</p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap justify-end">
                         <Badge variant="outline" className={cn('text-xs', style.badge)}>
                           {style.label}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className={cn('text-xs', order.orderPaymentStatus === 'pago'
+                            ? 'border-green-500 bg-green-50 text-green-700'
+                            : 'border-red-400 bg-red-50 text-red-700')}
+                        >
+                          {order.orderPaymentStatus === 'pago' ? 'Pago' : 'Devedor'}
                         </Badge>
                         <p className="font-bold text-primary">
                           R$ {Number(order.total).toFixed(2).replace('.', ',')}
@@ -506,20 +528,31 @@ export default function LojaAdminPage() {
                       <p className="text-xs text-muted-foreground mt-2 italic">Obs: {order.notes}</p>
                     )}
                   </CardContent>
-                  {(nextStatus || order.status === 'pendente' || order.status === 'confirmado') && (
-                    <CardFooter className="border-t pt-3 gap-2 flex-wrap">
-                      {nextStatus && (
-                        <Button size="sm" onClick={() => advanceStatus(order)}>
-                          Marcar como {STATUS_STYLES[nextStatus].label}
-                        </Button>
-                      )}
-                      {(order.status === 'pendente' || order.status === 'confirmado') && (
-                        <Button size="sm" variant="outline" className="text-destructive border-destructive/30" onClick={() => cancelOrder(order)}>
-                          Cancelar pedido
-                        </Button>
-                      )}
-                    </CardFooter>
-                  )}
+                  <CardFooter className="border-t pt-3 gap-2 flex-wrap">
+                    {order.orderPaymentStatus === 'devedor' ? (
+                      <Button size="sm" variant="outline"
+                        className="border-green-500 text-green-700 hover:bg-green-50"
+                        onClick={() => toggleOrderPayment(order)}>
+                        Registrar pagamento
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="outline"
+                        className="border-red-400 text-red-700 hover:bg-red-50"
+                        onClick={() => toggleOrderPayment(order)}>
+                        Marcar como devedor
+                      </Button>
+                    )}
+                    {nextStatus && (
+                      <Button size="sm" onClick={() => advanceStatus(order)}>
+                        Marcar como {STATUS_STYLES[nextStatus].label}
+                      </Button>
+                    )}
+                    {(order.status === 'pendente' || order.status === 'confirmado') && (
+                      <Button size="sm" variant="outline" className="text-destructive border-destructive/30" onClick={() => cancelOrder(order)}>
+                        Cancelar pedido
+                      </Button>
+                    )}
+                  </CardFooter>
                 </Card>
               );
             })}
