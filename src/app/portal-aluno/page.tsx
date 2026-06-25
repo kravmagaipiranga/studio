@@ -205,6 +205,7 @@ export default function StudentPortalPage() {
   // ── Student orders — via Admin SDK API route ─────────────────────────────
   const [studentOrders, setStudentOrders] = useState<StoreOrder[]>([]);
   const [hasUnpaidOrders, setHasUnpaidOrders] = useState(false);
+  const [hasConfirmedOrder, setHasConfirmedOrder] = useState(false);
   const [isOrdersLoading, setIsOrdersLoading] = useState(false);
 
   const refreshOrders = useCallback(async () => {
@@ -218,6 +219,7 @@ export default function StudentPortalPage() {
       );
       setStudentOrders(orders);
       setHasUnpaidOrders(orders.some(o => o.orderPaymentStatus === 'devedor' && o.status !== 'cancelado'));
+      setHasConfirmedOrder(orders.some(o => o.status === 'confirmado'));
     } catch {
       setStudentOrders([]);
       setHasUnpaidOrders(false);
@@ -521,6 +523,25 @@ export default function StudentPortalPage() {
                   <button
                     onClick={() => setActiveTab('loja')}
                     className="mt-2 text-xs font-semibold text-orange-700 underline underline-offset-2 hover:text-orange-900 transition-colors"
+                  >
+                    Ver meus pedidos →
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Pedido Confirmado ────────────────────────────────────── */}
+            {hasConfirmedOrder && (
+              <div className="flex items-start gap-3 rounded-xl border-2 border-blue-300 bg-blue-50 px-4 py-3.5">
+                <PackageCheck className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-blue-800">Pedido pronto para retirada</p>
+                  <p className="text-xs text-blue-700 mt-0.5 leading-snug">
+                    Seu pedido já pode ser retirado na Academia.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('loja')}
+                    className="mt-2 text-xs font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-900 transition-colors"
                   >
                     Ver meus pedidos →
                   </button>
