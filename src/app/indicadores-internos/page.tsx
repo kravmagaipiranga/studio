@@ -32,7 +32,8 @@ import {
   TrendingDown,
   Info,
   ChevronRight,
-  UserPlus
+  UserPlus,
+  BarChart2
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
@@ -43,7 +44,8 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  Cell
+  Cell,
+  Legend
 } from "recharts";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -58,6 +60,18 @@ const beltColors: Record<string, { border: string; bg: string; text: string }> =
   'Preta': { border: 'border-slate-900', bg: 'bg-slate-100', text: 'text-slate-900' },
 };
 
+const BELT_ORDER = ['Branca', 'Amarela', 'Laranja', 'Verde', 'Azul', 'Marrom', 'Preta'];
+
+const BELT_CHART_COLORS: Record<string, string> = {
+  Branca:  '#cbd5e1',
+  Amarela: '#eab308',
+  Laranja: '#f97316',
+  Verde:   '#10b981',
+  Azul:    '#3b82f6',
+  Marrom:  '#92400e',
+  Preta:   '#334155',
+};
+
 export default function IndicadoresInternosPage() {
   const firestore = useFirestore();
   const router = useRouter();
@@ -65,6 +79,11 @@ export default function IndicadoresInternosPage() {
   
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
+
+  // ── Filtros do card de presença por graduação ────────────────────────────
+  const [beltAvgWindow, setBeltAvgWindow] = useState<'mes' | 'trimestre'>('mes');
+  const [beltAvgBelt, setBeltAvgBelt] = useState('Todas');
+  const [beltAvgSchedule, setBeltAvgSchedule] = useState('Todos');
 
   useEffect(() => {
     const now = new Date();
@@ -241,6 +260,68 @@ export default function IndicadoresInternosPage() {
         };
     }).filter(Boolean);
   }, [students, allAttendance, selectedMonth, selectedYear]);
+
+  // ── Presença Média por Graduação e Turma ────────────────────────────────
+  const studentBeltMap = useMemo(() => {
+    if (!students) return {} as Record<string, string>;
+    return Object.fromEntries(students.map(s => [s.id!, s.belt ?? '']));
+  }, [students]);
+
+  const beltAvgBaseAttendance = useMemo(() => {
+    return beltAvgWindow === 'mes' ? attendanceThisMonth : (allAttendance ?? []);
+  }, [beltAvgWindow, attendanceThisMonth, allAttendance]);
+
+  const beltAvgChartData = useMemo(() => {
+    if (!beltAvgBaseAttendance.length || !students) return { rows: [] as Record<string, string | number>[], turmas: [] as string[], belts: [] as string[] };
+    const turmaMap: Record<string, { dates: Set<string>; beltCounts: Record<string, number> }> = {};
+
+    beltAvgBaseAttendance
+      .filter(a => !a.category || a.category === 'Aluno')
+      .forEach(a => {
+        const belt = a.studentId ? (studentBeltMap[a.studentId] || '') : '';
+        if (!belt || !a.time || !a.date) return;
+        let dayLabel = '';
+        try {
+          const dow = getDay(parseISO(a.date));
+          if (dow === 1 || dow === 3) dayLabel = 'Seg/Qua';
+          else if (dow === 2 || dow === 4) dayLabel = 'Ter/Qui';
+          else if (dow === 6) dayLabel = 'Sábado';
+          else if (dow === 5) dayLabel = 'Sexta';
+          else return;
+        } catch { return; }
+        const turma = `${dayLabel} ${a.time}`;
+        if (!turmaMap[turma]) turmaMap[turma] = { dates: new Set(), beltCounts: {} };
+        turmaMap[turma].dates.add(a.date);
+        turmaMap[turma].beltCounts[belt] = (turmaMap[turma].beltCounts[belt] || 0) + 1;
+      });
+
+    const beltSet = new Set<string>();
+    const rows: Record<string, string | number>[] = Object.entries(turmaMap).map(([turma, data]) => {
+      const sessions = data.dates.size || 1;
+      const row: Record<string, string | number> = { turma };
+      Object.entries(data.beltCounts).forEach(([belt, count]) => {
+        row[belt] = parseFloat((count / sessions).toFixed(1));
+        beltSet.add(belt);
+      });
+      return row;
+    }).sort((a, b) => String(a.turma).localeCompare(String(b.turma)));
+
+    const belts = BELT_ORDER.filter(b => beltSet.has(b));
+    const turmas = rows.map(r => String(r.turma));
+    return { rows, turmas, belts };
+  }, [beltAvgBaseAttendance, studentBeltMap, students]);
+
+  const beltAvgFilteredRows = useMemo(() => {
+    return beltAvgSchedule !== 'Todos'
+      ? beltAvgChartData.rows.filter(r => r.turma === beltAvgSchedule)
+      : beltAvgChartData.rows;
+  }, [beltAvgChartData.rows, beltAvgSchedule]);
+
+  const beltAvgVisibleBelts = useMemo(() => {
+    return beltAvgBelt === 'Todas'
+      ? beltAvgChartData.belts
+      : beltAvgChartData.belts.filter(b => b === beltAvgBelt);
+  }, [beltAvgChartData.belts, beltAvgBelt]);
 
   const formatMonth = (m: string) => {
     if (!m) return "";
@@ -427,6 +508,116 @@ export default function IndicadoresInternosPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Presença Média por Graduação e Turma ──────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart2 className="h-5 w-5 text-primary" />
+                Presença Média por Graduação e Turma
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Média de alunos por faixa em cada aula (presença total ÷ nº de sessões no período).
+              </CardDescription>
+            </div>
+            {/* Filtros */}
+            <div className="flex flex-wrap gap-2 shrink-0">
+              <Select value={beltAvgWindow} onValueChange={v => setBeltAvgWindow(v as 'mes' | 'trimestre')}>
+                <SelectTrigger className="h-8 w-36 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mes">Mês selecionado</SelectItem>
+                  <SelectItem value="trimestre">Últimos 3 meses</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={beltAvgBelt} onValueChange={setBeltAvgBelt}>
+                <SelectTrigger className="h-8 w-32 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Todas">Todas as faixas</SelectItem>
+                  {BELT_ORDER.map(b => (
+                    <SelectItem key={b} value={b}>{b}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={beltAvgSchedule} onValueChange={setBeltAvgSchedule}>
+                <SelectTrigger className="h-8 w-36 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Todos">Todos os horários</SelectItem>
+                  {beltAvgChartData.turmas.map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-64 w-full" />
+          ) : beltAvgFilteredRows.length === 0 ? (
+            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
+              Sem dados para os filtros selecionados.
+            </div>
+          ) : (
+            <div className="w-full overflow-x-auto">
+              <div style={{ minWidth: beltAvgFilteredRows.length === 1 ? 320 : Math.max(400, beltAvgFilteredRows.length * (beltAvgVisibleBelts.length * 28 + 40)) }}>
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart
+                    data={beltAvgFilteredRows}
+                    margin={{ top: 10, right: 16, left: -10, bottom: 40 }}
+                    barCategoryGap="25%"
+                    barGap={2}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="turma"
+                      tick={{ fontSize: 11 }}
+                      angle={-30}
+                      textAnchor="end"
+                      interval={0}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={v => String(v)}
+                      label={{ value: 'Média / sessão', angle: -90, position: 'insideLeft', offset: 14, style: { fontSize: 10, fill: '#94a3b8' } }}
+                    />
+                    <Tooltip
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: 12 }}
+                      formatter={(val: number, name: string) => [`${val} aluno(s)/aula`, name]}
+                    />
+                    {beltAvgVisibleBelts.length > 1 && (
+                      <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                    )}
+                    {beltAvgVisibleBelts.map(belt => (
+                      <Bar
+                        key={belt}
+                        dataKey={belt}
+                        name={belt}
+                        fill={BELT_CHART_COLORS[belt] ?? '#94a3b8'}
+                        radius={[3, 3, 0, 0]}
+                        maxBarSize={40}
+                      />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+          {!isLoading && beltAvgFilteredRows.length > 0 && (
+            <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
+              <Info className="h-3 w-3" />
+              Apenas registros de categoria &quot;Aluno&quot;. Sábado conta como uma sessão separada.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Revisão por Faixa e Performance */}
       <Card>
