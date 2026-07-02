@@ -52,6 +52,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUser, useCollection, useFirestore, useMemoFirebase, useAuth } from "@/firebase";
+import { ADMIN_EMAIL } from "@/lib/admin-config";
 import { useEffect, useMemo, useState, useCallback, Suspense } from "react";
 import { FirebaseErrorListener } from "@/components/FirebaseErrorListener";
 import { collection } from "firebase/firestore";
@@ -214,13 +215,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isUserLoading || !pathname || !mounted) return;
-    
+
     const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));
-    
+
     if (!user && !isPublicRoute) {
       router.push('/login');
+      return;
     }
-  }, [isUserLoading, user, pathname, router, mounted]);
+
+    // Segunda camada: usuário autenticado mas não-admin em rota protegida → expulsar
+    if (user && !isPublicRoute && user.email !== ADMIN_EMAIL) {
+      signOut(auth).catch(() => {});
+      router.push('/login-aluno');
+    }
+  }, [isUserLoading, user, pathname, router, mounted, auth]);
 
   const handleSignOut = async () => {
     if (auth) {

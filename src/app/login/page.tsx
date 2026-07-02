@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { ADMIN_EMAIL } from '@/lib/admin-config';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -41,7 +42,20 @@ export default function LoginPage() {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+
+      // Apenas o administrador pode acessar este painel
+      if (credential.user.email !== ADMIN_EMAIL) {
+        await signOut(auth);
+        toast({
+          variant: 'destructive',
+          title: 'Acesso negado',
+          description: 'Este portal é exclusivo para o administrador. Use o login de aluno.',
+        });
+        router.push('/login-aluno');
+        return;
+      }
+
       toast({
         title: 'Login bem-sucedido!',
         description: 'Redirecionando para o painel...',
