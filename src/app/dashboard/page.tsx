@@ -5,6 +5,7 @@ import { Overview } from "@/components/dashboard/overview";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { MonthlyPerformance } from "@/components/dashboard/monthly-performance";
 import { PaymentSummary } from "@/components/dashboard/payment-summary";
+import { VisitsTrialCard } from "@/components/dashboard/visits-trial-card";
 
 export default function DashboardPage() {
   return (
@@ -16,6 +17,7 @@ export default function DashboardPage() {
             <div className="flex flex-col w-full gap-4">
                 <Overview />
                 <MonthlyPerformance />
+                <VisitsTrialCard />
                 <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
                     <PaymentSummary />
                     <RevenueChart />
