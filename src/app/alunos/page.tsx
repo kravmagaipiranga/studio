@@ -108,9 +108,25 @@ function AlunosContent() {
     const [togglingId, setTogglingId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [activeFilter, setActiveFilter] = useState<FilterType>('Todos');
+    const [activeTab, setActiveTab] = useState<'Ativo' | 'Inativo'>('Ativo');
     
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(25);
+
+    // Persist tab in sessionStorage so navigating to edit and back keeps it
+    useEffect(() => {
+        try {
+            const saved = sessionStorage.getItem('alunos-tab') as 'Ativo' | 'Inativo' | null;
+            if (saved === 'Ativo' || saved === 'Inativo') setActiveTab(saved);
+        } catch { /* ignore */ }
+    }, []);
+
+    const handleTabChange = (tab: 'Ativo' | 'Inativo') => {
+        setActiveTab(tab);
+        setCurrentPage(1);
+        setActiveFilter('Todos');
+        try { sessionStorage.setItem('alunos-tab', tab); } catch { /* ignore */ }
+    };
 
     useEffect(() => {
         const filterParam = searchParams.get('filter');
@@ -180,15 +196,15 @@ function AlunosContent() {
     const filteredStudents = useMemo(() => {
         if (!studentsWithTimeInBelt) return [];
 
-        let students = studentsWithTimeInBelt;
+        // 1. Always filter by the active tab first
+        let students = studentsWithTimeInBelt.filter(s => s.status === activeTab);
 
+        // 2. Apply secondary filter within the tab
         if (activeFilter === 'Vencido') {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             students = students.filter(student => {
-                if (student.status !== 'Ativo' || !student.planExpirationDate) {
-                    return false;
-                }
+                if (!student.planExpirationDate) return false;
                 try {
                     return isBefore(parseISO(student.planExpirationDate), today);
                 } catch { 
@@ -198,37 +214,30 @@ function AlunosContent() {
         } else if (activeFilter === 'Aptos para Revisão') {
             const now = new Date();
             students = students.filter(student => {
-                if (student.status !== 'Ativo' || !student.belt) return false;
-        
+                if (!student.belt) return false;
                 const belt = student.belt.toLowerCase();
-        
                 try {
                     if (belt === 'branca') {
                         const startDate = student.startDate ? parseISO(student.startDate) : (student.registrationDate ? parseISO(student.registrationDate) : null);
                         return startDate ? differenceInMonths(now, startDate) >= 4 : false;
                     }
-        
                     if (!student.lastExamDate) return false;
-        
                     const lastExamDate = parseISO(student.lastExamDate);
                     const monthsSinceExam = differenceInMonths(now, lastExamDate);
-        
                     if (belt === 'amarela') return monthsSinceExam >= 12;
                     if (belt === 'laranja') return monthsSinceExam >= 18; 
                     if (belt === 'verde' || belt === 'azul') return monthsSinceExam >= 24; 
                     if (belt === 'marrom') return monthsSinceExam >= 36; 
-        
                 } catch {
                     return false;
                 }
                 return false;
             });
         } else if (beltOrder.includes(activeFilter.toLowerCase())) {
-            students = students.filter(student => student.status === 'Ativo' && student.belt?.toLowerCase() === activeFilter.toLowerCase());
-        } else if (activeFilter !== 'Todos') {
-            students = students.filter(student => student.status === activeFilter);
+            students = students.filter(student => student.belt?.toLowerCase() === activeFilter.toLowerCase());
         }
 
+        // 3. Search
         if (searchQuery) {
             students = students.filter(student => 
                 student.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -237,7 +246,7 @@ function AlunosContent() {
 
         return students;
 
-    }, [studentsWithTimeInBelt, activeFilter, searchQuery]);
+    }, [studentsWithTimeInBelt, activeFilter, activeTab, searchQuery]);
 
     const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
     const paginatedStudents = useMemo(() => {
@@ -328,13 +337,6 @@ function AlunosContent() {
         });
     };
 
-    const cardTitle = activeFilter === 'Todos' 
-        ? 'Alunos - Todos' 
-        : beltOrder.includes(activeFilter.toLowerCase())
-        ? `Alunos - Faixa ${activeFilter}`
-        : `Alunos - ${activeFilter}s`;
-
-
     const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
         'Ativo': 'default',
         'Inativo': 'secondary',
@@ -342,8 +344,12 @@ function AlunosContent() {
         'Particular': 'outline',
     }
     
-    const generalFilters: FilterType[] = ['Todos', 'Ativo', 'Inativo', 'Vencido'];
+    // 'Ativo' and 'Inativo' removed — handled by tabs
+    const generalFilters: FilterType[] = ['Todos', 'Vencido'];
     const beltFilters: FilterType[] = ['Branca', 'Amarela', 'Laranja', 'Verde', 'Azul', 'Marrom', 'Preta'];
+
+    const activeCount = studentsWithTimeInBelt.filter(s => s.status === 'Ativo').length;
+    const inactiveCount = studentsWithTimeInBelt.filter(s => s.status === 'Inativo').length;
 
 
     return (
@@ -382,79 +388,123 @@ function AlunosContent() {
             </div>
 
             <Card className="h-full flex flex-col flex-grow">
-                <CardHeader className="border-b">
-                    <div className="flex items-start justify-between gap-4">
-                         <div>
-                            <CardTitle>{cardTitle}</CardTitle>
-                            <CardDescription>{filterDescriptions[activeFilter]}</CardDescription>
-                        </div>
-                        <div className="flex items-center gap-2 flex-wrap justify-end">
-                            <BulkImportDialog>
-                                <Button size="sm" variant="outline">
-                                    <Upload className="mr-2 h-4 w-4" />
-                                    Importar em Massa
-                                </Button>
-                            </BulkImportDialog>
-                            <Link href="/alunos/novo/editar">
-                                <Button size="sm">
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    Novo Aluno
-                                </Button>
-                            </Link>
-                             <Button variant="outline" size="sm" onClick={handleExportData}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Exportar Dados
-                            </Button>
-                        </div>
+                {/* ── Browser-style tabs ─────────────────────────────────── */}
+                <div className="flex items-end justify-between px-6 pt-5 border-b bg-muted/20">
+                    <div className="flex items-end gap-1">
+                        <button
+                            onClick={() => handleTabChange('Ativo')}
+                            className={cn(
+                                "flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all select-none",
+                                activeTab === 'Ativo'
+                                    ? "bg-white border-border text-foreground shadow-sm -mb-px z-10"
+                                    : "bg-muted/40 border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                            )}
+                        >
+                            <UserCheck className="h-4 w-4 text-emerald-500" />
+                            Ativos
+                            {!isLoading && (
+                                <span className={cn(
+                                    "ml-1 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold",
+                                    activeTab === 'Ativo' ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"
+                                )}>
+                                    {activeCount}
+                                </span>
+                            )}
+                        </button>
+                        <button
+                            onClick={() => handleTabChange('Inativo')}
+                            className={cn(
+                                "flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all select-none",
+                                activeTab === 'Inativo'
+                                    ? "bg-white border-border text-foreground shadow-sm -mb-px z-10"
+                                    : "bg-muted/40 border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                            )}
+                        >
+                            <UserX className="h-4 w-4 text-slate-400" />
+                            Inativos
+                            {!isLoading && (
+                                <span className={cn(
+                                    "ml-1 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold",
+                                    activeTab === 'Inativo' ? "bg-slate-100 text-slate-600" : "bg-muted text-muted-foreground"
+                                )}>
+                                    {inactiveCount}
+                                </span>
+                            )}
+                        </button>
                     </div>
-                </CardHeader>
+                    <div className="flex items-center gap-2 pb-2 flex-wrap justify-end">
+                        <BulkImportDialog>
+                            <Button size="sm" variant="outline">
+                                <Upload className="mr-2 h-4 w-4" />
+                                Importar em Massa
+                            </Button>
+                        </BulkImportDialog>
+                        <Link href="/alunos/novo/editar">
+                            <Button size="sm">
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Novo Aluno
+                            </Button>
+                        </Link>
+                        <Button variant="outline" size="sm" onClick={handleExportData}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Exportar Dados
+                        </Button>
+                    </div>
+                </div>
                 <CardContent className="p-0 flex-grow flex flex-col">
                     <div className="p-4 space-y-4 border-b">
                         <div className="flex flex-wrap items-center gap-2">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm">
-                                        Filtro: {activeFilter}
-                                        <ChevronDown className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start">
-                                    {generalFilters.map(filter => (
-                                        <DropdownMenuItem key={filter} onSelect={() => setActiveFilter(filter)}>
-                                            Listar {filter}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            {activeTab === 'Ativo' && (
+                              <>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant={activeFilter === 'Vencido' ? 'default' : 'outline'} size="sm">
+                                            Filtro: {activeFilter}
+                                            <ChevronDown className="ml-2 h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start">
+                                        {generalFilters.map(filter => (
+                                            <DropdownMenuItem key={filter} onSelect={() => setActiveFilter(filter)}>
+                                                {filter === 'Todos' ? 'Todos os ativos' : filter}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
 
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm">
-                                        Faixa: {beltFilters.includes(activeFilter) ? activeFilter : 'Selecione'}
-                                        <ChevronDown className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start">
-                                    {beltFilters.map(belt => (
-                                        <DropdownMenuItem key={belt} onSelect={() => setActiveFilter(belt)}>
-                                            <div className="flex items-center">
-                                                <span className={cn("w-3 h-3 rounded-full mr-2", beltStyles[belt.toLowerCase()])}></span>
-                                                {belt}
-                                            </div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant={beltFilters.includes(activeFilter) ? 'default' : 'outline'} size="sm">
+                                            Faixa: {beltFilters.includes(activeFilter) ? activeFilter : 'Selecione'}
+                                            <ChevronDown className="ml-2 h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start">
+                                        <DropdownMenuItem onSelect={() => setActiveFilter('Todos')}>
+                                            Todas as faixas
                                         </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                                        {beltFilters.map(belt => (
+                                            <DropdownMenuItem key={belt} onSelect={() => setActiveFilter(belt)}>
+                                                <div className="flex items-center">
+                                                    <span className={cn("w-3 h-3 rounded-full mr-2", beltStyles[belt.toLowerCase()])}></span>
+                                                    {belt}
+                                                </div>
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
 
-                             <Button 
-                                variant={activeFilter === 'Aptos para Revisão' ? 'default' : 'outline'}
-                                onClick={() => setActiveFilter('Aptos para Revisão')}
-                                size="sm"
-                                className={cn(activeFilter === 'Aptos para Revisão' && "bg-blue-600 text-white hover:bg-blue-700")}
-                             >
-                                <GraduationCap className="mr-2 h-4 w-4" />
-                                Aptos para Revisão
-                             </Button>
+                                <Button 
+                                    variant={activeFilter === 'Aptos para Revisão' ? 'default' : 'outline'}
+                                    onClick={() => setActiveFilter('Aptos para Revisão')}
+                                    size="sm"
+                                    className={cn(activeFilter === 'Aptos para Revisão' && "bg-blue-600 text-white hover:bg-blue-700")}
+                                >
+                                    <GraduationCap className="mr-2 h-4 w-4" />
+                                    Aptos para Revisão
+                                </Button>
+                              </>
+                            )}
                         </div>
                         <div className="relative">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
