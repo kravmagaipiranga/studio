@@ -57,7 +57,7 @@ import { ADMIN_EMAIL } from "@/lib/admin-config";
 import { useEffect, useMemo, useState, useCallback, Suspense } from "react";
 import { FirebaseErrorListener } from "@/components/FirebaseErrorListener";
 import { collection } from "firebase/firestore";
-import type { Student, WomensMonthLead, Company } from "@/lib/types";
+import type { Student, WomensMonthLead, Company, StoreOrder } from "@/lib/types";
 import { signOut } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -148,9 +148,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     return collection(firestore, 'companies');
   }, [firestore, user, mounted]);
 
+  const ordersCollection = useMemoFirebase(() => {
+    if (!firestore || !user || !mounted) return null;
+    return collection(firestore, 'orders');
+  }, [firestore, user, mounted]);
+
   const { data: students } = useCollection<Student>(studentsCollection);
   const { data: womensLeads } = useCollection<WomensMonthLead>(womensMonthCollection);
   const { data: companies } = useCollection<Company>(companiesCollection);
+  const { data: storeOrders } = useCollection<StoreOrder>(ordersCollection);
+
+  const pendingStoreOrders = useMemo(() => {
+    if (!storeOrders || !mounted) return [];
+    return storeOrders.filter(o => o.status === 'pendente');
+  }, [storeOrders, mounted]);
 
   const birthdayStudents = useMemo(() => {
     if (!students || !mounted) return [];
@@ -212,7 +223,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }, [womensLeads, mounted]);
 
   const totalNotifications = mounted 
-    ? (birthdayStudents?.length || 0) + (pendingStudents?.length || 0) + (recentWomensLeads?.length || 0) + (upcomingCorporateEvents?.length || 0)
+    ? (birthdayStudents?.length || 0) + (pendingStudents?.length || 0) + (recentWomensLeads?.length || 0) + (upcomingCorporateEvents?.length || 0) + (pendingStoreOrders?.length > 0 ? 1 : 0)
     : 0;
 
   useEffect(() => {
@@ -383,9 +394,27 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </>
               )}
               
+              {pendingStoreOrders.length > 0 && (
+                <>
+                  {(pendingStudents.length > 0 || upcomingCorporateEvents.length > 0 || recentWomensLeads.length > 0) && <DropdownMenuSeparator />}
+                  <DropdownMenuLabel className="flex items-center gap-2 text-orange-600">
+                    <ShoppingBag className="h-4 w-4" /> Novos Pedidos na Loja
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/loja" className="flex flex-col gap-0.5">
+                      <span className="font-semibold">
+                        {pendingStoreOrders.length} {pendingStoreOrders.length === 1 ? 'pedido aguarda' : 'pedidos aguardam'} confirmação
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">Clique para gerenciar na Loja</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              )}
+
               {birthdayStudents.length > 0 && (
                   <>
-                    {(pendingStudents.length > 0 || recentWomensLeads.length > 0 || upcomingCorporateEvents.length > 0) && <DropdownMenuSeparator />}
+                    {(pendingStudents.length > 0 || recentWomensLeads.length > 0 || upcomingCorporateEvents.length > 0 || pendingStoreOrders.length > 0) && <DropdownMenuSeparator />}
                     <DropdownMenuLabel className="flex items-center gap-2">
                       <Cake className="h-4 w-4" /> Aniversariantes de Hoje
                     </DropdownMenuLabel>
