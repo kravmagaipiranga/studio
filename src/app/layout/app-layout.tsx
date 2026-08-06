@@ -150,7 +150,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const ordersCollection = useMemoFirebase(() => {
     if (!firestore || !user || !mounted) return null;
-    return collection(firestore, 'orders');
+    return collection(firestore, 'pedidos');
   }, [firestore, user, mounted]);
 
   const { data: students } = useCollection<Student>(studentsCollection);
