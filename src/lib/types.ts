@@ -207,6 +207,31 @@ export type TaughtTechnique = {
   createdAt: string;
 };
 
+export type ExpenseCategory =
+  | 'Aluguel'
+  | 'Água'
+  | 'Energia'
+  | 'Internet'
+  | 'Salários'
+  | 'Marketing'
+  | 'Equipamentos'
+  | 'Manutenção'
+  | 'Contabilidade'
+  | 'Impostos'
+  | 'Outros';
+
+export type Expense = {
+  id: string;
+  date: string;           // yyyy-MM-dd
+  category: ExpenseCategory;
+  description: string;
+  supplier: string;       // Aluno / Fornecedor
+  paymentMethod: 'Pix' | 'Dinheiro' | 'Boleto' | 'Cartão de Crédito' | 'Cartão de Débito' | 'Transferência' | 'Outros';
+  amount: number;
+  competencia: string;    // yyyy-MM  (mês de competência)
+  createdAt: string;
+};
+
 export type GlobalParameters = {
   id: 'global';
   schoolName: string;
