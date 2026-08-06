@@ -67,8 +67,8 @@ import { ShieldAlert, Loader2 } from "lucide-react";
 const MENU_ITEMS = [
   { href: "/alunos", label: "Alunos", icon: Users },
   { href: "/chamada", label: "Controle de Presença", icon: CheckSquare },
-  { href: "/central-de-mensagens", label: "Central de Mensagens", icon: MessageSquare, color: "text-blue-600" },
-  { href: "/mes-das-mulheres", label: "Mês das Mulheres", icon: Star, color: "text-pink-600" },
+  { href: "/central-de-mensagens", label: "Central de Mensagens", icon: MessageSquare },
+  { href: "/mes-das-mulheres", label: "Mês das Mulheres", icon: Star },
   { href: "/empresas", label: "Empresas", icon: Building2 },
   { href: "/agendamentos", label: "Agendamentos", icon: CalendarPlus },
   { href: "/pagamentos", label: "Pagamentos", icon: CreditCard },
@@ -80,10 +80,10 @@ const MENU_ITEMS = [
   { href: "/lista-de-tarefas", label: "Lista de Tarefas", icon: ListChecks },
   { href: "/leads", label: "Leads CAT CPKM", icon: Phone },
   { href: "/register", label: "Cadastro Público", icon: UserPlus, target: "_blank" },
-  { href: "/apostila", label: "Apostila", icon: BookOpen, color: "text-emerald-600" },
-  { href: "/avisos", label: "Avisos", icon: Megaphone, color: "text-orange-500" },
-  { href: "/loja", label: "Loja", icon: ShoppingBag, color: "text-indigo-600" },
-  { href: "/despesas", label: "Despesas", icon: Receipt, color: "text-red-600" },
+  { href: "/apostila", label: "Apostila", icon: BookOpen },
+  { href: "/avisos", label: "Avisos", icon: Megaphone },
+  { href: "/loja", label: "Loja", icon: ShoppingBag },
+  { href: "/despesas", label: "Despesas", icon: Receipt },
 ];
 
 const publicRoutes = ["/login", "/register", "/login-aluno", "/portal-aluno", "/mes-das-mulheres/registro", "/ativar-admin"];
@@ -270,7 +270,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <Suspense fallback={<div className="p-4 space-y-2"><div className="h-8 w-full bg-muted animate-pulse rounded" /></div>}>
                 {MENU_ITEMS.map((item) => (
                   <NavItem key={item.href} href={item.href} target={item.target}>
-                    <item.icon className={cn("h-4 w-4", item.color)} /> {item.label}
+                    <item.icon className="h-4 w-4" /> {item.label}
                   </NavItem>
                 ))}
               </Suspense>
@@ -302,7 +302,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <Suspense fallback={null}>
                     {MENU_ITEMS.map((item) => (
                       <NavItem key={item.href} href={item.href} isMobile target={item.target}>
-                        <item.icon className={cn("h-5 w-5", item.color)} /> {item.label}
+                        <item.icon className="h-5 w-5" /> {item.label}
                       </NavItem>
                     ))}
                   </Suspense>
