@@ -19,7 +19,7 @@ import { useFirestore, setDocumentNonBlocking } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Lead } from "@/lib/types";
 import { Lightbulb } from "lucide-react";
-import { format, parse } from 'date-fns';
+import { format, isValid } from 'date-fns';
 
 interface LeadImportDialogProps {
   children: React.ReactNode;
@@ -31,6 +31,36 @@ export function LeadImportDialog({ children }: LeadImportDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const firestore = useFirestore();
   const { toast } = useToast();
+
+  // Imports always belong to the current year. The day/month from the
+  // spreadsheet are preserved even when its year is wrong or outdated.
+  const parseImportedContactDate = (rawValue: string): string => {
+    const currentYear = new Date().getFullYear();
+    const raw = rawValue.trim();
+    let parsedDate: Date;
+
+    if (!isNaN(Number(raw))) {
+      // Excel serial date: parse its day/month, then replace the year.
+      parsedDate = new Date(1900, 0, Number(raw) - 1);
+    } else if (raw.includes('/')) {
+      const parts = raw.split('/');
+      const day = Number(parts[0]);
+      const month = Number(parts[1]);
+      parsedDate = new Date(currentYear, month - 1, day);
+    } else {
+      const parts = raw.split('-');
+      if (parts.length >= 3) {
+        // Supports YYYY-MM-DD and malformed YYYY values such as 0026-MM-DD.
+        parsedDate = new Date(currentYear, Number(parts[1]) - 1, Number(parts[2]));
+      } else {
+        parsedDate = new Date(raw);
+      }
+    }
+
+    if (!isValid(parsedDate)) return format(new Date(), 'yyyy-MM-dd');
+    parsedDate.setFullYear(currentYear);
+    return format(parsedDate, 'yyyy-MM-dd');
+  };
 
   const handleBulkImport = () => {
     if (!firestore || !pasteData) {
@@ -54,17 +84,9 @@ export function LeadImportDialog({ children }: LeadImportDialogProps) {
 
       const [rawContactDate, name, phone] = values;
       
-      let contactDate;
+       let contactDate;
       try {
-        if (!isNaN(Number(rawContactDate))) { // Handle Excel date format (number of days since 1900)
-            const excelDate = new Date(1900, 0, Number(rawContactDate) - 1);
-            contactDate = format(excelDate, 'yyyy-MM-dd');
-        } else if (rawContactDate.includes('/')) { // Handle DD/MM/AAAA format
-            const parsedDate = parse(rawContactDate, 'dd/MM/yyyy', new Date());
-            contactDate = format(parsedDate, 'yyyy-MM-dd');
-        } else { // Assume standard format like YYYY-MM-DD
-            contactDate = format(new Date(rawContactDate), 'yyyy-MM-dd');
-        }
+         contactDate = parseImportedContactDate(rawContactDate);
       } catch (e) {
         contactDate = format(new Date(), 'yyyy-MM-dd'); // Fallback
       }

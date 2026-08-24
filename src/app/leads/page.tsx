@@ -42,6 +42,19 @@ const months = [
   { value: "11", label: "Dezembro" },
 ];
 
+function normalizeContactDate(value: string): string {
+    if (!value) return value;
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return value;
+
+    const [, year, month, day] = match;
+    // Older imports sometimes stored the current year as 0026.
+    if (year === "0026") {
+        return `${new Date().getFullYear()}-${month}-${day}`;
+    }
+    return value;
+}
+
 export default function LeadsPage() {
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -64,9 +77,34 @@ export default function LeadsPage() {
 
     useEffect(() => {
         if (initialLeads) {
-            setLeads(initialLeads);
+            const normalizedLeads = initialLeads.map(lead => ({
+                ...lead,
+                contactDate: normalizeContactDate(lead.contactDate),
+            }));
+            setLeads(normalizedLeads);
+
+            // Persist the correction so the date is fixed everywhere, not only
+            // in this browser session.
+            const corrections = normalizedLeads.filter((lead, index) =>
+                lead.contactDate !== initialLeads[index].contactDate && !lead.isNew
+            );
+            if (firestore && corrections.length > 0) {
+                const batch = writeBatch(firestore);
+                corrections.forEach(lead => {
+                    batch.update(doc(firestore, "leads", lead.id), {
+                        contactDate: lead.contactDate,
+                    });
+                });
+                batch.commit().catch(() => {
+                    toast({
+                        variant: "destructive",
+                        title: "Não foi possível corrigir algumas datas",
+                        description: "Você ainda pode ajustá-las manualmente na tabela.",
+                    });
+                });
+            }
         }
-    }, [initialLeads]);
+    }, [initialLeads, firestore, toast]);
 
     useEffect(() => {
         setCurrentPage(1);
