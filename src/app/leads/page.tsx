@@ -108,7 +108,19 @@ export default function LeadsPage() {
          );
        }
 
-       return filtered;
+        // Keep the order deterministic after every filter: newest contact first.
+        // Sorting here also protects the UI if the realtime collection arrives
+        // in a different order than the Firestore query.
+        return [...filtered].sort((a, b) => {
+            const dateA = Date.parse(a.contactDate);
+            const dateB = Date.parse(b.contactDate);
+
+            // Valid dates come before missing/invalid dates.
+            if (Number.isNaN(dateA) && Number.isNaN(dateB)) return 0;
+            if (Number.isNaN(dateA)) return 1;
+            if (Number.isNaN(dateB)) return -1;
+            return dateB - dateA;
+        });
     }, [leads, searchQuery, dateRange, selectedMonth]);
 
     // Pagination logic
