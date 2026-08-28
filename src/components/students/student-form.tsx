@@ -509,9 +509,22 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                             render={({ field }) => (
                                 <FormItem>
                                 <FormLabel>Faixa</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="Ex: Branca, Amarela, etc." {...field} />
-                                </FormControl>
+                                 <Select onValueChange={field.onChange} value={field.value}>
+                                     <FormControl>
+                                         <SelectTrigger>
+                                             <SelectValue placeholder="Selecione a faixa..." />
+                                         </SelectTrigger>
+                                     </FormControl>
+                                     <SelectContent>
+                                         <SelectItem value="Branca">Branca</SelectItem>
+                                         <SelectItem value="Amarela">Amarela</SelectItem>
+                                         <SelectItem value="Laranja">Laranja</SelectItem>
+                                         <SelectItem value="Verde">Verde</SelectItem>
+                                         <SelectItem value="Azul">Azul</SelectItem>
+                                         <SelectItem value="Marrom">Marrom</SelectItem>
+                                         <SelectItem value="Preta">Preta</SelectItem>
+                                     </SelectContent>
+                                 </Select>
                                 <FormMessage />
                                 </FormItem>
                             )}

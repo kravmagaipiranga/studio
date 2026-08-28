@@ -20,6 +20,7 @@ import { differenceInYears } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
+import { useEffect } from "react";
 
 interface ExamsTableProps {
   exams: Exam[];
@@ -42,18 +43,62 @@ export function ExamsTable({ exams, allExams, setExams, allStudents, isLoading }
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  function syncLastExamDate(studentId: string, examsToConsider: Exam[]) {
+  function getExamSyncData(studentId: string, examsToConsider: Exam[]) {
+    const today = new Date().toISOString().split('T')[0];
     if (!firestore || !studentId) return;
     const studentExams = examsToConsider.filter(
       e => e.studentId === studentId && !e.id.startsWith('new_') && e.examDate
     );
+    if (studentExams.length === 0) return;
     const mostRecent = studentExams.reduce<string>(
       (latest, e) => (e.examDate > latest ? e.examDate : latest),
       ''
     );
-    const studentDocRef = doc(firestore, 'students', studentId);
-    setDocumentNonBlocking(studentDocRef, { lastExamDate: mostRecent }, { merge: true });
+    const mostRecentPastExam = studentExams
+      .filter(e => e.examDate <= today && e.targetBelt)
+      .sort((a, b) => b.examDate.localeCompare(a.examDate))[0];
+
+    return {
+      lastExamDate: mostRecent,
+      // A future exam is only an intention. The belt changes after the exam
+      // date, using the target belt from the most recent past exam.
+      ...(mostRecentPastExam ? { belt: mostRecentPastExam.targetBelt } : {}),
+    };
   }
+
+  function syncStudentExamData(studentId: string, examsToConsider: Exam[]) {
+    if (!firestore || !studentId) return;
+    const syncData = getExamSyncData(studentId, examsToConsider);
+    const studentDocRef = doc(firestore, 'students', studentId);
+    // After deleting the final exam, clear only the synchronized date and
+    // preserve the student's manually maintained current belt.
+    setDocumentNonBlocking(
+      studentDocRef,
+      syncData || { lastExamDate: '' },
+      { merge: true }
+    );
+  }
+
+  // Reconcile existing students too, not only exams edited in this session.
+  // This fixes old records and keeps the student profile aligned with exams.
+  useEffect(() => {
+    if (!firestore || !allExams.length || !allStudents.length) return;
+
+    allStudents.forEach(student => {
+      const syncData = getExamSyncData(student.id, allExams);
+      if (!syncData) return;
+
+      const shouldUpdateDate = (student.lastExamDate || '') !== syncData.lastExamDate;
+      const shouldUpdateBelt = 'belt' in syncData && student.belt !== syncData.belt;
+      if (shouldUpdateDate || shouldUpdateBelt) {
+        setDocumentNonBlocking(
+          doc(firestore, 'students', student.id),
+          syncData,
+          { merge: true }
+        );
+      }
+    });
+  }, [firestore, allExams, allStudents]);
   
   const studentOptions = allStudents.slice().sort((a,b) => a.name.localeCompare(b.name)).map(s => ({ value: s.id, label: s.name }));
 
@@ -104,7 +149,7 @@ export function ExamsTable({ exams, allExams, setExams, allStudents, isLoading }
       const updatedAll = allExams
         .filter(e => e.id !== examToSave.id)
         .concat(savedEntry as Exam);
-      syncLastExamDate(examToSave.studentId, updatedAll);
+      syncStudentExamData(examToSave.studentId, updatedAll);
     }
 
     toast({
@@ -147,7 +192,7 @@ export function ExamsTable({ exams, allExams, setExams, allStudents, isLoading }
     // Sync student's lastExamDate after removal
     if (examBeingDeleted?.studentId) {
       const remainingExams = allExams.filter(e => e.id !== examId);
-      syncLastExamDate(examBeingDeleted.studentId, remainingExams);
+      syncStudentExamData(examBeingDeleted.studentId, remainingExams);
     }
 
     setExams(prev => prev.filter(ex => ex.id !== examId));
