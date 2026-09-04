@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { collection, query, where } from "firebase/firestore";
 import { useFirestore, useMemoFirebase, useCollection } from "@/firebase";
-import { Attendance } from "@/lib/types";
+import { Attendance, Payment } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserPlus, FlaskConical, TrendingUp } from "lucide-react";
+import { UserPlus, FlaskConical, TrendingUp, UserRoundPlus } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -54,8 +54,23 @@ export function VisitsTrialCard() {
 
   const { data: attendance, isLoading } = useCollection<Attendance>(attendanceQuery);
 
+  const paymentsQuery = useMemoFirebase(() => {
+    if (!firestore || !selectedMonth || !selectedYear) return null;
+    const start = format(startOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1)), "yyyy-MM-dd");
+    const end = format(endOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1)), "yyyy-MM-dd");
+    return query(
+      collection(firestore, "payments"),
+      where("paymentDate", ">=", start),
+      where("paymentDate", "<=", end)
+    );
+  }, [firestore, selectedMonth, selectedYear]);
+
+  const { data: payments, isLoading: isLoadingPayments } = useCollection<Payment>(paymentsQuery);
+
   const metrics = useMemo(() => {
-    if (!attendance) return { visits: 0, experiences: 0, byDate: [] as { date: string; visits: number; experiences: number }[] };
+    if (!attendance || !payments) {
+      return { visits: 0, experiences: 0, enrollments: 0, byDate: [] as { date: string; visits: number; experiences: number }[] };
+    }
 
     let visits = 0;
     let experiences = 0;
@@ -77,8 +92,12 @@ export function VisitsTrialCard() {
       .map(([date, counts]) => ({ date, ...counts }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    return { visits, experiences, byDate };
-  }, [attendance]);
+    const enrollments = payments.filter(p => p.planType === "Matrícula").length;
+
+    return { visits, experiences, enrollments, byDate };
+  }, [attendance, payments]);
+
+  const dataIsLoading = isLoading || isLoadingPayments;
 
   const months = Array.from({ length: 12 }, (_, i) => {
     const m = String(i + 1).padStart(2, "0");
@@ -126,11 +145,11 @@ export function VisitsTrialCard() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Summary tiles */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex flex-col items-center justify-center p-5 rounded-xl bg-orange-50 border border-orange-100 shadow-sm">
             <UserPlus className="h-5 w-5 text-orange-500 mb-1" />
             <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600 mb-1">Visitas</span>
-            {isLoading ? (
+            {dataIsLoading ? (
               <Skeleton className="h-8 w-12" />
             ) : (
               <span className="text-3xl font-black text-orange-900">{metrics.visits}</span>
@@ -139,7 +158,7 @@ export function VisitsTrialCard() {
           <div className="flex flex-col items-center justify-center p-5 rounded-xl bg-blue-50 border border-blue-100 shadow-sm">
             <FlaskConical className="h-5 w-5 text-blue-500 mb-1" />
             <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600 mb-1">Aulas de Experiência</span>
-            {isLoading ? (
+            {dataIsLoading ? (
               <Skeleton className="h-8 w-12" />
             ) : (
               <span className="text-3xl font-black text-blue-900">{metrics.experiences}</span>
@@ -148,7 +167,7 @@ export function VisitsTrialCard() {
           <div className="flex flex-col items-center justify-center p-5 rounded-xl bg-emerald-50 border border-emerald-100 shadow-sm">
             <TrendingUp className="h-5 w-5 text-emerald-500 mb-1" />
             <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-1">Visita → Experiência</span>
-            {isLoading ? (
+            {dataIsLoading ? (
               <Skeleton className="h-8 w-16" />
             ) : (
               <span className="text-3xl font-black text-emerald-900">
@@ -156,10 +175,19 @@ export function VisitsTrialCard() {
               </span>
             )}
           </div>
+          <div className="flex flex-col items-center justify-center p-5 rounded-xl bg-violet-50 border border-violet-100 shadow-sm">
+            <UserRoundPlus className="h-5 w-5 text-violet-500 mb-1" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-violet-600 mb-1">Matrículas</span>
+            {dataIsLoading ? (
+              <Skeleton className="h-8 w-12" />
+            ) : (
+              <span className="text-3xl font-black text-violet-900">{metrics.enrollments}</span>
+            )}
+          </div>
         </div>
 
         {/* Daily breakdown */}
-        {isLoading ? (
+        {dataIsLoading ? (
           <Skeleton className="h-32 w-full" />
         ) : metrics.byDate.length > 0 ? (
           <div className="border rounded-xl overflow-hidden">

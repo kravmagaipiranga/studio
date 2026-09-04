@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { collection, query, where } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { Student, Attendance } from "@/lib/types";
+import { Student, Attendance, Payment } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { 
   Select, 
@@ -110,10 +110,22 @@ export default function IndicadoresInternosPage() {
     );
   }, [firestore, selectedMonth, selectedYear]);
 
+  const paymentsQuery = useMemoFirebase(() => {
+    if (!firestore || !selectedMonth || !selectedYear) return null;
+    const currentEnd = endOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1));
+    const threeMonthsAgoStart = startOfMonth(subMonths(currentEnd, 2));
+    return query(
+      collection(firestore, "payments"),
+      where("paymentDate", ">=", format(threeMonthsAgoStart, "yyyy-MM-dd")),
+      where("paymentDate", "<=", format(currentEnd, "yyyy-MM-dd"))
+    );
+  }, [firestore, selectedMonth, selectedYear]);
+
   const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
   const { data: allAttendance, isLoading: isLoadingAttendance } = useCollection<Attendance>(attendanceQuery);
+  const { data: allPayments, isLoading: isLoadingPayments } = useCollection<Payment>(paymentsQuery);
 
-  const isLoading = isLoadingStudents || isLoadingAttendance || !isMounted;
+  const isLoading = isLoadingStudents || isLoadingAttendance || isLoadingPayments || !isMounted;
 
   // Filtra presenças apenas do mês selecionado para os gráficos mensais
   const attendanceThisMonth = useMemo(() => {
@@ -186,12 +198,22 @@ export default function IndicadoresInternosPage() {
 
   // 4. & 5. Visitas e Aulas de Experiência (Mês atual)
   const trialMetrics = useMemo(() => {
-    if (!attendanceThisMonth) return { visits: 0, experiences: 0 };
+    if (!attendanceThisMonth || !allPayments) return { visits: 0, experiences: 0, enrollments: 0 };
+    const paymentStart = `${selectedYear}-${selectedMonth}-01`;
+    const paymentEnd = format(
+      endOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1)),
+      "yyyy-MM-dd"
+    );
     return {
       visits: attendanceThisMonth.filter(a => a.category === 'Visita').length,
-      experiences: attendanceThisMonth.filter(a => a.category === 'Experiência').length
+      experiences: attendanceThisMonth.filter(a => a.category === 'Experiência').length,
+      enrollments: allPayments.filter(p =>
+        p.planType === "Matrícula" &&
+        p.paymentDate >= paymentStart &&
+        p.paymentDate <= paymentEnd
+      ).length,
     };
-  }, [attendanceThisMonth]);
+  }, [attendanceThisMonth, allPayments, selectedMonth, selectedYear]);
 
   // 6. Aniversariantes do mês count (Apenas Ativos)
   const birthdaysCount = useMemo(() => {
@@ -364,7 +386,7 @@ export default function IndicadoresInternosPage() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => router.push('/chamada')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Visitas (Mês)</CardTitle>
@@ -383,6 +405,16 @@ export default function IndicadoresInternosPage() {
           <CardContent>
             <div className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-12" /> : trialMetrics.experiences}</div>
             <p className="text-xs text-muted-foreground">Realizadas neste mês</p>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => router.push('/pagamentos')}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Matrículas (Mês)</CardTitle>
+            <UserPlus className="h-4 w-4 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-12" /> : trialMetrics.enrollments}</div>
+            <p className="text-xs text-muted-foreground">Pagamentos de matrícula registrados</p>
           </CardContent>
         </Card>
         <Card 

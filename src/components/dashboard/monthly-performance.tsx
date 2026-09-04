@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { collection, query, where, doc } from "firebase/firestore";
 import { useFirestore, useMemoFirebase, setDocumentNonBlocking, useDoc, useCollection } from "@/firebase";
-import { MonthlyIndicator, Student, Attendance } from "@/lib/types";
+import { MonthlyIndicator, Student, Attendance, Payment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2, ChevronLeft, ChevronRight, Users, TrendingUp, Target } from "lucide-react";
 import { format as dateFnsFormat, startOfMonth, endOfMonth } from "date-fns";
@@ -65,13 +65,27 @@ export function MonthlyPerformance() {
 
   const { data: monthAttendance, isLoading: isLoadingMonthAttendance } = useCollection<Attendance>(attendanceMonthQuery);
 
-  const attendanceCounts = useMemo(() => {
-    if (!monthAttendance) return { visits: 0, trialClasses: 0 };
+  const paymentsMonthQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    const start = dateFnsFormat(startOfMonth(new Date(selectedYear, selectedMonth - 1)), "yyyy-MM-dd");
+    const end = dateFnsFormat(endOfMonth(new Date(selectedYear, selectedMonth - 1)), "yyyy-MM-dd");
+    return query(
+      collection(firestore, "payments"),
+      where("paymentDate", ">=", start),
+      where("paymentDate", "<=", end)
+    );
+  }, [firestore, selectedYear, selectedMonth]);
+
+  const { data: monthPayments, isLoading: isLoadingMonthPayments } = useCollection<Payment>(paymentsMonthQuery);
+
+  const automaticCounts = useMemo(() => {
+    if (!monthAttendance || !monthPayments) return { visits: 0, trialClasses: 0, newEnrollments: 0 };
     return {
       visits: monthAttendance.filter(a => a.category === "Visita").length,
       trialClasses: monthAttendance.filter(a => a.category === "Experiência").length,
+      newEnrollments: monthPayments.filter(p => p.planType === "Matrícula").length,
     };
-  }, [monthAttendance]);
+  }, [monthAttendance, monthPayments]);
 
   const activeStudentsCount = useMemo(() => {
     if (!students) return 0;
@@ -96,7 +110,14 @@ export function MonthlyPerformance() {
   
 
   const calculatedData = useMemo(() => {
-    const data = { ...indicator };
+    const data = {
+      ...indicator,
+      ...(monthAttendance && monthPayments ? {
+        visits: automaticCounts.visits,
+        trialClasses: automaticCounts.trialClasses,
+        newEnrollments: automaticCounts.newEnrollments,
+      } : {}),
+    };
     const enrollments = data.newEnrollments || 0;
     const reenrollments = data.reenrollments || 0;
     const exits = data.exits || 0;
@@ -108,7 +129,7 @@ export function MonthlyPerformance() {
     const conversionDivisor = trials;
     data.conversionRate = conversionDivisor > 0 ? (enrollments / conversionDivisor) * 100 : 0;
     return data;
-  }, [indicator]);
+  }, [indicator, monthAttendance, monthPayments, automaticCounts]);
 
   const handleInputChange = (field: EditableIndicator, value: string) => {
     const numValue = value === '' ? 0 : Number(value);
@@ -121,7 +142,7 @@ export function MonthlyPerformance() {
     setIsSaving(true);
     try {
       const dataToSave: Partial<MonthlyIndicator> = { 
-        ...indicator, 
+        ...calculatedData,
         id: documentId,
         year: selectedYear,
         month: selectedMonth,
@@ -147,7 +168,7 @@ export function MonthlyPerformance() {
     setCurrentDate(current => direction === 'prev' ? subMonths(current, 1) : addMonths(current, 1));
   };
 
-  const isLoading = isLoadingIndicator || isLoadingStudents || isLoadingMonthAttendance;
+  const isLoading = isLoadingIndicator || isLoadingStudents || isLoadingMonthAttendance || isLoadingMonthPayments;
 
   return (
     <Card className="shadow-sm border-muted-foreground/10">
@@ -185,9 +206,11 @@ export function MonthlyPerformance() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 bg-muted/10 p-4 rounded-xl border border-dashed">
             {Object.entries(indicatorLabels).map(([key, label]) => {
               const autoCount = key === 'visits'
-                ? attendanceCounts.visits
+                ? automaticCounts.visits
                 : key === 'trialClasses'
-                  ? attendanceCounts.trialClasses
+                  ? automaticCounts.trialClasses
+                  : key === 'newEnrollments'
+                    ? automaticCounts.newEnrollments
                   : null;
               return (
                 <div key={key} className="space-y-1.5 text-center">
@@ -196,14 +219,15 @@ export function MonthlyPerformance() {
                     type="number"
                     placeholder="0"
                     className="h-9 text-center font-bold text-base focus-visible:ring-primary"
-                    value={indicator[key as EditableIndicator] ?? ""}
+                  value={calculatedData[key as EditableIndicator] ?? ""}
                     onChange={(e) => handleInputChange(key as EditableIndicator, e.target.value)}
+                  disabled={key === "visits" || key === "trialClasses" || key === "newEnrollments"}
                   />
-                  {autoCount !== null && (
+                  {autoCount !== null ? (
                     <p className="text-[10px] text-blue-600 font-semibold">
-                      {autoCount} na chamada
+                      {autoCount} automático
                     </p>
-                  )}
+                  ) : null}
                 </div>
               );
             })}

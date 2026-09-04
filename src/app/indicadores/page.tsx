@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { collection, query, where, doc } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
-import { type MonthlyIndicator } from "@/lib/types";
+import { type MonthlyIndicator, type Attendance, type Payment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -60,6 +60,52 @@ export default function IndicadoresPage() {
 
   const { data: initialData, isLoading } = useCollection<MonthlyIndicator>(indicatorsQuery);
 
+  const attendanceQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, "attendance"),
+      where("date", ">=", `${selectedYear}-01-01`),
+      where("date", "<=", `${selectedYear}-12-31`)
+    );
+  }, [firestore, selectedYear]);
+
+  const paymentsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, "payments"),
+      where("paymentDate", ">=", `${selectedYear}-01-01`),
+      where("paymentDate", "<=", `${selectedYear}-12-31`)
+    );
+  }, [firestore, selectedYear]);
+
+  const { data: yearAttendance, isLoading: isLoadingAttendance } =
+    useCollection<Attendance>(attendanceQuery);
+  const { data: yearPayments, isLoading: isLoadingPayments } =
+    useCollection<Payment>(paymentsQuery);
+
+  const automaticCountsByMonth = useMemo(() => {
+    const counts: Record<number, { visits: number; trialClasses: number; newEnrollments: number }> = {};
+    for (let month = 1; month <= 12; month++) {
+      counts[month] = { visits: 0, trialClasses: 0, newEnrollments: 0 };
+    }
+
+    (yearAttendance || []).forEach(attendance => {
+      const month = Number(attendance.date?.slice(5, 7));
+      if (!month || !counts[month]) return;
+      if (attendance.category === "Visita") counts[month].visits++;
+      if (attendance.category === "Experiência") counts[month].trialClasses++;
+    });
+
+    (yearPayments || []).forEach(payment => {
+      const month = Number(payment.paymentDate?.slice(5, 7));
+      if (month && counts[month] && payment.planType === "Matrícula") {
+        counts[month].newEnrollments++;
+      }
+    });
+
+    return counts;
+  }, [yearAttendance, yearPayments]);
+
   useEffect(() => {
     if (initialData) {
       const dataByMonth: Record<string, Partial<MonthlyIndicator>> = {};
@@ -85,8 +131,15 @@ export default function IndicadoresPage() {
 
   const calculatedData = useMemo(() => {
     const newTableData = [...tableData];
+    const hasAutomaticData = yearAttendance !== undefined && yearPayments !== undefined;
     for (let i = 0; i < newTableData.length; i++) {
-        const currentMonth = newTableData[i];
+        const currentMonth = hasAutomaticData
+          ? {
+              ...newTableData[i],
+              ...automaticCountsByMonth[newTableData[i].month],
+            }
+          : newTableData[i];
+        newTableData[i] = currentMonth;
         const previousMonthTotalStudents = i === 0 
             ? (currentMonth.previousMonthTotal || 0) 
             : (newTableData[i - 1].totalStudents || 0);
@@ -104,7 +157,7 @@ export default function IndicadoresPage() {
         currentMonth.conversionRate = conversionDivisor > 0 ? ((currentMonth.newEnrollments || 0) / conversionDivisor) * 100 : 0;
     }
     return newTableData;
-  }, [tableData]);
+  }, [tableData, yearAttendance, yearPayments, automaticCountsByMonth]);
 
 
   const handleInputChange = (month: number, field: EditableIndicator, value: string) => {
@@ -132,6 +185,9 @@ export default function IndicadoresPage() {
         const docRef = doc(firestore, 'indicators', id);
         const dataToSave = {
           ...indicator,
+          ...(yearAttendance && yearPayments && automaticCountsByMonth[indicator.month]
+            ? automaticCountsByMonth[indicator.month]
+            : {}),
           id,
           year: selectedYear,
         };
@@ -161,6 +217,7 @@ export default function IndicadoresPage() {
   const renderCell = (row: keyof MonthlyIndicator, monthData: Partial<MonthlyIndicator>) => {
     const isCalculated = ['totalStudents', 'evolution', 'conversionRate'].includes(row);
     const isEditable = Object.keys(indicatorLabels).includes(row);
+    const isAutomatic = ['visits', 'trialClasses', 'newEnrollments'].includes(row);
     
     if (isEditable) {
        return (
@@ -169,7 +226,7 @@ export default function IndicadoresPage() {
             className="w-14 text-center h-7 px-1 text-[11px] font-bold border-muted-foreground/20"
             value={monthData[row as keyof MonthlyIndicator] as number ?? ''}
             onChange={(e) => handleInputChange(monthData.month!, row as EditableIndicator, e.target.value)}
-            disabled={row === 'previousMonthTotal' && monthData.month !== 1}
+            disabled={isAutomatic || (row === 'previousMonthTotal' && monthData.month !== 1)}
         />
        );
     }
@@ -196,6 +253,8 @@ export default function IndicadoresPage() {
 
     return null;
   }
+
+  const pageIsLoading = isLoading || isLoadingAttendance || isLoadingPayments;
 
   return (
     <div className="flex flex-col gap-4 max-w-full overflow-x-hidden">
@@ -241,7 +300,7 @@ export default function IndicadoresPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading && (
+                 {pageIsLoading && (
                     Object.keys(indicatorLabels).map(key => (
                         <TableRow key={key}>
                             <TableCell className="font-medium sticky left-0 bg-white dark:bg-card border-r text-[11px] py-2 z-10"><Skeleton className="h-4 w-full" /></TableCell>
@@ -249,7 +308,7 @@ export default function IndicadoresPage() {
                         </TableRow>
                     ))
                 )}
-                {!isLoading && (
+                 {!pageIsLoading && (
                     <>
                         {Object.entries(indicatorLabels).map(([key, label]) => (
                             <TableRow key={key} className="hover:bg-muted/5">
@@ -293,7 +352,7 @@ export default function IndicadoresPage() {
       </Card>
       
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
-           {isLoading ? (
+            {pageIsLoading ? (
               <>
                   <Skeleton className="h-64 w-full" />
                   <Skeleton className="h-64 w-full" />
