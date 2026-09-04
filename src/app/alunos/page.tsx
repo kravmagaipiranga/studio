@@ -258,6 +258,9 @@ function AlunosContent() {
         const reenrollmentDate = student.status === 'Inativo' && newStatus === 'Ativo'
             ? new Date().toISOString()
             : undefined;
+        const exitDate = student.status === 'Ativo' && newStatus === 'Inativo'
+            ? new Date().toISOString()
+            : undefined;
         setTogglingId(student.id);
         try {
             await updateDoc(doc(firestore, 'students', student.id), {
@@ -265,6 +268,9 @@ function AlunosContent() {
                 ...(activationDate ? { activationDate } : {}),
                 ...(reenrollmentDate
                     ? { reenrollmentDates: [...(student.reenrollmentDates || []), reenrollmentDate] }
+                    : {}),
+                ...(exitDate
+                    ? { exitDates: [...(student.exitDates || []), exitDate] }
                     : {}),
             });
             toast({

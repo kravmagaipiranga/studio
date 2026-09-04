@@ -68,6 +68,7 @@ export function VisitsTrialCard() {
         experiences: 0,
         enrollments: 0,
         reenrollments: 0,
+        exits: 0,
         byDate: [] as { date: string; visits: number; experiences: number }[],
       };
     }
@@ -100,8 +101,14 @@ export function VisitsTrialCard() {
         (student.reenrollmentDates || []).filter(date => date.slice(0, 7) === period).length,
       0
     );
+    const exits = students.reduce(
+      (total, student) =>
+        total +
+        (student.exitDates || []).filter(date => date.slice(0, 7) === period).length,
+      0
+    );
 
-    return { visits, experiences, enrollments, reenrollments, byDate };
+    return { visits, experiences, enrollments, reenrollments, exits, byDate };
   }, [attendance, students, selectedMonth, selectedYear]);
 
   const dataIsLoading = isLoading || isLoadingStudents;
@@ -152,7 +159,7 @@ export function VisitsTrialCard() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Summary tiles */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
           <div className="flex flex-col items-center justify-center p-5 rounded-xl bg-orange-50 border border-orange-100 shadow-sm">
             <UserPlus className="h-5 w-5 text-orange-500 mb-1" />
             <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600 mb-1">Visitas</span>
@@ -198,6 +205,15 @@ export function VisitsTrialCard() {
               <Skeleton className="h-8 w-12" />
             ) : (
               <span className="text-3xl font-black text-purple-900">{metrics.reenrollments}</span>
+            )}
+          </div>
+          <div className="flex flex-col items-center justify-center p-5 rounded-xl bg-red-50 border border-red-100 shadow-sm">
+            <UserRoundPlus className="h-5 w-5 text-red-500 mb-1" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-red-600 mb-1">Saídas</span>
+            {dataIsLoading ? (
+              <Skeleton className="h-8 w-12" />
+            ) : (
+              <span className="text-3xl font-black text-red-900">{metrics.exits}</span>
             )}
           </div>
         </div>

@@ -67,7 +67,7 @@ export function MonthlyPerformance() {
 
   const automaticCounts = useMemo(() => {
     if (!monthAttendance || !students) {
-      return { visits: 0, trialClasses: 0, newEnrollments: 0, reenrollments: 0 };
+      return { visits: 0, trialClasses: 0, newEnrollments: 0, reenrollments: 0, exits: 0 };
     }
     const reenrollmentPeriod = documentId;
     return {
@@ -78,6 +78,12 @@ export function MonthlyPerformance() {
         (total, student) =>
           total +
           (student.reenrollmentDates || []).filter(date => date.slice(0, 7) === reenrollmentPeriod).length,
+        0
+      ),
+      exits: students.reduce(
+        (total, student) =>
+          total +
+          (student.exitDates || []).filter(date => date.slice(0, 7) === reenrollmentPeriod).length,
         0
       ),
     };
@@ -113,6 +119,7 @@ export function MonthlyPerformance() {
         trialClasses: automaticCounts.trialClasses,
         newEnrollments: automaticCounts.newEnrollments,
         reenrollments: automaticCounts.reenrollments,
+        exits: automaticCounts.exits,
       } : {}),
     };
     const enrollments = data.newEnrollments || 0;
@@ -210,6 +217,8 @@ export function MonthlyPerformance() {
                     ? automaticCounts.newEnrollments
                     : key === 'reenrollments'
                       ? automaticCounts.reenrollments
+                      : key === 'exits'
+                        ? automaticCounts.exits
                   : null;
               return (
                 <div key={key} className="space-y-1.5 text-center">
@@ -220,7 +229,7 @@ export function MonthlyPerformance() {
                     className="h-9 text-center font-bold text-base focus-visible:ring-primary"
                   value={calculatedData[key as EditableIndicator] ?? ""}
                     onChange={(e) => handleInputChange(key as EditableIndicator, e.target.value)}
-                   disabled={key === "visits" || key === "trialClasses" || key === "newEnrollments" || key === "reenrollments"}
+                   disabled={key === "visits" || key === "trialClasses" || key === "newEnrollments" || key === "reenrollments" || key === "exits"}
                   />
                   {autoCount !== null ? (
                     <p className="text-[10px] text-blue-600 font-semibold">

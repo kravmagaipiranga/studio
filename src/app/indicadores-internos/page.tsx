@@ -187,7 +187,7 @@ export default function IndicadoresInternosPage() {
   // 4. & 5. Visitas e Aulas de Experiência (Mês atual)
   const trialMetrics = useMemo(() => {
     if (!attendanceThisMonth || !students) {
-      return { visits: 0, experiences: 0, enrollments: 0, reenrollments: 0 };
+      return { visits: 0, experiences: 0, enrollments: 0, reenrollments: 0, exits: 0 };
     }
     const selectedPeriod = `${selectedYear}-${selectedMonth}`;
     return {
@@ -198,6 +198,12 @@ export default function IndicadoresInternosPage() {
         (total, student) =>
           total +
           (student.reenrollmentDates || []).filter(date => date.slice(0, 7) === selectedPeriod).length,
+        0
+      ),
+      exits: students.reduce(
+        (total, student) =>
+          total +
+          (student.exitDates || []).filter(date => date.slice(0, 7) === selectedPeriod).length,
         0
       ),
     };
@@ -374,7 +380,7 @@ export default function IndicadoresInternosPage() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
         <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => router.push('/chamada')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Visitas (Mês)</CardTitle>
@@ -403,6 +409,16 @@ export default function IndicadoresInternosPage() {
           <CardContent>
             <div className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-12" /> : trialMetrics.enrollments}</div>
             <p className="text-xs text-muted-foreground">Novos alunos ativados</p>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => router.push('/alunos?filter=Inativo')}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Saídas (Mês)</CardTitle>
+            <UserPlus className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-12" /> : trialMetrics.exits}</div>
+            <p className="text-xs text-muted-foreground">Alunos ativos inativados</p>
           </CardContent>
         </Card>
         <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => router.push('/alunos')}>

@@ -6,6 +6,7 @@ export type Student = {
   registrationDate: string;
   activationDate?: string;
   reenrollmentDates?: string[];
+  exitDates?: string[];
   status: 'Ativo' | 'Inativo' | 'Pendente' | 'Particular';
   paymentStatus: 'Pago' | 'Vencido' | 'Pendente';
   dueDate?: string;
