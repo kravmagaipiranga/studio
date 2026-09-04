@@ -186,12 +186,20 @@ export default function IndicadoresInternosPage() {
 
   // 4. & 5. Visitas e Aulas de Experiência (Mês atual)
   const trialMetrics = useMemo(() => {
-    if (!attendanceThisMonth || !students) return { visits: 0, experiences: 0, enrollments: 0 };
+    if (!attendanceThisMonth || !students) {
+      return { visits: 0, experiences: 0, enrollments: 0, reenrollments: 0 };
+    }
     const selectedPeriod = `${selectedYear}-${selectedMonth}`;
     return {
       visits: attendanceThisMonth.filter(a => a.category === 'Visita').length,
       experiences: attendanceThisMonth.filter(a => a.category === 'Experiência').length,
       enrollments: students.filter(s => s.activationDate?.slice(0, 7) === selectedPeriod).length,
+      reenrollments: students.reduce(
+        (total, student) =>
+          total +
+          (student.reenrollmentDates || []).filter(date => date.slice(0, 7) === selectedPeriod).length,
+        0
+      ),
     };
   }, [attendanceThisMonth, students, selectedMonth, selectedYear]);
 
@@ -387,14 +395,24 @@ export default function IndicadoresInternosPage() {
             <p className="text-xs text-muted-foreground">Realizadas neste mês</p>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => router.push('/pagamentos')}>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => router.push('/alunos')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Matrículas (Mês)</CardTitle>
             <UserPlus className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-12" /> : trialMetrics.enrollments}</div>
-            <p className="text-xs text-muted-foreground">Pagamentos de matrícula registrados</p>
+            <p className="text-xs text-muted-foreground">Novos alunos ativados</p>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => router.push('/alunos')}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Rematrículas (Mês)</CardTitle>
+            <UserPlus className="h-4 w-4 text-violet-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{isLoading ? <Skeleton className="h-8 w-12" /> : trialMetrics.reenrollments}</div>
+            <p className="text-xs text-muted-foreground">Alunos inativos reativados</p>
           </CardContent>
         </Card>
         <Card 

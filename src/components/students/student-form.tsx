@@ -332,6 +332,14 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
           : values.status === 'Ativo' && student?.status === 'Pendente'
             ? { activationDate: new Date().toISOString() }
             : {}),
+        ...(values.status === 'Ativo' && student?.status === 'Inativo'
+          ? {
+              reenrollmentDates: [
+                ...(student.reenrollmentDates || []),
+                new Date().toISOString(),
+              ],
+            }
+          : {}),
         ...(student?.lastPaymentDate && { lastPaymentDate: student.lastPaymentDate }),
         ...(student?.planExpirationDate && { planExpirationDate: student.planExpirationDate }),
         ...(student?.paymentCredits && { paymentCredits: student.paymentCredits }),

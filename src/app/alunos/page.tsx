@@ -255,11 +255,17 @@ function AlunosContent() {
         const activationDate = student.status === 'Pendente' && newStatus === 'Ativo'
             ? new Date().toISOString()
             : undefined;
+        const reenrollmentDate = student.status === 'Inativo' && newStatus === 'Ativo'
+            ? new Date().toISOString()
+            : undefined;
         setTogglingId(student.id);
         try {
             await updateDoc(doc(firestore, 'students', student.id), {
                 status: newStatus,
                 ...(activationDate ? { activationDate } : {}),
+                ...(reenrollmentDate
+                    ? { reenrollmentDates: [...(student.reenrollmentDates || []), reenrollmentDate] }
+                    : {}),
             });
             toast({
                 title: newStatus === 'Ativo' ? "Aluno ativado" : "Aluno inativado",

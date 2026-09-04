@@ -5,6 +5,7 @@ export type Student = {
   email: string;
   registrationDate: string;
   activationDate?: string;
+  reenrollmentDates?: string[];
   status: 'Ativo' | 'Inativo' | 'Pendente' | 'Particular';
   paymentStatus: 'Pago' | 'Vencido' | 'Pendente';
   dueDate?: string;

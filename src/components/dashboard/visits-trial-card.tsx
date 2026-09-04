@@ -63,7 +63,13 @@ export function VisitsTrialCard() {
 
   const metrics = useMemo(() => {
     if (!attendance || !students) {
-      return { visits: 0, experiences: 0, enrollments: 0, byDate: [] as { date: string; visits: number; experiences: number }[] };
+      return {
+        visits: 0,
+        experiences: 0,
+        enrollments: 0,
+        reenrollments: 0,
+        byDate: [] as { date: string; visits: number; experiences: number }[],
+      };
     }
 
     let visits = 0;
@@ -88,8 +94,14 @@ export function VisitsTrialCard() {
 
     const period = `${selectedYear}-${selectedMonth}`;
     const enrollments = students.filter(student => student.activationDate?.slice(0, 7) === period).length;
+    const reenrollments = students.reduce(
+      (total, student) =>
+        total +
+        (student.reenrollmentDates || []).filter(date => date.slice(0, 7) === period).length,
+      0
+    );
 
-    return { visits, experiences, enrollments, byDate };
+    return { visits, experiences, enrollments, reenrollments, byDate };
   }, [attendance, students, selectedMonth, selectedYear]);
 
   const dataIsLoading = isLoading || isLoadingStudents;
@@ -140,7 +152,7 @@ export function VisitsTrialCard() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Summary tiles */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="flex flex-col items-center justify-center p-5 rounded-xl bg-orange-50 border border-orange-100 shadow-sm">
             <UserPlus className="h-5 w-5 text-orange-500 mb-1" />
             <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600 mb-1">Visitas</span>
@@ -177,6 +189,15 @@ export function VisitsTrialCard() {
               <Skeleton className="h-8 w-12" />
             ) : (
               <span className="text-3xl font-black text-violet-900">{metrics.enrollments}</span>
+            )}
+          </div>
+          <div className="flex flex-col items-center justify-center p-5 rounded-xl bg-purple-50 border border-purple-100 shadow-sm">
+            <UserRoundPlus className="h-5 w-5 text-purple-500 mb-1" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-purple-600 mb-1">Rematrículas</span>
+            {dataIsLoading ? (
+              <Skeleton className="h-8 w-12" />
+            ) : (
+              <span className="text-3xl font-black text-purple-900">{metrics.reenrollments}</span>
             )}
           </div>
         </div>

@@ -80,9 +80,9 @@ export default function IndicadoresPage() {
     useCollection<Student>(studentsQuery);
 
   const automaticCountsByMonth = useMemo(() => {
-    const counts: Record<number, { visits: number; trialClasses: number; newEnrollments: number }> = {};
+    const counts: Record<number, { visits: number; trialClasses: number; newEnrollments: number; reenrollments: number }> = {};
     for (let month = 1; month <= 12; month++) {
-      counts[month] = { visits: 0, trialClasses: 0, newEnrollments: 0 };
+      counts[month] = { visits: 0, trialClasses: 0, newEnrollments: 0, reenrollments: 0 };
     }
 
     (yearAttendance || []).forEach(attendance => {
@@ -100,6 +100,14 @@ export default function IndicadoresPage() {
       if (month && counts[month]) {
         counts[month].newEnrollments++;
       }
+      (student.reenrollmentDates || []).forEach(reenrollmentDate => {
+        const reenrollmentMonth = reenrollmentDate.startsWith(`${selectedYear}-`)
+          ? Number(reenrollmentDate.slice(5, 7))
+          : 0;
+        if (reenrollmentMonth && counts[reenrollmentMonth]) {
+          counts[reenrollmentMonth].reenrollments++;
+        }
+      });
     });
 
     return counts;
@@ -216,7 +224,7 @@ export default function IndicadoresPage() {
   const renderCell = (row: keyof MonthlyIndicator, monthData: Partial<MonthlyIndicator>) => {
     const isCalculated = ['totalStudents', 'evolution', 'conversionRate'].includes(row);
     const isEditable = Object.keys(indicatorLabels).includes(row);
-    const isAutomatic = ['visits', 'trialClasses', 'newEnrollments'].includes(row);
+    const isAutomatic = ['visits', 'trialClasses', 'newEnrollments', 'reenrollments'].includes(row);
     
     if (isEditable) {
        return (

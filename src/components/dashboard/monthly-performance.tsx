@@ -66,11 +66,20 @@ export function MonthlyPerformance() {
   const { data: monthAttendance, isLoading: isLoadingMonthAttendance } = useCollection<Attendance>(attendanceMonthQuery);
 
   const automaticCounts = useMemo(() => {
-    if (!monthAttendance || !students) return { visits: 0, trialClasses: 0, newEnrollments: 0 };
+    if (!monthAttendance || !students) {
+      return { visits: 0, trialClasses: 0, newEnrollments: 0, reenrollments: 0 };
+    }
+    const reenrollmentPeriod = documentId;
     return {
       visits: monthAttendance.filter(a => a.category === "Visita").length,
       trialClasses: monthAttendance.filter(a => a.category === "Experiência").length,
       newEnrollments: students.filter(s => s.activationDate?.slice(0, 7) === documentId).length,
+      reenrollments: students.reduce(
+        (total, student) =>
+          total +
+          (student.reenrollmentDates || []).filter(date => date.slice(0, 7) === reenrollmentPeriod).length,
+        0
+      ),
     };
   }, [monthAttendance, students, documentId]);
 
@@ -103,6 +112,7 @@ export function MonthlyPerformance() {
         visits: automaticCounts.visits,
         trialClasses: automaticCounts.trialClasses,
         newEnrollments: automaticCounts.newEnrollments,
+        reenrollments: automaticCounts.reenrollments,
       } : {}),
     };
     const enrollments = data.newEnrollments || 0;
@@ -198,6 +208,8 @@ export function MonthlyPerformance() {
                   ? automaticCounts.trialClasses
                   : key === 'newEnrollments'
                     ? automaticCounts.newEnrollments
+                    : key === 'reenrollments'
+                      ? automaticCounts.reenrollments
                   : null;
               return (
                 <div key={key} className="space-y-1.5 text-center">
@@ -208,7 +220,7 @@ export function MonthlyPerformance() {
                     className="h-9 text-center font-bold text-base focus-visible:ring-primary"
                   value={calculatedData[key as EditableIndicator] ?? ""}
                     onChange={(e) => handleInputChange(key as EditableIndicator, e.target.value)}
-                  disabled={key === "visits" || key === "trialClasses" || key === "newEnrollments"}
+                   disabled={key === "visits" || key === "trialClasses" || key === "newEnrollments" || key === "reenrollments"}
                   />
                   {autoCount !== null ? (
                     <p className="text-[10px] text-blue-600 font-semibold">

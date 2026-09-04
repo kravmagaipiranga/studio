@@ -201,6 +201,11 @@ export function RegisterPaymentForm({
         studentUpdate.status = 'Ativo';
         if (targetStudent.status === 'Pendente') {
             studentUpdate.activationDate = new Date().toISOString();
+        } else if (targetStudent.status === 'Inativo') {
+            studentUpdate.reenrollmentDates = [
+                ...(targetStudent.reenrollmentDates || []),
+                new Date().toISOString(),
+            ];
         }
     }
 
