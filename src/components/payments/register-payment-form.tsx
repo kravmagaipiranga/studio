@@ -199,6 +199,9 @@ export function RegisterPaymentForm({
 
     if (values.planType === 'Matrícula' && targetStudent.status !== 'Ativo') {
         studentUpdate.status = 'Ativo';
+        if (targetStudent.status === 'Pendente') {
+            studentUpdate.activationDate = new Date().toISOString();
+        }
     }
 
     const paymentData: Omit<Payment, 'id'> = {

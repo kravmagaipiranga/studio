@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { collection, query, where } from "firebase/firestore";
 import { useFirestore, useMemoFirebase, useCollection } from "@/firebase";
-import { Attendance, Payment } from "@/lib/types";
+import { Attendance, Student } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -54,21 +54,15 @@ export function VisitsTrialCard() {
 
   const { data: attendance, isLoading } = useCollection<Attendance>(attendanceQuery);
 
-  const paymentsQuery = useMemoFirebase(() => {
+  const studentsQuery = useMemoFirebase(() => {
     if (!firestore || !selectedMonth || !selectedYear) return null;
-    const start = format(startOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1)), "yyyy-MM-dd");
-    const end = format(endOfMonth(new Date(Number(selectedYear), Number(selectedMonth) - 1)), "yyyy-MM-dd");
-    return query(
-      collection(firestore, "payments"),
-      where("paymentDate", ">=", start),
-      where("paymentDate", "<=", end)
-    );
+    return collection(firestore, "students");
   }, [firestore, selectedMonth, selectedYear]);
 
-  const { data: payments, isLoading: isLoadingPayments } = useCollection<Payment>(paymentsQuery);
+  const { data: students, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
 
   const metrics = useMemo(() => {
-    if (!attendance || !payments) {
+    if (!attendance || !students) {
       return { visits: 0, experiences: 0, enrollments: 0, byDate: [] as { date: string; visits: number; experiences: number }[] };
     }
 
@@ -92,12 +86,13 @@ export function VisitsTrialCard() {
       .map(([date, counts]) => ({ date, ...counts }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    const enrollments = payments.filter(p => p.planType === "Matrícula").length;
+    const period = `${selectedYear}-${selectedMonth}`;
+    const enrollments = students.filter(student => student.activationDate?.slice(0, 7) === period).length;
 
     return { visits, experiences, enrollments, byDate };
-  }, [attendance, payments]);
+  }, [attendance, students, selectedMonth, selectedYear]);
 
-  const dataIsLoading = isLoading || isLoadingPayments;
+  const dataIsLoading = isLoading || isLoadingStudents;
 
   const months = Array.from({ length: 12 }, (_, i) => {
     const m = String(i + 1).padStart(2, "0");

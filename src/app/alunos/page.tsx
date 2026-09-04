@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { collection, query, orderBy, doc, updateDoc } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { Student, Payment } from "@/lib/types";
+import { Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Search, Download, Upload, UserCheck, MoreHorizontal, UserPlus, UserX, GraduationCap, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -145,22 +145,16 @@ function AlunosContent() {
         return query(collection(firestore, 'students'), orderBy('name', 'asc'));
     }, [firestore]);
     
-    const paymentsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return collection(firestore, 'payments');
-    }, [firestore]);
-
     const { data: allStudents, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
-    const { data: allPayments, isLoading: isLoadingPayments } = useCollection<Payment>(paymentsQuery);
     
-    const isLoading = isLoadingStudents || isLoadingPayments;
+    const isLoading = isLoadingStudents;
 
     useEffect(() => {
         setCurrentPage(1);
     }, [searchQuery, activeFilter]);
 
     const { activeStudentsCount, newEnrollmentsCount } = useMemo(() => {
-        if (!allStudents || !allPayments) return { activeStudentsCount: 0, newEnrollmentsCount: 0 };
+        if (!allStudents) return { activeStudentsCount: 0, newEnrollmentsCount: 0 };
     
         const today = new Date();
         const monthStart = startOfMonth(today);
@@ -168,18 +162,18 @@ function AlunosContent() {
     
         const active = allStudents.filter(s => s.status === 'Ativo').length;
         
-        const newEnrollments = allPayments.filter(p => {
-            if (p.planType !== 'Matrícula') return false;
+        const newEnrollments = allStudents.filter(student => {
+            if (!student.activationDate) return false;
             try {
-                const paymentDate = parseISO(p.paymentDate);
-                return isWithinInterval(paymentDate, { start: monthStart, end: monthEnd });
+                const activationDate = parseISO(student.activationDate);
+                return isWithinInterval(activationDate, { start: monthStart, end: monthEnd });
             } catch {
                 return false;
             }
         }).length;
     
         return { activeStudentsCount: active, newEnrollmentsCount: newEnrollments };
-    }, [allStudents, allPayments]);
+    }, [allStudents]);
 
     const studentsWithTimeInBelt = useMemo(() => {
         if (!allStudents) return [];
@@ -258,9 +252,15 @@ function AlunosContent() {
         e.stopPropagation();
         if (!firestore || togglingId === student.id) return;
         const newStatus = student.status === 'Ativo' ? 'Inativo' : 'Ativo';
+        const activationDate = student.status === 'Pendente' && newStatus === 'Ativo'
+            ? new Date().toISOString()
+            : undefined;
         setTogglingId(student.id);
         try {
-            await updateDoc(doc(firestore, 'students', student.id), { status: newStatus });
+            await updateDoc(doc(firestore, 'students', student.id), {
+                status: newStatus,
+                ...(activationDate ? { activationDate } : {}),
+            });
             toast({
                 title: newStatus === 'Ativo' ? "Aluno ativado" : "Aluno inativado",
                 description: `${student.name} foi marcado como ${newStatus}.`,

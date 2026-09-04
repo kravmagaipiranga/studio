@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { collection, query, where, doc } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
-import { type MonthlyIndicator, type Attendance, type Payment } from "@/lib/types";
+import { type MonthlyIndicator, type Attendance, type Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -69,19 +69,15 @@ export default function IndicadoresPage() {
     );
   }, [firestore, selectedYear]);
 
-  const paymentsQuery = useMemoFirebase(() => {
+  const studentsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(
-      collection(firestore, "payments"),
-      where("paymentDate", ">=", `${selectedYear}-01-01`),
-      where("paymentDate", "<=", `${selectedYear}-12-31`)
-    );
+    return collection(firestore, "students");
   }, [firestore, selectedYear]);
 
   const { data: yearAttendance, isLoading: isLoadingAttendance } =
     useCollection<Attendance>(attendanceQuery);
-  const { data: yearPayments, isLoading: isLoadingPayments } =
-    useCollection<Payment>(paymentsQuery);
+  const { data: students, isLoading: isLoadingStudents } =
+    useCollection<Student>(studentsQuery);
 
   const automaticCountsByMonth = useMemo(() => {
     const counts: Record<number, { visits: number; trialClasses: number; newEnrollments: number }> = {};
@@ -96,15 +92,18 @@ export default function IndicadoresPage() {
       if (attendance.category === "Experiência") counts[month].trialClasses++;
     });
 
-    (yearPayments || []).forEach(payment => {
-      const month = Number(payment.paymentDate?.slice(5, 7));
-      if (month && counts[month] && payment.planType === "Matrícula") {
+    (students || []).forEach(student => {
+      const activationMonth = student.activationDate?.slice(0, 7);
+      const month = activationMonth?.startsWith(`${selectedYear}-`)
+        ? Number(activationMonth.slice(5, 7))
+        : 0;
+      if (month && counts[month]) {
         counts[month].newEnrollments++;
       }
     });
 
     return counts;
-  }, [yearAttendance, yearPayments]);
+  }, [yearAttendance, students, selectedYear]);
 
   useEffect(() => {
     if (initialData) {
@@ -131,7 +130,7 @@ export default function IndicadoresPage() {
 
   const calculatedData = useMemo(() => {
     const newTableData = [...tableData];
-    const hasAutomaticData = yearAttendance !== undefined && yearPayments !== undefined;
+    const hasAutomaticData = yearAttendance !== undefined && students !== undefined;
     for (let i = 0; i < newTableData.length; i++) {
         const currentMonth = hasAutomaticData
           ? {
@@ -157,7 +156,7 @@ export default function IndicadoresPage() {
         currentMonth.conversionRate = conversionDivisor > 0 ? ((currentMonth.newEnrollments || 0) / conversionDivisor) * 100 : 0;
     }
     return newTableData;
-  }, [tableData, yearAttendance, yearPayments, automaticCountsByMonth]);
+  }, [tableData, yearAttendance, students, automaticCountsByMonth]);
 
 
   const handleInputChange = (month: number, field: EditableIndicator, value: string) => {
@@ -185,7 +184,7 @@ export default function IndicadoresPage() {
         const docRef = doc(firestore, 'indicators', id);
         const dataToSave = {
           ...indicator,
-          ...(yearAttendance && yearPayments && automaticCountsByMonth[indicator.month]
+          ...(yearAttendance && students && automaticCountsByMonth[indicator.month]
             ? automaticCountsByMonth[indicator.month]
             : {}),
           id,
@@ -254,7 +253,7 @@ export default function IndicadoresPage() {
     return null;
   }
 
-  const pageIsLoading = isLoading || isLoadingAttendance || isLoadingPayments;
+  const pageIsLoading = isLoading || isLoadingAttendance || isLoadingStudents;
 
   return (
     <div className="flex flex-col gap-4 max-w-full overflow-x-hidden">

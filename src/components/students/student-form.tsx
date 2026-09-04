@@ -327,6 +327,11 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
         registrationDate: student?.registrationDate || new Date().toISOString(),
         planValue: values.planValue,
         paymentStatus: student?.paymentStatus || 'Pendente',
+        ...(student?.activationDate
+          ? { activationDate: student.activationDate }
+          : values.status === 'Ativo' && student?.status === 'Pendente'
+            ? { activationDate: new Date().toISOString() }
+            : {}),
         ...(student?.lastPaymentDate && { lastPaymentDate: student.lastPaymentDate }),
         ...(student?.planExpirationDate && { planExpirationDate: student.planExpirationDate }),
         ...(student?.paymentCredits && { paymentCredits: student.paymentCredits }),

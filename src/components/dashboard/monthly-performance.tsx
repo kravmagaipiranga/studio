@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { collection, query, where, doc } from "firebase/firestore";
 import { useFirestore, useMemoFirebase, setDocumentNonBlocking, useDoc, useCollection } from "@/firebase";
-import { MonthlyIndicator, Student, Attendance, Payment } from "@/lib/types";
+import { MonthlyIndicator, Student, Attendance } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2, ChevronLeft, ChevronRight, Users, TrendingUp, Target } from "lucide-react";
 import { format as dateFnsFormat, startOfMonth, endOfMonth } from "date-fns";
@@ -65,27 +65,14 @@ export function MonthlyPerformance() {
 
   const { data: monthAttendance, isLoading: isLoadingMonthAttendance } = useCollection<Attendance>(attendanceMonthQuery);
 
-  const paymentsMonthQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    const start = dateFnsFormat(startOfMonth(new Date(selectedYear, selectedMonth - 1)), "yyyy-MM-dd");
-    const end = dateFnsFormat(endOfMonth(new Date(selectedYear, selectedMonth - 1)), "yyyy-MM-dd");
-    return query(
-      collection(firestore, "payments"),
-      where("paymentDate", ">=", start),
-      where("paymentDate", "<=", end)
-    );
-  }, [firestore, selectedYear, selectedMonth]);
-
-  const { data: monthPayments, isLoading: isLoadingMonthPayments } = useCollection<Payment>(paymentsMonthQuery);
-
   const automaticCounts = useMemo(() => {
-    if (!monthAttendance || !monthPayments) return { visits: 0, trialClasses: 0, newEnrollments: 0 };
+    if (!monthAttendance || !students) return { visits: 0, trialClasses: 0, newEnrollments: 0 };
     return {
       visits: monthAttendance.filter(a => a.category === "Visita").length,
       trialClasses: monthAttendance.filter(a => a.category === "Experiência").length,
-      newEnrollments: monthPayments.filter(p => p.planType === "Matrícula").length,
+      newEnrollments: students.filter(s => s.activationDate?.slice(0, 7) === documentId).length,
     };
-  }, [monthAttendance, monthPayments]);
+  }, [monthAttendance, students, documentId]);
 
   const activeStudentsCount = useMemo(() => {
     if (!students) return 0;
@@ -112,7 +99,7 @@ export function MonthlyPerformance() {
   const calculatedData = useMemo(() => {
     const data = {
       ...indicator,
-      ...(monthAttendance && monthPayments ? {
+      ...(monthAttendance && students ? {
         visits: automaticCounts.visits,
         trialClasses: automaticCounts.trialClasses,
         newEnrollments: automaticCounts.newEnrollments,
@@ -129,7 +116,7 @@ export function MonthlyPerformance() {
     const conversionDivisor = trials;
     data.conversionRate = conversionDivisor > 0 ? (enrollments / conversionDivisor) * 100 : 0;
     return data;
-  }, [indicator, monthAttendance, monthPayments, automaticCounts]);
+  }, [indicator, monthAttendance, students, automaticCounts]);
 
   const handleInputChange = (field: EditableIndicator, value: string) => {
     const numValue = value === '' ? 0 : Number(value);
@@ -168,7 +155,7 @@ export function MonthlyPerformance() {
     setCurrentDate(current => direction === 'prev' ? subMonths(current, 1) : addMonths(current, 1));
   };
 
-  const isLoading = isLoadingIndicator || isLoadingStudents || isLoadingMonthAttendance || isLoadingMonthPayments;
+  const isLoading = isLoadingIndicator || isLoadingStudents || isLoadingMonthAttendance;
 
   return (
     <Card className="shadow-sm border-muted-foreground/10">
