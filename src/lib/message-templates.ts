@@ -96,7 +96,7 @@ Com mais de 27 anos de experiência, somos o maior CT da região e estamos pront
 
 Horários disponíveis para iniciantes:
 🔹 Seg/Qua: 18h e 20h
-🔹 Ter/Qui: 19h e 20h
+🔹 Ter/Qui: 17h, 19h e 20h
 🔹 Sáb: 10h30
 
 Podemos reservar sua vaga para esta semana?
