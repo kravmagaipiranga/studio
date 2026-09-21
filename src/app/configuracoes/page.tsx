@@ -88,11 +88,66 @@ const beltDisplay: Record<string, { label: string, color: string, textColor: str
   marrom: { label: 'Marrom', color: 'bg-amber-800 border-amber-900', textColor: 'text-white' },
 };
 
+type ExportRecord = Record<string, unknown>;
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatExportValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+
+  const timestamp = value as { toDate?: () => Date };
+  if (typeof timestamp.toDate === "function") {
+    return timestamp.toDate().toLocaleString("pt-BR");
+  }
+
+  try {
+    return JSON.stringify(value, (_, nestedValue) => {
+      if (nestedValue && typeof nestedValue === "object" && "toDate" in nestedValue) {
+        const nestedTimestamp = nestedValue as { toDate?: () => Date };
+        if (typeof nestedTimestamp.toDate === "function") {
+          return nestedTimestamp.toDate().toISOString();
+        }
+      }
+      return nestedValue;
+    }, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+function renderExportTable(records: ExportRecord[]): string {
+  if (records.length === 0) {
+    return '<p class="empty">Nenhum registro encontrado.</p>';
+  }
+
+  const columns = Array.from(new Set(records.flatMap(record => Object.keys(record))));
+  const header = columns.map(column => `<th>${escapeHtml(column)}</th>`).join("");
+  const rows = records.map(record => {
+    const cells = columns
+      .map(column => `<td>${escapeHtml(formatExportValue(record[column]))}</td>`)
+      .join("");
+    return `<tr>${cells}</tr>`;
+  }).join("");
+
+  return `<table><thead><tr>${header}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
 export default function ConfiguracoesPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isExportingStudents, setIsExportingStudents] = useState(false);
   const [isSavingParams, setIsSavingParams] = useState(false);
   const [localParams, setLocalParams] = useState<GlobalParameters>(DEFAULT_PARAMETERS);
 
@@ -182,6 +237,132 @@ export default function ConfiguracoesPage() {
       toast({ variant: "destructive", title: "Erro no Backup", description: "Não foi possível extrair os dados." });
     } finally {
       setIsBackingUp(false);
+    }
+  };
+
+  const handleExportActiveStudents = async () => {
+    if (!firestore) return;
+    setIsExportingStudents(true);
+
+    const relatedCollections = [
+      "students",
+      "payments",
+      "exams",
+      "seminars",
+      "attendance",
+      "privateClasses",
+      "sales",
+      "uniformOrders",
+      "pedidos",
+      "notificacoes_aluno",
+      "appointments",
+    ];
+
+    try {
+      const collectionEntries = await Promise.all(
+        relatedCollections.map(async collectionName => {
+          const snapshot = await getDocs(collection(firestore, collectionName));
+          return [
+            collectionName,
+            snapshot.docs.map(item => ({ ...item.data(), id: item.id }) as ExportRecord),
+          ] as const;
+        })
+      );
+      const records = Object.fromEntries(collectionEntries) as Record<string, ExportRecord[]>;
+      const activeStudents = records.students
+        .filter(student => student.status === "Ativo")
+        .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "pt-BR"));
+
+      const sections = activeStudents.map((student, index) => {
+        const studentId = String(student.id || "");
+        const studentName = String(student.name || "");
+        const studentPhone = String(student.phone || "");
+        const relatedById = (collectionName: string) =>
+          (records[collectionName] || []).filter(record => String(record.studentId || "") === studentId);
+        const privateClasses = (records.privateClasses || []).filter(record => record.studentName === studentName);
+        const appointments = (records.appointments || []).filter(record =>
+          record.name === studentName ||
+          (studentPhone && (record.whatsapp === studentPhone || record.phone === studentPhone))
+        );
+
+        const relatedSections = [
+          { title: "Pagamentos", records: relatedById("payments") },
+          { title: "Exames de faixa", records: relatedById("exams") },
+          { title: "Seminários", records: relatedById("seminars") },
+          { title: "Presenças", records: relatedById("attendance") },
+          { title: "Aulas particulares", records: privateClasses },
+          { title: "Vendas", records: relatedById("sales") },
+          { title: "Pedidos da loja", records: relatedById("uniformOrders").concat(relatedById("pedidos")) },
+          { title: "Notificações do aluno", records: relatedById("notificacoes_aluno") },
+          { title: "Agendamentos relacionados", records: appointments },
+        ];
+
+        return `
+          <section class="student">
+            <h2>${index + 1}. ${escapeHtml(studentName || "Aluno sem nome")}</h2>
+            <h3>Dados completos do cadastro</h3>
+            ${renderExportTable([student])}
+            ${relatedSections.map(section => `
+              <h3>${escapeHtml(section.title)}</h3>
+              ${renderExportTable(section.records)}
+            `).join("")}
+          </section>
+        `;
+      }).join("");
+
+      const generatedAt = new Date().toLocaleString("pt-BR");
+      const html = `
+        <!doctype html>
+        <html lang="pt-BR">
+          <head>
+            <meta charset="utf-8">
+            <title>Alunos ativos - ${escapeHtml(new Date().toLocaleDateString("pt-BR"))}</title>
+            <style>
+              body { font-family: Arial, sans-serif; color: #172033; margin: 28px; font-size: 10pt; }
+              h1 { color: #123b63; border-bottom: 2px solid #123b63; padding-bottom: 8px; }
+              h2 { color: #123b63; margin-top: 28px; page-break-before: always; }
+              h2:first-child { page-break-before: auto; }
+              h3 { color: #2f5d85; margin: 18px 0 6px; }
+              p { margin: 4px 0 12px; }
+              .summary { color: #4b5563; margin-bottom: 24px; }
+              .empty { color: #6b7280; font-style: italic; }
+              table { border-collapse: collapse; width: 100%; margin-bottom: 12px; table-layout: fixed; }
+              th, td { border: 1px solid #cbd5e1; padding: 5px; text-align: left; vertical-align: top; word-break: break-word; }
+              th { background: #e8f0f7; color: #123b63; font-weight: bold; }
+              td { white-space: pre-wrap; }
+              @media print { body { margin: 15mm; } }
+            </style>
+          </head>
+          <body>
+            <h1>Relatório completo de alunos ativos</h1>
+            <p class="summary">Gerado em ${escapeHtml(generatedAt)} · ${activeStudents.length} aluno(s) ativo(s)</p>
+            ${sections || '<p class="empty">Nenhum aluno ativo encontrado.</p>'}
+          </body>
+        </html>
+      `;
+
+      const blob = new Blob([`\ufeff${html}`], { type: "application/msword" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `alunos_ativos_completo_${new Date().toISOString().split("T")[0]}.doc`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Exportação concluída",
+        description: `${activeStudents.length} aluno(s) ativo(s) exportado(s) com todos os registros relacionados.`,
+      });
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Erro na exportação",
+        description: "Não foi possível reunir os dados completos dos alunos ativos.",
+      });
+    } finally {
+      setIsExportingStudents(false);
     }
   };
 
@@ -575,6 +756,16 @@ export default function ConfiguracoesPage() {
               <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-white rounded-lg border shadow-sm">
                 <div className="flex-1"><p className="text-sm font-bold">Gerar Backup Completo</p></div>
                 <Button onClick={handleBackup} disabled={isBackingUp}>Baixar Dados</Button>
+              </div>
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-white rounded-lg border shadow-sm">
+                <div className="flex-1">
+                  <p className="text-sm font-bold">Exportar alunos ativos</p>
+                  <p className="text-xs text-muted-foreground">Gera um documento com cadastro, pagamentos, exames, seminários, presenças e demais registros relacionados.</p>
+                </div>
+                <Button onClick={handleExportActiveStudents} disabled={isExportingStudents}>
+                  {isExportingStudents ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                  Exportar DOC
+                </Button>
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-white rounded-lg border shadow-sm">
                 <div className="flex-1"><p className="text-sm font-bold">Restaurar de Arquivo</p></div>

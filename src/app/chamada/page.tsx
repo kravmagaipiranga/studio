@@ -13,7 +13,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { format, parseISO, startOfMonth, endOfMonth, isSaturday, eachWeekOfInterval, getDay } from "date-fns";
+import { format, parseISO, startOfMonth, endOfMonth, isSaturday, eachWeekOfInterval } from "date-fns";
 import { CheckSquare, Trash2, UserCheck, Clock, UserPlus, Info, TrendingDown, Users, BookOpen, GraduationCap, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -108,7 +108,8 @@ function ChamadaContent() {
       if (isSaturday(dateObj)) {
         return ["9h", "10h30"];
       }
-      const dayOfWeek = getDay(dateObj);
+      const [year, month, day] = classDate.split("-").map(Number);
+      const dayOfWeek = new Date(year, month - 1, day).getDay();
       if (dayOfWeek === 2 || dayOfWeek === 4) {
         return ["17h", "18h", "19h", "20h"];
       }
