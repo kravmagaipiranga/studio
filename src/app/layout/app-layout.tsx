@@ -80,7 +80,7 @@ const MENU_ITEMS = [
   { href: "/lista-de-tarefas", label: "Lista de Tarefas", icon: ListChecks },
   { href: "/leads", label: "Leads CAT CPKM", icon: Phone },
   { href: "/register", label: "Cadastro Público", icon: UserPlus, target: "_blank" },
-  { href: "/apostila", label: "Apostila", icon: BookOpen },
+  { href: "/apostila", label: "Tópicos de aprendizado", icon: BookOpen },
   { href: "/avisos", label: "Avisos", icon: Megaphone },
   { href: "/loja", label: "Loja", icon: ShoppingBag },
   { href: "/despesas", label: "Despesas", icon: Receipt },

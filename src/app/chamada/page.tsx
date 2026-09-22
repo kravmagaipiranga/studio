@@ -521,12 +521,12 @@ function ChamadaContent() {
                 <BookOpen className="h-5 w-5 text-blue-600" />
                 Matérias Ensinadas no Dia
               </CardTitle>
-              <CardDescription>Registre os temas técnicos abordados em aula conforme a apostila.</CardDescription>
+              <CardDescription>Registre os temas técnicos abordados em aula conforme os tópicos de aprendizado.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Graduação (Filtro Apostila)</label>
+                        <label className="text-sm font-medium">Graduação (filtro de tópicos)</label>
                         <Select value={selectedBeltId} onValueChange={setSelectedBeltId}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Selecione a faixa..." />
@@ -547,7 +547,7 @@ function ChamadaContent() {
                         <label className="text-sm font-medium">Técnica ensinada</label>
                         <Select value={selectedTechnique} onValueChange={setSelectedTechnique} disabled={!selectedBeltId}>
                             <SelectTrigger>
-                                <SelectValue placeholder={selectedBeltId ? "Escolha a técnica da apostila..." : "Selecione a faixa primeiro"} />
+                                <SelectValue placeholder={selectedBeltId ? "Escolha o tópico de aprendizado..." : "Selecione a faixa primeiro"} />
                             </SelectTrigger>
                             <SelectContent>
                                 {availableTechniques.length > 0 ? (

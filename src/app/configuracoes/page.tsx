@@ -151,7 +151,7 @@ export default function ConfiguracoesPage() {
   const [isSavingParams, setIsSavingParams] = useState(false);
   const [localParams, setLocalParams] = useState<GlobalParameters>(DEFAULT_PARAMETERS);
 
-  // Apostila State
+  // Tópicos de aprendizado state
   const [localHandbook, setLocalHandbook] = useState<Record<string, string>>({});
   const [isSavingHandbook, setIsSavingHandbook] = useState(false);
 
@@ -459,7 +459,7 @@ export default function ConfiguracoesPage() {
         updatedAt: new Date().toISOString()
       };
       await setDocumentNonBlocking(doc(firestore, 'handbook', beltId), data, { merge: true });
-      toast({ title: "Apostila Atualizada", description: `Matéria da ${beltName} salva.` });
+      toast({ title: "Tópicos de aprendizado atualizados", description: `Matéria da ${beltName} salva.` });
     } catch (e) {
       toast({ variant: "destructive", title: "Erro ao salvar" });
     } finally {
@@ -523,7 +523,7 @@ export default function ConfiguracoesPage() {
         <TabsList className="grid w-full grid-cols-5 max-w-2xl">
           <TabsTrigger value="identidade">Escola</TabsTrigger>
           <TabsTrigger value="academico">Acadêmico</TabsTrigger>
-          <TabsTrigger value="apostila">Apostila</TabsTrigger>
+          <TabsTrigger value="apostila">Tópicos de aprendizado</TabsTrigger>
           <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
           <TabsTrigger value="seguranca">Segurança</TabsTrigger>
         </TabsList>
@@ -588,11 +588,11 @@ export default function ConfiguracoesPage() {
         <TabsContent value="apostila" className="space-y-6 pt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-emerald-600" />
-                Gestão de Matérias (Apostila)
+                  Gestão de tópicos de aprendizado
               </CardTitle>
-              <CardDescription>Cole as técnicas de cada faixa. Cada linha será tratada como um item separado na apostila.</CardDescription>
+              <CardDescription>Cole as técnicas de cada faixa. Cada linha será tratada como um tópico de aprendizado separado.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {BELTS.map(belt => (

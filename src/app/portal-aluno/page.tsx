@@ -62,7 +62,7 @@ const NAV_ITEMS: { value: Tab; icon: React.ElementType; label: string }[] = [
   { value: 'pagamentos', icon: CreditCard,     label: 'Pgtos' },
   { value: 'presencas',  icon: CalendarCheck,  label: 'Pres.' },
   { value: 'exames',     icon: GraduationCap,  label: 'Exames' },
-  { value: 'curriculo',  icon: BookOpen,       label: 'Currículo' },
+  { value: 'curriculo',  icon: BookOpen,       label: 'Graduação' },
   { value: 'loja',       icon: ShoppingBag,    label: 'Loja' },
 ];
 
@@ -557,8 +557,8 @@ export default function StudentPortalPage() {
                   <p className="text-sm font-bold text-red-800">Seu plano está vencido</p>
                   <p className="text-xs text-red-700 mt-0.5 leading-snug">
                     {planBlock === 'inativo'
-                      ? 'Faça a sua Rematrícula para ter acesso ao currículo e ao histórico de exames.'
-                      : 'Renove sua mensalidade para continuar acessando o currículo e o histórico de exames.'}
+                      ? 'Faça a sua Rematrícula para ter acesso à graduação e ao histórico de exames.'
+                      : 'Renove sua mensalidade para continuar acessando a graduação e o histórico de exames.'}
                   </p>
                   <button
                     onClick={() => setActiveTab('pagamentos')}
@@ -955,7 +955,7 @@ export default function StudentPortalPage() {
           )
         )}
 
-        {/* ── CURRÍCULO ───────────────────────────────────────────────────── */}
+        {/* ── GRADUAÇÃO ───────────────────────────────────────────────────── */}
         {activeTab === 'curriculo' && (
           planBlock ? (
             <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
@@ -965,8 +965,8 @@ export default function StudentPortalPage() {
               <p className="text-base font-semibold text-foreground">Acesso bloqueado</p>
               <p className="text-sm text-muted-foreground max-w-xs">
                 {planBlock === 'inativo'
-                  ? 'Faça a sua Rematrícula para ter acesso ao currículo.'
-                  : 'O currículo está disponível apenas para alunos com plano ativo.'}
+                  ? 'Faça a sua Rematrícula para ter acesso à graduação.'
+                  : 'A graduação está disponível apenas para alunos com plano ativo.'}
               </p>
               <Button size="sm" variant="destructive" onClick={() => setActiveTab('pagamentos')}>
                 Ver pagamentos
@@ -983,7 +983,7 @@ export default function StudentPortalPage() {
                   <BookOpen className="h-4 w-4" />
                 </div>
                 <div>
-                  <CardTitle className="text-base">Currículo — Faixa {student.belt}</CardTitle>
+                  <CardTitle className="text-base">Graduação — Faixa {student.belt}</CardTitle>
                   <CardDescription className="text-xs">Matérias do programa da sua graduação atual.</CardDescription>
                 </div>
               </div>
@@ -1048,7 +1048,7 @@ export default function StudentPortalPage() {
               ) : (
                 <div className="py-10 text-center">
                   <BookOpen className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground font-medium">Currículo não disponível</p>
+                  <p className="text-sm text-muted-foreground font-medium">Graduação não disponível</p>
                   <p className="text-xs text-muted-foreground/70 mt-1">
                     Nenhuma matéria cadastrada para a Faixa {student.belt} ainda.
                   </p>

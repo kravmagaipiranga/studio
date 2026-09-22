@@ -54,14 +54,14 @@ export default function ApostilaPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <BookOpen className="h-6 w-6 text-emerald-600" />
-            Apostila Técnica
+            Tópicos de aprendizado
           </h1>
-          <p className="text-muted-foreground">Currículo de graduação e lista de exercícios por faixa.</p>
+          <p className="text-muted-foreground">Conteúdo de graduação e lista de exercícios por faixa.</p>
         </div>
         <Link href="/configuracoes?tab=apostila">
           <Button variant="outline" size="sm">
             <Settings className="h-4 w-4 mr-2" />
-            Gerenciar Matérias
+            Gerenciar tópicos
           </Button>
         </Link>
       </div>
@@ -126,7 +126,7 @@ export default function ApostilaPage() {
                     <p className="text-sm text-muted-foreground italic">Nenhuma matéria técnica cadastrada para esta faixa.</p>
                     <Link href="/configuracoes?tab=apostila">
                       <Button variant="link" size="sm" className="mt-2 font-bold uppercase text-[10px]">
-                        Clique aqui para adicionar
+                        Clique aqui para adicionar tópicos
                       </Button>
                     </Link>
                   </div>
