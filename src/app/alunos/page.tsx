@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { collection, query, orderBy, doc, updateDoc } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { Student } from "@/lib/types";
+import { Exam, Student } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Search, Download, Upload, UserCheck, MoreHorizontal, UserPlus, UserX, GraduationCap, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BulkImportDialog } from "@/components/students/bulk-import-dialog";
 import { Badge } from "@/components/ui/badge";
-import { differenceInMonths, isBefore, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { differenceInMonths, format, isBefore, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -100,6 +100,15 @@ function getInitials(name: string) {
     return name.substring(0, 2).toUpperCase();
 }
 
+function formatExamDate(date?: string): string {
+    if (!date) return "—";
+    try {
+        return format(parseISO(date.split('T')[0]), "dd/MM/yyyy");
+    } catch {
+        return date;
+    }
+}
+
 function AlunosContent() {
     const firestore = useFirestore();
     const router = useRouter();
@@ -144,10 +153,16 @@ function AlunosContent() {
         if (!firestore) return null;
         return query(collection(firestore, 'students'), orderBy('name', 'asc'));
     }, [firestore]);
+
+    const examsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'exams');
+    }, [firestore]);
     
     const { data: allStudents, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
+    const { data: allExams, isLoading: isLoadingExams } = useCollection<Exam>(examsQuery);
     
-    const isLoading = isLoadingStudents;
+    const isLoading = isLoadingStudents || isLoadingExams;
 
     useEffect(() => {
         setCurrentPage(1);
@@ -175,17 +190,36 @@ function AlunosContent() {
         return { activeStudentsCount: active, newEnrollmentsCount: newEnrollments };
     }, [allStudents]);
 
+    const latestExamByStudent = useMemo(() => {
+        const latestByStudent = new Map<string, Exam>();
+        for (const exam of allExams || []) {
+            if (!exam.studentId || !exam.examDate || !exam.targetBelt) continue;
+            const examTime = Date.parse(exam.examDate);
+            if (!Number.isFinite(examTime)) continue;
+
+            const previous = latestByStudent.get(exam.studentId);
+            const previousTime = previous?.examDate ? Date.parse(previous.examDate) : Number.NEGATIVE_INFINITY;
+            if (!previous || examTime > previousTime) {
+                latestByStudent.set(exam.studentId, exam);
+            }
+        }
+        return latestByStudent;
+    }, [allExams]);
+
     const studentsWithTimeInBelt = useMemo(() => {
         if (!allStudents) return [];
 
         return allStudents.map(student => {
-            const dateToCalculateFrom = student.lastExamDate || student.startDate || student.registrationDate;
+            const latestExam = latestExamByStudent.get(student.id);
+            const lastExamDate = latestExam?.examDate || student.lastExamDate;
+            const belt = latestExam?.targetBelt || student.belt;
+            const dateToCalculateFrom = lastExamDate || student.startDate || student.registrationDate;
             const timeInBelt = calculateTimeSince(dateToCalculateFrom);
             
-            return { ...student, timeInBelt };
+            return { ...student, belt, lastExamDate, timeInBelt };
         });
 
-    }, [allStudents]);
+    }, [allStudents, latestExamByStudent]);
 
     const filteredStudents = useMemo(() => {
         if (!studentsWithTimeInBelt) return [];
@@ -536,6 +570,7 @@ function AlunosContent() {
                                     <TableHead className="w-[300px]">Aluno</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Faixa</TableHead>
+                                    <TableHead>Último Exame</TableHead>
                                     <TableHead>Tempo na Faixa</TableHead>
                                     <TableHead><span className="sr-only">Ações</span></TableHead>
                                 </TableRow>
@@ -545,6 +580,7 @@ function AlunosContent() {
                                     <TableRow key={i}>
                                         <TableCell><Skeleton className="h-6 w-48"/></TableCell>
                                         <TableCell><Skeleton className="h-6 w-20"/></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-24"/></TableCell>
                                         <TableCell><Skeleton className="h-6 w-24"/></TableCell>
                                         <TableCell><Skeleton className="h-6 w-20"/></TableCell>
                                         <TableCell><Skeleton className="h-8 w-8"/></TableCell>
@@ -587,6 +623,7 @@ function AlunosContent() {
                                                 {student.belt}
                                             </Badge>
                                         </TableCell>
+                                        <TableCell>{formatExamDate(student.lastExamDate)}</TableCell>
                                         <TableCell>
                                             {student.timeInBelt && <Badge variant="secondary">{student.timeInBelt}</Badge>}
                                         </TableCell>

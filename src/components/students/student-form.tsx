@@ -57,7 +57,7 @@ const formSchema = z.object({
   tshirtSize: z.string().min(1, "Selecione um tamanho de camiseta."),
   pantsSize: z.string().min(1, "Selecione um tamanho de calça."),
 
-  planType: z.enum(["Mensal", "Trimestral", "Bolsa 50%", "Bolsa 100%", "Outros", "Matrícula"]).optional(),
+  planType: z.string().optional(),
   planValue: z.preprocess(
     (a) => {
       if (typeof a === 'string' && a.trim() !== '') {
@@ -69,11 +69,11 @@ const formSchema = z.object({
     },
     z.number({ invalid_type_error: "O valor deve ser um número." }).optional()
   ),
-  paymentPreference: z.array(z.enum(["pix", "dinheiro", "boleto"])).optional(),
+  paymentPreference: z.array(z.string()).optional(),
   
   fikmAnnuityPaid: z.boolean().optional(),
   fikmAnnuityPaymentDate: z.string().optional(),
-  fikmAnnuityPaymentMethod: z.enum(["Pix", "Boleto", "Dinheiro", "Pendente"]).optional(),
+  fikmAnnuityPaymentMethod: z.string().optional(),
 
   emergencyContacts: z.string().optional(),
   medicalHistory: z.string().optional(),
@@ -198,14 +198,12 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
         readyForReview: student.readyForReview || false,
         generalNotes: student.generalNotes || "",
         medicalHistory: student.medicalHistory || "",
-        planType: (['Mensal','Trimestral','Bolsa 50%','Bolsa 100%','Outros','Matrícula'] as const).includes(student.planType as any)
-          ? student.planType as 'Mensal' | 'Trimestral' | 'Bolsa 50%' | 'Bolsa 100%' | 'Outros' | 'Matrícula'
-          : 'Mensal',
-        planValue: student.planValue ?? 330,
+        planType: student.planType,
+        planValue: student.planValue,
         paymentPreference: student.paymentPreference || [],
-        fikmAnnuityPaid: student.fikmAnnuityPaid || false,
+        fikmAnnuityPaid: student.fikmAnnuityPaid ?? false,
         fikmAnnuityPaymentDate: student.fikmAnnuityPaymentDate ? student.fikmAnnuityPaymentDate.split('T')[0] : '',
-        fikmAnnuityPaymentMethod: student.fikmAnnuityPaymentMethod || 'Pendente',
+        fikmAnnuityPaymentMethod: student.fikmAnnuityPaymentMethod,
       });
     }
   }, [student, isEditing, form]);
@@ -320,12 +318,16 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     }
     
     const finalStudentId = isEditing && student ? student.id : doc(collection(firestore, "students")).id;
+    const { lastExamDate: _lastExamDate, ...submittedValues } = values;
+    const editableValues = Object.fromEntries(
+      Object.entries(submittedValues).filter(([, value]) => value !== undefined)
+    ) as Partial<Student>;
     
     const studentData: Partial<Student> = {
-        ...values,
+        ...(isEditing && student ? student : {}),
+        ...editableValues,
         id: finalStudentId,
         registrationDate: student?.registrationDate || new Date().toISOString(),
-        planValue: values.planValue,
         paymentStatus: student?.paymentStatus || 'Pendente',
         ...(student?.activationDate
           ? { activationDate: student.activationDate }
@@ -537,6 +539,9 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                                          </SelectTrigger>
                                      </FormControl>
                                      <SelectContent>
+                                      {field.value && !["Branca", "Amarela", "Laranja", "Verde", "Azul", "Marrom", "Preta"].includes(field.value) && (
+                                          <SelectItem value={field.value}>{field.value} (cadastro atual)</SelectItem>
+                                      )}
                                          <SelectItem value="Branca">Branca</SelectItem>
                                          <SelectItem value="Amarela">Amarela</SelectItem>
                                          <SelectItem value="Laranja">Laranja</SelectItem>
@@ -642,6 +647,9 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
+                                    {field.value && !["Mensal", "Trimestral", "Bolsa 50%", "Bolsa 100%", "Outros", "Matrícula"].includes(field.value) && (
+                                        <SelectItem value={field.value}>{field.value} (cadastro atual)</SelectItem>
+                                    )}
                                     <SelectItem value="Mensal">Mensal</SelectItem>
                                     <SelectItem value="Trimestral">Trimestral</SelectItem>
                                     <SelectItem value="Bolsa 50%">Bolsa 50%</SelectItem>
@@ -690,6 +698,11 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                                         value={field.value}
                                         onValueChange={field.onChange}
                                     >
+                                        {(field.value || [])
+                                          .filter(value => value && !["pix", "dinheiro", "boleto"].includes(value))
+                                          .map(value => (
+                                            <ToggleGroupItem key={value} value={value}>{value} (atual)</ToggleGroupItem>
+                                          ))}
                                         <ToggleGroupItem value="pix">Pix</ToggleGroupItem>
                                         <ToggleGroupItem value="dinheiro">Dinheiro</ToggleGroupItem>
                                         <ToggleGroupItem value="boleto">Boleto</ToggleGroupItem>
@@ -742,6 +755,9 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
                                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
+                                        {field.value && !["Pendente", "Pix", "Boleto", "Dinheiro"].includes(field.value) && (
+                                            <SelectItem value={field.value}>{field.value} (cadastro atual)</SelectItem>
+                                        )}
                                         <SelectItem value="Pendente">Pendente</SelectItem>
                                         <SelectItem value="Pix">Pix</SelectItem>
                                         <SelectItem value="Boleto">Boleto</SelectItem>
