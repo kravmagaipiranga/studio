@@ -49,6 +49,32 @@ const beltColors: Record<string, string> = {
   'Preta': '#0f172a',
 };
 
+function getClassOptionsForDate(date: string): string[] {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) return ["18h", "19h", "20h"];
+
+  const [, yearText, monthText, dayText] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const dateObject = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    dateObject.getUTCFullYear() !== year ||
+    dateObject.getUTCMonth() !== month - 1 ||
+    dateObject.getUTCDate() !== day
+  ) {
+    return ["18h", "19h", "20h"];
+  }
+
+  const dayOfWeek = dateObject.getUTCDay();
+  if (dayOfWeek === 6) return ["9h", "10h30"];
+  if (dayOfWeek === 2 || dayOfWeek === 4) {
+    return ["17h", "18h", "19h", "20h"];
+  }
+  return ["18h", "19h", "20h"];
+}
+
 function ChamadaContent() {
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -103,20 +129,7 @@ function ChamadaContent() {
 
   // Determine class options based on date
   const classOptions = useMemo(() => {
-    try {
-      const dateObj = parseISO(classDate);
-      if (isSaturday(dateObj)) {
-        return ["9h", "10h30"];
-      }
-      const [year, month, day] = classDate.split("-").map(Number);
-      const dayOfWeek = new Date(year, month - 1, day).getDay();
-      if (dayOfWeek === 2 || dayOfWeek === 4) {
-        return ["17h", "18h", "19h", "20h"];
-      }
-      return ["18h", "19h", "20h"];
-    } catch {
-      return ["18h", "19h", "20h"];
-    }
+    return getClassOptionsForDate(classDate);
   }, [classDate]);
 
   // Sync selected class if it becomes invalid after date change
@@ -436,6 +449,9 @@ function ChamadaContent() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    A turma das 17h aparece ao selecionar uma terça ou quinta-feira.
+                  </p>
                 </div>
               </div>
 
