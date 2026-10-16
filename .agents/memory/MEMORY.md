@@ -1,0 +1,1 @@
+- [Preços de planos](plan-pricing.md) — reajustar um plano em Configurações deve propagar o preço aos cadastros dos alunos desse plano.

@@ -1,4 +1,14 @@
 
+export type PlanType = 'Mensal' | 'Trimestral' | 'Bolsa 50%' | 'Bolsa 100%' | 'Outros' | 'Matrícula';
+
+export const DEFAULT_PLAN_PRICES: Partial<Record<PlanType, number>> = {
+  'Mensal': 330,
+  'Matrícula': 170,
+  'Trimestral': 940,
+  'Bolsa 50%': 165,
+  'Bolsa 100%': 0,
+};
+
 export type Student = {
   id: string;
   name: string;
@@ -25,7 +35,7 @@ export type Student = {
   fikmAnnuityPaymentDate?: string;
   fikmAnnuityPaymentMethod?: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
   readyForReview?: boolean;
-  planType?: 'Mensal' | 'Trimestral' | 'Bolsa 50%' | 'Bolsa 100%' | 'Outros' | 'Matrícula';
+  planType?: PlanType;
   planValue?: number;
   paymentPreference?: ('pix' | 'dinheiro' | 'boleto')[];
   lastPaymentDate?: string;
@@ -41,7 +51,7 @@ export type Payment = {
   studentId: string;
   studentName: string;
   paymentDate: string;
-  planType: 'Mensal' | 'Trimestral' | 'Bolsa 50%' | 'Bolsa 100%' | 'Outros' | 'Matrícula';
+  planType: PlanType;
   amount: number;
   expirationDate?: string;
   paymentMethod: 'Pix' | 'Boleto' | 'Dinheiro' | 'Pendente';
@@ -250,6 +260,7 @@ export type GlobalParameters = {
     azul: number;
     marrom: number;
   };
+  planPrices?: Partial<Record<PlanType, number | null>>;
 };
 
 export type Company = {

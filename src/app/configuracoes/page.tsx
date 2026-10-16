@@ -21,7 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GlobalParameters, Student, MessageTemplate, HandbookContent } from "@/lib/types";
+import { DEFAULT_PLAN_PRICES, GlobalParameters, PlanType, Student, MessageTemplate, HandbookContent } from "@/lib/types";
 import { DEFAULT_TEMPLATES } from "@/lib/message-templates";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -57,6 +57,7 @@ const DEFAULT_PARAMETERS: GlobalParameters = {
   schoolAddress: "Rua Tabor, 482 - Ipiranga - São Paulo - SP",
   schoolPhone: "11 2589-6049",
   attendanceTargetPerWeek: 2,
+  planPrices: { ...DEFAULT_PLAN_PRICES },
   beltRules: {
     branca: 4,
     amarela: 12,
@@ -78,6 +79,15 @@ const BELTS = [
 ];
 
 const beltOrder: (keyof GlobalParameters['beltRules'])[] = ['branca', 'amarela', 'laranja', 'verde', 'azul', 'marrom'];
+
+const PLAN_PRICE_FIELDS: { type: PlanType; label: string }[] = [
+  { type: 'Mensal', label: 'Mensal' },
+  { type: 'Matrícula', label: 'Matrícula' },
+  { type: 'Trimestral', label: 'Trimestral' },
+  { type: 'Bolsa 50%', label: 'Bolsa 50%' },
+  { type: 'Bolsa 100%', label: 'Bolsa 100%' },
+  { type: 'Outros', label: 'Outros' },
+];
 
 const beltDisplay: Record<string, { label: string, color: string, textColor: string }> = {
   branca: { label: 'Branca', color: 'bg-white border-gray-300', textColor: 'text-black' },
@@ -149,6 +159,7 @@ export default function ConfiguracoesPage() {
   const [isRestoring, setIsRestoring] = useState(false);
   const [isExportingStudents, setIsExportingStudents] = useState(false);
   const [isSavingParams, setIsSavingParams] = useState(false);
+  const [isUpdatingPlanPrices, setIsUpdatingPlanPrices] = useState(false);
   const [localParams, setLocalParams] = useState<GlobalParameters>(DEFAULT_PARAMETERS);
 
   // Tópicos de aprendizado state
@@ -190,7 +201,16 @@ export default function ConfiguracoesPage() {
   }, [dbTemplates]);
 
   useEffect(() => {
-    if (dbParams) setLocalParams(dbParams);
+    if (dbParams) {
+      setLocalParams({
+        ...DEFAULT_PARAMETERS,
+        ...dbParams,
+        planPrices: {
+          ...DEFAULT_PLAN_PRICES,
+          ...dbParams.planPrices,
+        },
+      });
+    }
   }, [dbParams]);
 
   useEffect(() => {
@@ -415,29 +435,72 @@ export default function ConfiguracoesPage() {
 
   const handleUpdateAllStudentPlans = async () => {
     if (!firestore) return;
-    setIsSavingParams(true);
+
+    const planPrices = {
+      ...DEFAULT_PLAN_PRICES,
+      ...localParams.planPrices,
+    };
+    const requiredPlanTypes = PLAN_PRICE_FIELDS
+      .map(field => field.type)
+      .filter(planType => planType !== 'Outros');
+    const hasInvalidPrice = Object.values(planPrices).some(
+      value => value !== undefined && value !== null && (!Number.isFinite(value) || value < 0)
+    );
+    const missingPlan = requiredPlanTypes.find(planType => typeof planPrices[planType] !== 'number');
+
+    if (hasInvalidPrice || missingPlan) {
+      toast({
+        variant: "destructive",
+        title: "Revise os valores dos planos",
+        description: missingPlan
+          ? `Informe um valor para o plano ${missingPlan}.`
+          : "Os valores precisam ser números iguais ou maiores que zero.",
+      });
+      return;
+    }
+
+    setIsUpdatingPlanPrices(true);
+    let pricesWereSaved = false;
+    let updatedCount = 0;
     try {
+      await setDocumentNonBlocking(doc(firestore, 'parameters', 'global'), { planPrices }, { merge: true });
+      pricesWereSaved = true;
+
       const querySnapshot = await getDocs(collection(firestore, 'students'));
-      const batch = writeBatch(firestore);
-      let count = 0;
+      const changes: { ref: (typeof querySnapshot.docs)[number]["ref"]; planValue: number }[] = [];
       querySnapshot.forEach((studentDoc) => {
         const data = studentDoc.data() as Student;
-        let newVal = data.planValue;
-        if (data.planType === 'Mensal') newVal = 330;
-        if (data.planType === 'Matrícula') newVal = 170;
-        if (data.planType === 'Trimestral') newVal = 940;
-        if (data.planType === 'Bolsa 50%') newVal = 165;
-        if (newVal !== data.planValue) {
-          batch.update(studentDoc.ref, { planValue: newVal });
-          count++;
+        if (!data.planType) return;
+        const newValue = planPrices[data.planType];
+        if (typeof newValue === 'number' && newValue !== data.planValue) {
+          changes.push({ ref: studentDoc.ref, planValue: newValue });
         }
       });
-      await batch.commit();
-      toast({ title: "Atualização Concluída", description: `${count} alunos atualizados.` });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Erro na atualização" });
+
+      for (let offset = 0; offset < changes.length; offset += 450) {
+        const batch = writeBatch(firestore);
+        const batchChanges = changes.slice(offset, offset + 450);
+        batchChanges.forEach(change => {
+          batch.update(change.ref, { planValue: change.planValue });
+        });
+        await batch.commit();
+        updatedCount += batchChanges.length;
+      }
+
+      toast({
+        title: "Valores atualizados",
+        description: `${updatedCount} aluno(s) receberam os novos valores. Os pagamentos já registrados não foram alterados.`,
+      });
+    } catch {
+      toast({
+        variant: "destructive",
+        title: pricesWereSaved ? "Atualização parcial" : "Erro ao salvar os valores",
+        description: pricesWereSaved
+          ? `${updatedCount} aluno(s) foram atualizados antes da falha. Os valores novos já estão salvos; clique novamente para concluir os demais.`
+          : "Não foi possível salvar os valores dos planos.",
+      });
     } finally {
-      setIsSavingParams(false);
+      setIsUpdatingPlanPrices(false);
     }
   };
 
@@ -568,16 +631,66 @@ export default function ConfiguracoesPage() {
                 </div>
               </div>
               <div className="space-y-4">
-                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Manutenção de Alunos</h4>
-                <div className="p-4 border rounded-lg bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="space-y-1"><p className="text-sm font-bold">Atualizar Valores de Março/2025</p></div>
+                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Manutenção de Alunos — Valores dos Planos</h4>
+                <div className="space-y-4 rounded-lg border bg-muted/20 p-4">
+                  <p className="text-sm text-muted-foreground">
+                    Defina o valor de cada plano. Ao confirmar, o valor cadastrado será atualizado em todos os alunos daquele plano, inclusive inativos.
+                  </p>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {PLAN_PRICE_FIELDS.map(({ type, label }) => (
+                      <div key={type} className="space-y-2">
+                        <Label htmlFor={`plan-price-${type}`}>{label}</Label>
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
+                          <Input
+                            id={`plan-price-${type}`}
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className="pl-10"
+                            value={localParams.planPrices?.[type] ?? ""}
+                            onChange={event => {
+                              const rawValue = event.target.value;
+                              const value = rawValue === "" ? null : Number(rawValue);
+                              setLocalParams(previous => ({
+                                ...previous,
+                                planPrices: {
+                                  ...DEFAULT_PLAN_PRICES,
+                                  ...previous.planPrices,
+                                  [type]: value,
+                                },
+                              }));
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Se “Outros” ficar em branco, os valores individuais já cadastrados nesses alunos serão mantidos. Pagamentos já registrados não serão alterados.
+                  </p>
+                  <div className="flex justify-end">
                     <AlertDialog>
-                        <AlertDialogTrigger asChild><Button variant="outline" size="sm">Atualizar Todos</Button></AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Atualizar todos os planos?</AlertDialogTitle><AlertDialogDescription>Aplica a nova tabela de preços em todos os cadastros.</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleUpdateAllStudentPlans}>Confirmar</AlertDialogAction></AlertDialogFooter>
-                        </AlertDialogContent>
+                      <AlertDialogTrigger asChild>
+                        <Button disabled={isUpdatingPlanPrices}>
+                          {isUpdatingPlanPrices && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Salvar valores e atualizar alunos
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Aplicar os novos valores a todos os alunos?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            O valor do plano será substituído para todos os alunos com um dos tipos configurados, inclusive inativos. Valores em “Outros” sem preço definido e pagamentos já registrados serão mantidos.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleUpdateAllStudentPlans}>Confirmar atualização</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
                     </AlertDialog>
+                  </div>
                 </div>
               </div>
               <div className="flex justify-end pt-4"><Button onClick={handleSaveParameters} disabled={isSavingParams}>Salvar Regras</Button></div>

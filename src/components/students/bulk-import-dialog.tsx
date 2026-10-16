@@ -15,9 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useFirestore, setDocumentNonBlocking } from "@/firebase";
+import { useDoc, useFirestore, useMemoFirebase, setDocumentNonBlocking } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { Student } from "@/lib/types";
+import { DEFAULT_PLAN_PRICES, GlobalParameters, Student } from "@/lib/types";
 import { Lightbulb } from "lucide-react";
 
 interface BulkImportDialogProps {
@@ -30,6 +30,11 @@ export function BulkImportDialog({ children }: BulkImportDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const firestore = useFirestore();
   const { toast } = useToast();
+  const parametersRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, "parameters", "global");
+  }, [firestore]);
+  const { data: globalParameters } = useDoc<GlobalParameters>(parametersRef);
 
   const handleBulkImport = () => {
     if (!firestore || !pasteData) {
@@ -67,7 +72,7 @@ export function BulkImportDialog({ children }: BulkImportDialogProps) {
         registrationDate: new Date().toISOString(),
         paymentStatus: 'Pendente',
         planType: 'Mensal',
-        planValue: 330,
+        planValue: globalParameters?.planPrices?.Mensal ?? DEFAULT_PLAN_PRICES.Mensal ?? 330,
       };
 
       const docRef = doc(firestore, 'students', newStudentId);

@@ -13,10 +13,11 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth, useFirestore } from "@/firebase";
+import { useAuth, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "../ui/textarea";
 import { Checkbox } from "../ui/checkbox";
+import { DEFAULT_PLAN_PRICES, GlobalParameters } from "@/lib/types";
 
 const registrationSchema = z.object({
   name: z.string().min(3, "O nome completo é obrigatório."),
@@ -45,6 +46,11 @@ export function PublicRegistrationForm() {
   const firestore = useFirestore();
   const auth = useAuth();
   const router = useRouter();
+  const parametersRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, "parameters", "global");
+  }, [firestore]);
+  const { data: globalParameters } = useDoc<GlobalParameters>(parametersRef);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -94,7 +100,7 @@ export function PublicRegistrationForm() {
         paymentStatus: 'Pendente' as const,
         registrationDate: new Date().toISOString(),
         planType: 'Mensal' as const,
-        planValue: 330,
+        planValue: globalParameters?.planPrices?.Mensal ?? DEFAULT_PLAN_PRICES.Mensal ?? 330,
       });
 
       // 3. Redirect to the portal (they are now signed in)

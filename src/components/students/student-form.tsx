@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useDoc, useFirestore, useMemoFirebase, setDocumentNonBlocking, useAuth } from "@/firebase"
-import { Student } from "@/lib/types"
+import { DEFAULT_PLAN_PRICES, GlobalParameters, PlanType, Student } from "@/lib/types"
 import { Switch } from "../ui/switch"
 import { ScrollArea } from "../ui/scroll-area"
 import { Skeleton } from "../ui/skeleton"
@@ -131,7 +131,13 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
     return doc(firestore, 'students', studentId);
   }, [firestore, studentId]);
 
+  const parametersRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'parameters', 'global');
+  }, [firestore]);
+
   const { data: student, isLoading } = useDoc<Student>(studentRef);
+  const { data: globalParameters } = useDoc<GlobalParameters>(parametersRef);
   const hasResetRef = useRef(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -154,7 +160,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
       generalNotes: "",
       medicalHistory: "",
       planType: 'Mensal' as const,
-      planValue: 330,
+      planValue: DEFAULT_PLAN_PRICES.Mensal ?? 330,
       paymentPreference: [],
       fikmAnnuityPaid: false,
       fikmAnnuityPaymentDate: "",
@@ -163,6 +169,7 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
   });
 
   const dobValue = form.watch("dob");
+  const planTypeValue = form.watch("planType");
 
   useEffect(() => {
     if (dobValue) {
@@ -177,6 +184,18 @@ export function StudentForm({ studentId, isEditing }: StudentFormProps) {
       setAge(null);
     }
   }, [dobValue]);
+
+  useEffect(() => {
+    if (isEditing || !planTypeValue) return;
+    const planType = planTypeValue as PlanType;
+    const configuredPrice = globalParameters?.planPrices?.[planType];
+    const price = configuredPrice === null
+      ? undefined
+      : configuredPrice ?? DEFAULT_PLAN_PRICES[planType];
+    if (typeof price === "number") {
+      form.setValue("planValue", price);
+    }
+  }, [isEditing, planTypeValue, globalParameters, form]);
 
   useEffect(() => {
     if (isEditing && student && !hasResetRef.current) {

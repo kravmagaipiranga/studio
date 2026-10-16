@@ -29,9 +29,9 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Student, Payment } from "@/lib/types"
+import { DEFAULT_PLAN_PRICES, GlobalParameters, PlanType, Student, Payment } from "@/lib/types"
 import { Combobox } from "@/components/ui/combobox";
-import { useFirestore, addDocumentNonBlocking } from "@/firebase";
+import { useDoc, useFirestore, useMemoFirebase, addDocumentNonBlocking } from "@/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 
 const formSchema = z.object({
@@ -64,6 +64,11 @@ export function RegisterPaymentForm({
   const { toast } = useToast()
   const firestore = useFirestore();
   const router = useRouter();
+  const parametersRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, "parameters", "global");
+  }, [firestore]);
+  const { data: globalParameters } = useDoc<GlobalParameters>(parametersRef);
   
   const [selectedStudent, setSelectedStudent] = useState<Student | undefined>(undefined);
   
@@ -74,7 +79,7 @@ export function RegisterPaymentForm({
     defaultValues: {
         studentId: '',
         planType: "Mensal",
-        amount: 330,
+        amount: DEFAULT_PLAN_PRICES.Mensal ?? 330,
         paymentDate: format(new Date(), 'yyyy-MM-dd'),
         expirationDate: '',
         paymentMethod: "Pix",
@@ -91,6 +96,31 @@ export function RegisterPaymentForm({
     
     const pDate = parseISO(paymentDateWatcher);
     const isNewPrice = !isNaN(pDate.getTime()) && isAfter(pDate, new Date(2025, 1, 28));
+
+    if (isNewPrice) {
+      const planType = planTypeWatcher as PlanType;
+      const selectedStudentPrice = selectedStudent?.planType === planTypeWatcher
+        ? selectedStudent.planValue
+        : undefined;
+      if (typeof selectedStudentPrice === "number") {
+        form.setValue('amount', selectedStudentPrice);
+        return;
+      }
+
+      const configuredPrice = globalParameters?.planPrices?.[planType];
+      const price = configuredPrice === null
+        ? undefined
+        : configuredPrice ?? DEFAULT_PLAN_PRICES[planType];
+      if (typeof price === "number") {
+        form.setValue('amount', price);
+        return;
+      }
+
+      if (planTypeWatcher === 'Outros') {
+        form.setValue('amount', 0);
+        return;
+      }
+    }
 
     switch (planTypeWatcher) {
       case 'Matrícula':
@@ -114,7 +144,7 @@ export function RegisterPaymentForm({
         }
         break;
     }
-  }, [planTypeWatcher, paymentDateWatcher, form, selectedStudent]);
+  }, [planTypeWatcher, paymentDateWatcher, form, selectedStudent, globalParameters]);
 
   // Cálculo automático da validade (sugestão)
   useEffect(() => {
