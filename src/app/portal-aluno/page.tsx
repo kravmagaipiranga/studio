@@ -6,12 +6,13 @@ import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser, updateD
 import { signOut } from 'firebase/auth';
 import { collection, query, where, limit, doc, updateDoc } from 'firebase/firestore';
 import {
-  Student, Payment, Attendance, Exam, HandbookContent, Notice, Product, StoreOrderItem, StudentNotification, StoreOrder,
+  Student, Payment, Attendance, Exam, HandbookContent, Notice, Product, StoreOrderItem, StudentNotification, StoreOrder, StudentLearningTask,
 } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
   LogOut, User, CreditCard, CalendarCheck, GraduationCap, ShieldAlert,
@@ -34,6 +35,8 @@ const beltStyles: Record<string, { bg: string; text: string }> = {
   marrom:  { bg: 'bg-amber-800', text: 'text-white' },
   preta:   { bg: 'bg-gray-900', text: 'text-white' },
 };
+
+const PERSONAL_LEARNING_BELTS = new Set(['branca', 'amarela', 'laranja', 'marrom']);
 
 function formatDate(dateStr?: string) {
   if (!dateStr) return '—';
@@ -242,6 +245,84 @@ export default function StudentPortalPage() {
   const handbook = useMemo(() => handbookData?.[0], [handbookData]);
 
   const beltId = useMemo(() => student?.belt?.toLowerCase() ?? 'branca', [student]);
+  const isStudentManagedBelt = PERSONAL_LEARNING_BELTS.has(beltId);
+  const learningTasksKey = student ? `${student.id}:${beltId}` : '';
+  const [learningTasksDraft, setLearningTasksDraft] = useState<{
+    key: string;
+    tasks: StudentLearningTask[];
+  } | null>(null);
+  const [newLearningTopic, setNewLearningTopic] = useState('');
+  const [isSavingLearningTasks, setIsSavingLearningTasks] = useState(false);
+
+  useEffect(() => {
+    setLearningTasksDraft(null);
+    setNewLearningTopic('');
+  }, [learningTasksKey]);
+
+  const defaultLearningTasks = useMemo<StudentLearningTask[]>(() => {
+    if (!isStudentManagedBelt) return [];
+    const currentTopics = handbook?.techniques?.slice(0, 2) ?? [];
+    const previouslyChecked = student?.curriculumChecked?.[beltId] ?? [];
+    return Array.from({ length: 2 }, (_, index) => {
+      const topic = currentTopics[index] ?? '';
+      return {
+        id: `current-${beltId}-${index}`,
+        topic,
+        completed: Boolean(topic) && previouslyChecked.includes(topic),
+      };
+    });
+  }, [beltId, handbook, isStudentManagedBelt, student]);
+
+  const learningTasks = learningTasksDraft?.key === learningTasksKey
+    ? learningTasksDraft.tasks
+    : student?.learningTasks?.[beltId] ?? defaultLearningTasks;
+
+  const updateLearningTasksDraft = (tasks: StudentLearningTask[]) => {
+    if (!learningTasksKey) return;
+    setLearningTasksDraft({ key: learningTasksKey, tasks });
+  };
+
+  const updateLearningTask = (taskId: string, updates: Partial<StudentLearningTask>) => {
+    updateLearningTasksDraft(
+      learningTasks.map(task => task.id === taskId ? { ...task, ...updates } : task)
+    );
+  };
+
+  const addLearningTopic = () => {
+    const topic = newLearningTopic.trim();
+    if (!topic) return;
+    updateLearningTasksDraft([
+      ...learningTasks,
+      { id: crypto.randomUUID(), topic, completed: false },
+    ]);
+    setNewLearningTopic('');
+  };
+
+  const saveLearningTasks = async () => {
+    if (!firestore || !student?.id) return;
+    setIsSavingLearningTasks(true);
+    try {
+      const tasks = learningTasks.map(task => ({ ...task, topic: task.topic.trim() }));
+      const pendingTopic = newLearningTopic.trim();
+      if (pendingTopic) {
+        tasks.push({ id: crypto.randomUUID(), topic: pendingTopic, completed: false });
+      }
+      await updateDoc(doc(firestore, 'students', student.id), {
+        [`learningTasks.${beltId}`]: tasks,
+      });
+      updateLearningTasksDraft(tasks);
+      setNewLearningTopic('');
+      toast({ title: 'Lista salva', description: 'Sua lista de tópicos de aprendizado foi atualizada.' });
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao salvar',
+        description: 'Não foi possível atualizar sua lista. Tente novamente.',
+      });
+    } finally {
+      setIsSavingLearningTasks(false);
+    }
+  };
 
   const toggleTechnique = (technique: string) => {
     if (!firestore || !student?.id) return;
@@ -984,7 +1065,11 @@ export default function StudentPortalPage() {
                 </div>
                 <div>
                   <CardTitle className="text-base">Graduação — Faixa {student.belt}</CardTitle>
-                  <CardDescription className="text-xs">Matérias do programa da sua graduação atual.</CardDescription>
+                  <CardDescription className="text-xs">
+                    {isStudentManagedBelt
+                      ? 'Escreva os tópicos que aprendeu e marque os que já treinou.'
+                      : 'Matérias do programa da sua graduação atual.'}
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -993,6 +1078,101 @@ export default function StudentPortalPage() {
                 <div className="space-y-2">
                   {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
                 </div>
+              ) : isStudentManagedBelt ? (
+                (() => {
+                  const nonEmptyTasks = learningTasks.filter(task => task.topic.trim());
+                  const doneCount = nonEmptyTasks.filter(task => task.completed).length;
+                  const pct = nonEmptyTasks.length
+                    ? Math.round((doneCount / nonEmptyTasks.length) * 100)
+                    : 0;
+
+                  return (
+                    <>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs text-muted-foreground">
+                          <span className="font-semibold text-foreground">{doneCount}</span>
+                          {' '}de {nonEmptyTasks.length} tópico{nonEmptyTasks.length !== 1 ? 's' : ''} concluído{doneCount !== 1 ? 's' : ''}
+                        </span>
+                        <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full capitalize', beltStyle.bg, beltStyle.text)}>
+                          {pct}%
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-muted mb-4 overflow-hidden">
+                        <div
+                          className={cn('h-full rounded-full transition-all duration-300', beltStyle.bg)}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <ul className="divide-y divide-border">
+                        {learningTasks.map((task, index) => (
+                          <li key={task.id} className="flex items-center gap-3 py-2">
+                            <button
+                              type="button"
+                              onClick={() => updateLearningTask(task.id, { completed: !task.completed })}
+                              disabled={!task.topic.trim() || isSavingLearningTasks}
+                              aria-label={task.completed ? `Desmarcar tópico ${index + 1}` : `Marcar tópico ${index + 1} como concluído`}
+                              aria-pressed={task.completed}
+                              className={cn(
+                                'flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors disabled:opacity-40',
+                                task.completed
+                                  ? 'border-transparent bg-green-500'
+                                  : 'border-muted-foreground/40 bg-background'
+                              )}
+                            >
+                              {task.completed && <Check className="h-3 w-3 text-white" />}
+                            </button>
+                            <Input
+                              value={task.topic}
+                              onChange={event => updateLearningTask(task.id, { topic: event.target.value })}
+                              disabled={isSavingLearningTasks}
+                              aria-label={`Tópico de aprendizado ${index + 1}`}
+                              placeholder={index === 0 ? 'Nome do primeiro tópico...' : 'Nome do tópico aprendido...'}
+                              className={cn(
+                                task.completed && 'text-muted-foreground line-through'
+                              )}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                        <Input
+                          value={newLearningTopic}
+                          onChange={event => setNewLearningTopic(event.target.value)}
+                          onKeyDown={event => {
+                            if (event.key === 'Enter') {
+                              event.preventDefault();
+                              addLearningTopic();
+                            }
+                          }}
+                          disabled={isSavingLearningTasks}
+                          aria-label="Novo tópico de aprendizado"
+                          placeholder="Digite aqui o nome da matéria aprendida..."
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={addLearningTopic}
+                          disabled={!newLearningTopic.trim() || isSavingLearningTasks}
+                          className="shrink-0"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Adicionar tópico
+                        </Button>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={saveLearningTasks}
+                        disabled={isSavingLearningTasks}
+                        className="mt-3 w-full"
+                      >
+                        {isSavingLearningTasks ? 'Salvando...' : 'Salvar minha lista'}
+                      </Button>
+                      <p className="mt-2 text-center text-xs text-muted-foreground">
+                        Você pode incluir novos tópicos quando aprender outras matérias.
+                      </p>
+                    </>
+                  );
+                })()
               ) : handbook?.techniques?.length ? (
                 (() => {
                   const checked = student.curriculumChecked?.[beltId] ?? [];

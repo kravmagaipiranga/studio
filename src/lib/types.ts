@@ -9,6 +9,12 @@ export const DEFAULT_PLAN_PRICES: Partial<Record<PlanType, number>> = {
   'Bolsa 100%': 0,
 };
 
+export type StudentLearningTask = {
+  id: string;
+  topic: string;
+  completed: boolean;
+};
+
 export type Student = {
   id: string;
   name: string;
@@ -44,6 +50,7 @@ export type Student = {
   userId?: string;
   photoUrl?: string;
   curriculumChecked?: Record<string, string[]>;
+  learningTasks?: Record<string, StudentLearningTask[]>;
 };
 
 export type Payment = {
