@@ -14,6 +14,57 @@ service cloud.firestore {
       );
     }
 
+    function validPublicStudentRegistration(studentId) {
+      let student = request.resource.data;
+      return isSignedIn()
+        && student.keys().hasAll([
+          'id', 'userId', 'name', 'dob', 'cpf', 'phone', 'email',
+          'tshirtSize', 'pantsSize', 'status', 'paymentStatus',
+          'belt', 'registrationDate', 'planType', 'planValue'
+        ])
+        && student.keys().hasOnly([
+          'id', 'userId', 'name', 'dob', 'cpf', 'phone', 'email',
+          'tshirtSize', 'pantsSize', 'emergencyContacts', 'status',
+          'paymentStatus', 'belt', 'registrationDate', 'planType', 'planValue'
+        ])
+        && student.id == studentId
+        && student.userId == request.auth.uid
+        && student.name is string
+        && student.name.size() >= 3
+        && student.name.size() <= 150
+        && student.email is string
+        && student.email.size() <= 254
+        && student.dob is string
+        && student.cpf is string
+        && student.cpf.size() >= 11
+        && student.cpf.size() <= 14
+        && student.phone is string
+        && student.phone.size() >= 10
+        && student.phone.size() <= 30
+        && student.tshirtSize is string
+        && student.pantsSize is string
+        && (!student.keys().hasAny(['emergencyContacts']) || student.emergencyContacts is string)
+        && student.status == 'Pendente'
+        && student.paymentStatus == 'Pendente'
+        && student.belt == 'Branca'
+        && student.registrationDate is string
+        && student.planType == 'Mensal'
+        && student.planValue is number
+        && student.planValue >= 0;
+    }
+
+    function validStudentOwnerUpdate() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && changed.hasOnly([
+          'name', 'dob', 'cpf', 'phone', 'email', 'tshirtSize', 'pantsSize',
+          'emergencyContacts', 'medicalHistory', 'photoUrl',
+          'curriculumChecked', 'learningTasks', 'fikmAnnuityPaid'
+        ])
+        && (!changed.hasAny(['fikmAnnuityPaid']) || request.resource.data.fikmAnnuityPaid == false);
+    }
+
     // Verifica se o documento pertence ao aluno autenticado via studentId
     function isOwnerViaStudentId(studentId) {
       return isSignedIn() &&
@@ -29,11 +80,12 @@ service cloud.firestore {
 
     // ─── ALUNOS ───────────────────────────────────────────────────────────────
     match /students/{studentId} {
-      // Formulários públicos de captação podem criar alunos sem autenticação
-      allow create: if true;
+      // O cadastro público precisa autenticar a conta e só pode criar um cadastro pendente próprio.
+      allow create: if isAdmin() || validPublicStudentRegistration(studentId);
       // Aluno lê e edita apenas o seu próprio documento; admin acessa todos
       allow read:   if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-      allow update: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      // Aluno pode editar apenas perfil, foto e sua lista pessoal de aprendizado.
+      allow update: if isAdmin() || validStudentOwnerUpdate();
       allow delete: if isAdmin();
     }
 
