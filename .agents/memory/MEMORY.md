@@ -1,1 +1,2 @@
 - [Preços de planos](plan-pricing.md) — reajustar um plano em Configurações deve propagar o preço aos cadastros dos alunos desse plano.
+- [Entrega Vercel/Git](vercel-git-delivery.md) — confira o remoto com `git ls-remote`; estado do workspace, push manual e deploy Vercel são sinais distintos.
