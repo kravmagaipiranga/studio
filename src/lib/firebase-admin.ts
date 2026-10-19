@@ -17,7 +17,7 @@ function getFirebaseAdmin() {
     process.env.GCLOUD_PROJECT ||
     FALLBACK_PROJECT_ID;
 
-  // GOOGLE_CLIENT_EMAIL / GOOGLE_PRIVATE_KEY are forwarded via next.config.ts env.
+  // Keep service-account credentials server-side; read them from the runtime environment.
   const clientEmail =
     process.env.GOOGLE_CLIENT_EMAIL ||
     process.env.FIREBASE_CLIENT_EMAIL;
