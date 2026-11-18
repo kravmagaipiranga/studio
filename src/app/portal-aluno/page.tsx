@@ -6,7 +6,7 @@ import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser, updateD
 import { signOut } from 'firebase/auth';
 import { collection, query, where, limit, doc, updateDoc } from 'firebase/firestore';
 import {
-  Student, Payment, Attendance, Exam, HandbookContent, Notice, Product, StoreOrderItem, StudentNotification, StoreOrder, StudentLearningTask,
+  Student, Payment, Attendance, Exam, Notice, Product, StoreOrderItem, StudentNotification, StoreOrder, StudentLearningTask,
 } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,8 +35,6 @@ const beltStyles: Record<string, { bg: string; text: string }> = {
   marrom:  { bg: 'bg-amber-800', text: 'text-white' },
   preta:   { bg: 'bg-gray-900', text: 'text-white' },
 };
-
-const PERSONAL_LEARNING_BELTS = new Set(['branca', 'amarela', 'laranja', 'marrom']);
 
 function formatDate(dateStr?: string) {
   if (!dateStr) return '—';
@@ -235,17 +233,7 @@ export default function StudentPortalPage() {
     refreshOrders();
   }, [refreshOrders]);
 
-  // ── Handbook ──────────────────────────────────────────────────────────────
-  const handbookQuery = useMemoFirebase(() => {
-    if (!firestore || !student) return null;
-    const beltId = student.belt?.toLowerCase() ?? 'branca';
-    return query(collection(firestore, 'handbook'), where('id', '==', beltId));
-  }, [firestore, student]);
-  const { data: handbookData, isLoading: isHandbookLoading } = useCollection<HandbookContent>(handbookQuery);
-  const handbook = useMemo(() => handbookData?.[0], [handbookData]);
-
   const beltId = useMemo(() => student?.belt?.toLowerCase() ?? 'branca', [student]);
-  const isStudentManagedBelt = PERSONAL_LEARNING_BELTS.has(beltId);
   const learningTasksKey = student ? `${student.id}:${beltId}` : '';
   const [learningTasksDraft, setLearningTasksDraft] = useState<{
     key: string;
@@ -259,23 +247,9 @@ export default function StudentPortalPage() {
     setNewLearningTopic('');
   }, [learningTasksKey]);
 
-  const defaultLearningTasks = useMemo<StudentLearningTask[]>(() => {
-    if (!isStudentManagedBelt) return [];
-    const currentTopics = handbook?.techniques?.slice(0, 2) ?? [];
-    const previouslyChecked = student?.curriculumChecked?.[beltId] ?? [];
-    return Array.from({ length: 2 }, (_, index) => {
-      const topic = currentTopics[index] ?? '';
-      return {
-        id: `current-${beltId}-${index}`,
-        topic,
-        completed: Boolean(topic) && previouslyChecked.includes(topic),
-      };
-    });
-  }, [beltId, handbook, isStudentManagedBelt, student]);
-
   const learningTasks = learningTasksDraft?.key === learningTasksKey
     ? learningTasksDraft.tasks
-    : student?.learningTasks?.[beltId] ?? defaultLearningTasks;
+    : student?.learningTasks?.[beltId] ?? [];
 
   const updateLearningTasksDraft = (tasks: StudentLearningTask[]) => {
     if (!learningTasksKey) return;
@@ -322,17 +296,6 @@ export default function StudentPortalPage() {
     } finally {
       setIsSavingLearningTasks(false);
     }
-  };
-
-  const toggleTechnique = (technique: string) => {
-    if (!firestore || !student?.id) return;
-    const current = student.curriculumChecked?.[beltId] ?? [];
-    const updated = current.includes(technique)
-      ? current.filter(t => t !== technique)
-      : [...current, technique];
-    updateDocumentNonBlocking(doc(firestore, 'students', student.id), {
-      [`curriculumChecked.${beltId}`]: updated,
-    });
   };
 
   // ── Products / Shop ───────────────────────────────────────────────────────
@@ -1066,43 +1029,41 @@ export default function StudentPortalPage() {
                 <div>
                   <CardTitle className="text-base">Graduação — Faixa {student.belt}</CardTitle>
                   <CardDescription className="text-xs">
-                    {isStudentManagedBelt
-                      ? 'Escreva os tópicos que aprendeu e marque os que já treinou.'
-                      : 'Matérias do programa da sua graduação atual.'}
+                    Escreva os tópicos que aprendeu e marque os que já treinou.
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="px-4">
-              {isHandbookLoading ? (
-                <div className="space-y-2">
-                  {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
-                </div>
-              ) : isStudentManagedBelt ? (
-                (() => {
-                  const nonEmptyTasks = learningTasks.filter(task => task.topic.trim());
-                  const doneCount = nonEmptyTasks.filter(task => task.completed).length;
-                  const pct = nonEmptyTasks.length
-                    ? Math.round((doneCount / nonEmptyTasks.length) * 100)
-                    : 0;
+              {(() => {
+                const nonEmptyTasks = learningTasks.filter(task => task.topic.trim());
+                const doneCount = nonEmptyTasks.filter(task => task.completed).length;
+                const pct = nonEmptyTasks.length
+                  ? Math.round((doneCount / nonEmptyTasks.length) * 100)
+                  : 0;
 
-                  return (
-                    <>
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs text-muted-foreground">
-                          <span className="font-semibold text-foreground">{doneCount}</span>
-                          {' '}de {nonEmptyTasks.length} tópico{nonEmptyTasks.length !== 1 ? 's' : ''} concluído{doneCount !== 1 ? 's' : ''}
-                        </span>
-                        <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full capitalize', beltStyle.bg, beltStyle.text)}>
-                          {pct}%
-                        </span>
-                      </div>
-                      <div className="w-full h-1.5 rounded-full bg-muted mb-4 overflow-hidden">
-                        <div
-                          className={cn('h-full rounded-full transition-all duration-300', beltStyle.bg)}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
+                return (
+                  <>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs text-muted-foreground">
+                        <span className="font-semibold text-foreground">{doneCount}</span>
+                        {' '}de {nonEmptyTasks.length} tópico{nonEmptyTasks.length !== 1 ? 's' : ''} concluído{doneCount !== 1 ? 's' : ''}
+                      </span>
+                      <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full capitalize', beltStyle.bg, beltStyle.text)}>
+                        {pct}%
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-muted mb-4 overflow-hidden">
+                      <div
+                        className={cn('h-full rounded-full transition-all duration-300', beltStyle.bg)}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    {learningTasks.length === 0 ? (
+                      <p className="py-5 text-center text-sm text-muted-foreground">
+                        Sua lista está vazia. Adicione tópicos para começar.
+                      </p>
+                    ) : (
                       <ul className="divide-y divide-border">
                         {learningTasks.map((task, index) => (
                           <li key={task.id} className="flex items-center gap-3 py-2">
@@ -1134,106 +1095,46 @@ export default function StudentPortalPage() {
                           </li>
                         ))}
                       </ul>
-                      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                        <Input
-                          value={newLearningTopic}
-                          onChange={event => setNewLearningTopic(event.target.value)}
-                          onKeyDown={event => {
-                            if (event.key === 'Enter') {
-                              event.preventDefault();
-                              addLearningTopic();
-                            }
-                          }}
-                          disabled={isSavingLearningTasks}
-                          aria-label="Novo tópico de aprendizado"
-                          placeholder="Digite aqui o nome da matéria aprendida..."
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={addLearningTopic}
-                          disabled={!newLearningTopic.trim() || isSavingLearningTasks}
-                          className="shrink-0"
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Adicionar tópico
-                        </Button>
-                      </div>
+                    )}
+                    <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                      <Input
+                        value={newLearningTopic}
+                        onChange={event => setNewLearningTopic(event.target.value)}
+                        onKeyDown={event => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            addLearningTopic();
+                          }
+                        }}
+                        disabled={isSavingLearningTasks}
+                        aria-label="Novo tópico de aprendizado"
+                        placeholder="Digite aqui o nome da matéria aprendida..."
+                      />
                       <Button
                         type="button"
-                        onClick={saveLearningTasks}
-                        disabled={isSavingLearningTasks}
-                        className="mt-3 w-full"
+                        variant="outline"
+                        onClick={addLearningTopic}
+                        disabled={!newLearningTopic.trim() || isSavingLearningTasks}
+                        className="shrink-0"
                       >
-                        {isSavingLearningTasks ? 'Salvando...' : 'Salvar minha lista'}
+                        <Plus className="mr-2 h-4 w-4" />
+                        Adicionar tópico
                       </Button>
-                      <p className="mt-2 text-center text-xs text-muted-foreground">
-                        Você pode incluir novos tópicos quando aprender outras matérias.
-                      </p>
-                    </>
-                  );
-                })()
-              ) : handbook?.techniques?.length ? (
-                (() => {
-                  const checked = student.curriculumChecked?.[beltId] ?? [];
-                  const doneCount = handbook.techniques.filter(t => checked.includes(t)).length;
-                  const pct = Math.round((doneCount / handbook.techniques.length) * 100);
-                  return (
-                    <>
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs text-muted-foreground">
-                          <span className="font-semibold text-foreground">{doneCount}</span> de {handbook.techniques.length} matéria{handbook.techniques.length !== 1 ? 's' : ''} treinada{doneCount !== 1 ? 's' : ''}
-                        </span>
-                        <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full capitalize', beltStyle.bg, beltStyle.text)}>
-                          {pct}%
-                        </span>
-                      </div>
-                      <div className="w-full h-1.5 rounded-full bg-muted mb-4 overflow-hidden">
-                        <div
-                          className={cn('h-full rounded-full transition-all duration-300', beltStyle.bg)}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <ul className="divide-y divide-border">
-                        {handbook.techniques.map((technique, index) => {
-                          const isChecked = checked.includes(technique);
-                          return (
-                            <li key={index}>
-                              <button
-                                onClick={() => toggleTechnique(technique)}
-                                className="w-full flex items-center gap-3 py-3 text-left hover:bg-muted/40 transition-colors px-1 rounded"
-                              >
-                                <span className={cn(
-                                  'flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
-                                  isChecked
-                                    ? 'border-transparent bg-green-500'
-                                    : 'border-muted-foreground/40 bg-background'
-                                )}>
-                                  {isChecked && <Check className="h-3 w-3 text-white" />}
-                                </span>
-                                <span className={cn(
-                                  'text-sm leading-snug',
-                                  isChecked && 'text-muted-foreground line-through'
-                                )}>
-                                  {technique}
-                                </span>
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </>
-                  );
-                })()
-              ) : (
-                <div className="py-10 text-center">
-                  <BookOpen className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground font-medium">Graduação não disponível</p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">
-                    Nenhuma matéria cadastrada para a Faixa {student.belt} ainda.
-                  </p>
-                </div>
-              )}
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={saveLearningTasks}
+                      disabled={isSavingLearningTasks}
+                      className="mt-3 w-full"
+                    >
+                      {isSavingLearningTasks ? 'Salvando...' : 'Salvar minha lista'}
+                    </Button>
+                    <p className="mt-2 text-center text-xs text-muted-foreground">
+                      Você pode incluir novos tópicos quando aprender outras matérias.
+                    </p>
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
           )
