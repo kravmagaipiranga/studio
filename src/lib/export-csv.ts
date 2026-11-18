@@ -2,19 +2,25 @@ export function escapeCSV(value: unknown): string {
     if (value === null || value === undefined) return '';
     if (typeof value === 'boolean') return value ? 'Sim' : 'Não';
     const str = String(value);
-    if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r') || str.includes(';')) {
-        return `"${str.replace(/"/g, '""')}"`;
+    const safeStr = /^[=+\-@\t]/.test(str) ? `'${str}` : str;
+    if (safeStr.includes(',') || safeStr.includes('"') || safeStr.includes('\n') || safeStr.includes('\r') || safeStr.includes(';')) {
+        return `"${safeStr.replace(/"/g, '""')}"`;
     }
-    return str;
+    return safeStr;
 }
 
 export function downloadCSV(filenameBase: string, headers: string[], rows: unknown[][]): void {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).format(new Date());
     const safeBase = filenameBase.replace(/[^\w-]+/g, '_');
     const filename = `${safeBase}_${today}.csv`;
 
-    const headerLine = headers.map(escapeCSV).join(',');
-    const bodyLines = rows.map(row => row.map(escapeCSV).join(','));
+    const headerLine = headers.map(escapeCSV).join(';');
+    const bodyLines = rows.map(row => row.map(escapeCSV).join(';'));
     const csvContent = [headerLine, ...bodyLines].join('\n');
 
     const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
@@ -26,5 +32,5 @@ export function downloadCSV(filenameBase: string, headers: string[], rows: unkno
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
