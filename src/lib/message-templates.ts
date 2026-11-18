@@ -177,12 +177,23 @@ Professor Thiago R. Pedro`
   },
 ];
 
+export function getTemplate(templates: MessageTemplate[], id: string): MessageTemplate | undefined {
+  const template = templates.find(t => t.id === id);
+  if (!template) {
+    console.warn(`[message-templates] Modelo ausente na configuração: ${id}`);
+  }
+  return template;
+}
+
 export function getTemplateBody(templates: MessageTemplate[], id: string): string {
-  return templates.find(t => t.id === id)?.body ?? (DEFAULT_TEMPLATES.find(t => t.id === id)?.body ?? "");
+  return getTemplate(templates, id)?.body ?? "";
 }
 
 export function applyTemplateVars(body: string, vars: Record<string, string>): string {
-  return Object.entries(vars).reduce((text, [key, value]) => {
-    return text.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value);
-  }, body);
+  const keys = Object.keys(vars);
+  if (keys.length === 0) return body;
+
+  const escapedKeys = keys.map(key => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const placeholderPattern = new RegExp(`\\{\\{(${escapedKeys.join('|')})\\}\\}`, 'g');
+  return body.replace(placeholderPattern, (_match, key: string) => vars[key]);
 }

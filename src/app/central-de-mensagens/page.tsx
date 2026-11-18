@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from "react";
 import { collection, query, orderBy, doc } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase, useDoc } from "@/firebase";
 import { Student, GlobalParameters, MessageTemplate } from "@/lib/types";
-import { DEFAULT_TEMPLATES } from "@/lib/message-templates";
+import { applyTemplateVars, getTemplate } from "@/lib/message-templates";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,14 +41,7 @@ export default function CentralDeMensagensPage() {
   const { data: dbTemplates, isLoading: isLoadingTemplates } = useCollection<MessageTemplate>(templatesQuery);
 
   const templates = useMemo(() => {
-    const list = [...(dbTemplates || [])];
-    // Add default templates if they don't exist in DB
-    DEFAULT_TEMPLATES.forEach(def => {
-      if (!list.find(t => t.id === def.id || t.name === def.name)) {
-        list.push(def);
-      }
-    });
-    return list;
+    return dbTemplates ?? [];
   }, [dbTemplates]);
 
   // State
@@ -60,16 +53,26 @@ export default function CentralDeMensagensPage() {
 
   // Initialize template
   useEffect(() => {
-    if (templates.length > 0) {
-      const initialId = activeTemplateId || templates[0].id;
-      const tpl = templates.find(t => t.id === initialId);
-      if (tpl) {
-        setActiveTemplateId(tpl.id);
-        setBody(tpl.body);
-        setSubject(tpl.subject);
-      }
+    if (isLoadingTemplates) return;
+    if (templates.length === 0) {
+      setActiveTemplateId("");
+      setBody("");
+      setSubject("");
+      return;
     }
-  }, [templates, activeTemplateId]);
+
+    const selectedTemplate = templates.find(t => t.id === activeTemplateId) ?? templates[0];
+    const template = getTemplate(templates, selectedTemplate.id);
+    if (!template) {
+      setActiveTemplateId("");
+      setBody("");
+      setSubject("");
+      return;
+    }
+    setActiveTemplateId(template.id);
+    setBody(template.body);
+    setSubject(template.subject);
+  }, [templates, activeTemplateId, isLoadingTemplates]);
 
   // Filtering
   const filteredStudents = useMemo(() => {
@@ -104,33 +107,52 @@ export default function CentralDeMensagensPage() {
     const inicio = student.startDate ? format(parseISO(student.startDate), 'dd/MM/yyyy') : 'N/A';
     const valor = student.planValue ? student.planValue.toFixed(2) : '0.00';
 
-    return text
-      .replace(/{{nome}}/g, student.name.split(' ')[0])
-      .replace(/{{nome_completo}}/g, student.name)
-      .replace(/{{vencimento}}/g, vencimento)
-      .replace(/{{ultimo_pagamento}}/g, ultimoPgto)
-      .replace(/{{plano}}/g, student.planType || 'Mensal')
-      .replace(/{{valor}}/g, valor)
-      .replace(/{{inicio}}/g, inicio);
+    return applyTemplateVars(text, {
+      nome: student.name.split(' ')[0],
+      nome_completo: student.name,
+      vencimento,
+      ultimo_pagamento: ultimoPgto,
+      plano: student.planType || 'Mensal',
+      valor,
+      inicio,
+    });
   };
 
   const handleSendWhatsApp = (student: Student) => {
-    const message = replacePlaceholders(customBody, student);
     const phone = student.phone?.replace(/\D/g, '');
     if (!phone) {
       toast({ variant: "destructive", title: "Erro", description: `Aluno ${student.name} não possui telefone.` });
       return;
     }
+    if (!activeTemplateId) {
+      toast({ variant: "destructive", title: "Modelo não disponível", description: "Configure um modelo antes de enviar mensagens." });
+      return;
+    }
+    const template = getTemplate(templates, activeTemplateId);
+    if (!template || !customBody.trim()) {
+      toast({ variant: "destructive", title: "Modelo não disponível", description: `O modelo "${activeTemplateId}" não possui conteúdo para envio.` });
+      return;
+    }
+    const message = replacePlaceholders(customBody, student);
     window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const handleSendEmail = (student: Student) => {
-    const message = replacePlaceholders(customBody, student);
-    const subject = replacePlaceholders(customSubject, student);
     if (!student.email) {
       toast({ variant: "destructive", title: "Erro", description: `Aluno ${student.name} não possui e-mail.` });
       return;
     }
+    if (!activeTemplateId) {
+      toast({ variant: "destructive", title: "Modelo não disponível", description: "Configure um modelo antes de enviar mensagens." });
+      return;
+    }
+    const template = getTemplate(templates, activeTemplateId);
+    if (!template || !customBody.trim()) {
+      toast({ variant: "destructive", title: "Modelo não disponível", description: `O modelo "${activeTemplateId}" não possui conteúdo para envio.` });
+      return;
+    }
+    const message = replacePlaceholders(customBody, student);
+    const subject = replacePlaceholders(customSubject, student);
     
     // Gmail Compose URL format: https://mail.google.com/mail/?view=cm&fs=1&to=TO&su=SUBJECT&body=BODY
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(student.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
@@ -140,6 +162,12 @@ export default function CentralDeMensagensPage() {
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-10">
+      {!isLoadingTemplates && templates.length === 0 && (
+        <div role="alert" className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          Nenhum modelo está configurado. Configure e salve um modelo antes de enviar mensagens.
+        </div>
+      )}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Central de Mensagens</h1>
@@ -233,7 +261,7 @@ export default function CentralDeMensagensPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase text-muted-foreground">Modelo</label>
-                  <Select value={activeTemplateId} onValueChange={setActiveTemplateId}>
+                  <Select value={activeTemplateId} onValueChange={setActiveTemplateId} disabled={isLoadingTemplates || templates.length === 0}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -319,7 +347,7 @@ export default function CentralDeMensagensPage() {
                             size="sm" 
                             className="h-8 text-xs border-green-200 text-green-700 hover:bg-green-50"
                             onClick={() => handleSendWhatsApp(student)}
-                            disabled={!student.phone}
+                            disabled={!student.phone || isLoadingTemplates || !activeTemplateId}
                           >
                             <MessageSquare className="h-3 w-3 mr-2" /> WhatsApp
                           </Button>
@@ -328,7 +356,7 @@ export default function CentralDeMensagensPage() {
                             size="sm" 
                             className="h-8 text-xs border-blue-200 text-blue-700 hover:bg-blue-50"
                             onClick={() => handleSendEmail(student)}
-                            disabled={!student.email}
+                            disabled={!student.email || isLoadingTemplates || !activeTemplateId}
                           >
                             <Mail className="h-3 w-3 mr-2" /> E-mail
                           </Button>

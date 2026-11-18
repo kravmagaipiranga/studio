@@ -14,8 +14,7 @@ import { Skeleton } from "../ui/skeleton"
 import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, doc } from "firebase/firestore"
 import { MessageTemplate } from "@/lib/types"
-import { DEFAULT_TEMPLATES, getTemplateBody, applyTemplateVars } from "@/lib/message-templates"
-import { useMemo } from "react"
+import { getTemplateBody, applyTemplateVars } from "@/lib/message-templates"
 import { Input } from "../ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "../ui/textarea"
@@ -40,12 +39,7 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
     if (!firestore) return null;
     return collection(firestore, 'messageTemplates');
   }, [firestore]);
-  const { data: dbTemplates } = useCollection<MessageTemplate>(templatesQuery);
-  const allTemplates = useMemo(() => {
-    const list = [...(dbTemplates || [])];
-    DEFAULT_TEMPLATES.forEach(def => { if (!list.find(t => t.id === def.id)) list.push(def); });
-    return list;
-  }, [dbTemplates]);
+  const { data: dbTemplates, isLoading: isLoadingTemplates } = useCollection<MessageTemplate>(templatesQuery);
 
   useEffect(() => {
     setMounted(true)
@@ -135,35 +129,54 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
     })
   }
 
-  const generateWhatsAppLinks = (appointment: Appointment) => {
+  const handleWhatsApp = (appointment: Appointment, templateId: string) => {
+    if (isLoadingTemplates) return;
     const phone = appointment.whatsapp?.replace(/\D/g, '')
+    if (!phone) return;
     const firstName = appointment.name.split(' ')[0]
 
-    const missedMessage = applyTemplateVars(getTemplateBody(allTemplates, 'agendamentos_faltou'), { nome: firstName })
-    const thankYouMessage = applyTemplateVars(getTemplateBody(allTemplates, 'agendamentos_obrigado'), { nome: firstName })
-
-    let instructionsMessage = ""
-    if (appointment.classDate) {
+    let vars: Record<string, string> = { nome: firstName };
+    if (templateId === 'agendamentos_instrucoes') {
+      if (!appointment.classDate) {
+        toast({
+          variant: "destructive",
+          title: "Data da aula ausente",
+          description: "Informe a data da aula antes de abrir a mensagem de instruções."
+        });
+        return;
+      }
         try {
             const appointmentDate = parseISO(appointment.classDate)
             const dayOfWeek = format(appointmentDate, 'EEEE', { locale: ptBR })
             const formattedDate = format(appointmentDate, 'dd/MM/yyyy')
-            const instrBody = getTemplateBody(allTemplates, 'agendamentos_instrucoes')
-            instructionsMessage = applyTemplateVars(instrBody, {
+            vars = {
                 nome_completo: appointment.name,
                 nome: firstName,
                 dia_semana: dayOfWeek,
                 data_aula: formattedDate,
-            })
-        } catch (e) {}
+            };
+        } catch {
+          toast({
+            variant: "destructive",
+            title: "Data da aula inválida",
+            description: "Verifique a data da aula antes de abrir a mensagem de instruções."
+          });
+          return;
+        }
     }
 
-    const baseUrl = "https://wa.me/55"
-    return {
-        missed: phone ? `${baseUrl}${phone}?text=${encodeURIComponent(missedMessage)}` : "#",
-        thanks: phone ? `${baseUrl}${phone}?text=${encodeURIComponent(thankYouMessage)}` : "#",
-        instructions: phone && instructionsMessage ? `${baseUrl}${phone}?text=${encodeURIComponent(instructionsMessage)}` : "#"
+    const templateBody = getTemplateBody(dbTemplates ?? [], templateId);
+    if (!templateBody) {
+      toast({
+        variant: "destructive",
+        title: "Modelo não disponível",
+        description: `O modelo "${templateId}" não está configurado. Configure-o antes de enviar.`
+      });
+      return;
     }
+
+    const message = applyTemplateVars(templateBody, vars);
+    window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   }
 
   if (isLoading || !mounted) {
@@ -181,7 +194,6 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
         {appointments.length > 0 ? (
           <Accordion type="single" collapsible className="w-full">
             {appointments.map((appointment: Appointment) => {
-              const waLinks = generateWhatsAppLinks(appointment)
               let classIsTomorrow = false
               if (appointment.classDate) {
                   try {
@@ -269,24 +281,18 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
 
                       <div className="flex flex-wrap items-center gap-2 mt-6 pt-4 border-t">
                           <span className="text-xs font-bold text-muted-foreground w-full mb-1 uppercase">Notificações WhatsApp</span>
-                          <a href={waLinks.instructions} target="_blank" rel="noopener noreferrer">
-                              <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50" disabled={!appointment.whatsapp || waLinks.instructions === '#'}>
-                                  <ClipboardList className="h-4 w-4 mr-2" />
-                                  Instruções
-                              </Button>
-                          </a>
-                          <a href={waLinks.missed} target="_blank" rel="noopener noreferrer">
-                              <Button variant="outline" size="sm" className="text-orange-600 border-orange-200 hover:bg-orange-50" disabled={!appointment.whatsapp}>
-                                  <MessageSquare className="h-4 w-4 mr-2" />
-                                  Notificar Falta
-                              </Button>
-                          </a>
-                          <a href={waLinks.thanks} target="_blank" rel="noopener noreferrer">
-                              <Button variant="outline" size="sm" className="text-green-600 border-green-200 hover:bg-green-50" disabled={!appointment.whatsapp}>
-                                  <MessageSquare className="h-4 w-4 mr-2" />
-                                  Agradecer
-                              </Button>
-                          </a>
+                          <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50" disabled={!appointment.whatsapp || !appointment.classDate || isLoadingTemplates} onClick={() => handleWhatsApp(appointment, 'agendamentos_instrucoes')}>
+                              <ClipboardList className="h-4 w-4 mr-2" />
+                              Instruções
+                          </Button>
+                          <Button variant="outline" size="sm" className="text-orange-600 border-orange-200 hover:bg-orange-50" disabled={!appointment.whatsapp || isLoadingTemplates} onClick={() => handleWhatsApp(appointment, 'agendamentos_faltou')}>
+                              <MessageSquare className="h-4 w-4 mr-2" />
+                              Notificar Falta
+                          </Button>
+                          <Button variant="outline" size="sm" className="text-green-600 border-green-200 hover:bg-green-50" disabled={!appointment.whatsapp || isLoadingTemplates} onClick={() => handleWhatsApp(appointment, 'agendamentos_obrigado')}>
+                              <MessageSquare className="h-4 w-4 mr-2" />
+                              Agradecer
+                          </Button>
                       </div>
 
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-6 gap-4">

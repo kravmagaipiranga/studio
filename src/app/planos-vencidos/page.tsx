@@ -7,7 +7,7 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { Student, Payment, MessageTemplate } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Search, AlertTriangle, MessageSquare, Mail } from "lucide-react";
-import { DEFAULT_TEMPLATES, getTemplateBody, applyTemplateVars } from "@/lib/message-templates";
+import { getTemplate, getTemplateBody, applyTemplateVars } from "@/lib/message-templates";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { isBefore, parseISO, format, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
@@ -31,6 +32,7 @@ function getInitials(name: string) {
 export default function PlanosVencidosPage() {
     const firestore = useFirestore();
     const router = useRouter();
+    const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState("");
 
     const studentsQuery = useMemoFirebase(() => {
@@ -50,15 +52,8 @@ export default function PlanosVencidosPage() {
 
     const { data: activeStudents, isLoading: isLoadingStudents } = useCollection<Student>(studentsQuery);
     const { data: allPayments, isLoading: isLoadingPayments } = useCollection<Payment>(paymentsQuery);
-    const { data: dbTemplates } = useCollection<MessageTemplate>(templatesQuery);
-
-    const allTemplates = useMemo(() => {
-        const list = [...(dbTemplates || [])];
-        DEFAULT_TEMPLATES.forEach(def => {
-            if (!list.find(t => t.id === def.id)) list.push(def);
-        });
-        return list;
-    }, [dbTemplates]);
+    const { data: dbTemplates, isLoading: isLoadingTemplates } = useCollection<MessageTemplate>(templatesQuery);
+    const templates = dbTemplates ?? [];
 
     const isLoading = isLoadingStudents || isLoadingPayments;
 
@@ -117,52 +112,70 @@ export default function PlanosVencidosPage() {
         router.push(`/alunos/${studentId}/editar`);
     };
 
-    const generateWhatsAppMessage = (student: Student) => {
+    const handleWhatsApp = (student: Student) => {
+        if (isLoadingTemplates) return;
+        const phone = student.phone?.replace(/\D/g, '');
+        if (!phone) return;
+
         const expirationDate = student.planExpirationDate 
             ? format(parseISO(student.planExpirationDate), 'dd/MM/yyyy') 
             : 'pendente';
-        const templateBody = getTemplateBody(allTemplates, 'planos_vencidos');
+        const templateBody = getTemplateBody(templates, 'planos_vencidos');
+        if (!templateBody) {
+            toast({
+                variant: "destructive",
+                title: "Modelo não disponível",
+                description: 'O modelo "planos_vencidos" não está configurado. Configure-o antes de enviar.'
+            });
+            return;
+        }
         const message = applyTemplateVars(templateBody, {
             nome: student.name.split(' ')[0],
             vencimento: expirationDate,
         });
-        return encodeURIComponent(message);
+        window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
     }
     
-    const generateEmailLink = (student: Student) => {
-        if (!student.email) return '#';
+    const handleEmail = (student: Student) => {
+        if (!student.email) return;
+        if (isLoadingTemplates) return;
 
         const expirationDate = student.planExpirationDate 
             ? format(parseISO(student.planExpirationDate), 'dd/MM/yyyy') 
             : 'pendente';
 
-        let body = '';
-        let subject = '';
-
+        let templateId = 'planos_vencidos';
+        let vars: Record<string, string> = {
+            nome: student.name.split(' ')[0],
+            vencimento: expirationDate,
+        };
         if (student.planType === 'Trimestral' && student.lastPaymentDate) {
              const paymentDate = parseISO(student.lastPaymentDate);
              const paymentDay = format(paymentDate, 'dd/MM/yyyy');
              const month1 = format(paymentDate, 'MMMM', { locale: ptBR });
              const month2 = format(addMonths(paymentDate, 1), 'MMMM', { locale: ptBR });
              const month3 = format(addMonths(paymentDate, 2), 'MMMM', { locale: ptBR });
-             const monthsCovered = `${month1}, ${month2} e ${month3}`;
-             const trimestralTpl = allTemplates.find(t => t.id === 'planos_vencidos_trimestral') ?? DEFAULT_TEMPLATES.find(t => t.id === 'planos_vencidos_trimestral')!;
-             subject = trimestralTpl.subject;
-             body = applyTemplateVars(trimestralTpl.body, {
+             templateId = 'planos_vencidos_trimestral';
+             vars = {
                  nome: student.name.split(' ')[0],
-                 meses_cobertos: monthsCovered,
+                 meses_cobertos: `${month1}, ${month2} e ${month3}`,
                  data_pagamento: paymentDay,
-             });
-        } else {
-             const tpl = allTemplates.find(t => t.id === 'planos_vencidos') ?? DEFAULT_TEMPLATES.find(t => t.id === 'planos_vencidos')!;
-             subject = tpl.subject;
-             body = applyTemplateVars(tpl.body, {
-                 nome: student.name.split(' ')[0],
-                 vencimento: expirationDate,
-             });
+             };
         }
 
-        return `mailto:${student.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        const template = getTemplate(templates, templateId);
+        if (!template || !template.body.trim()) {
+            toast({
+                variant: "destructive",
+                title: "Modelo não disponível",
+                description: `O modelo "${templateId}" não está configurado com conteúdo. Configure-o antes de enviar.`
+            });
+            return;
+        }
+
+        const subject = applyTemplateVars(template.subject, vars);
+        const body = applyTemplateVars(template.body, vars);
+        window.open(`mailto:${student.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
     }
 
     return (
@@ -224,11 +237,6 @@ export default function PlanosVencidosPage() {
                                 </TableRow>
                             ))}
                             {!isLoading && expiredStudents.map((student) => {
-                                const phone = student.phone?.replace(/\D/g, '');
-                                const message = generateWhatsAppMessage(student);
-                                const whatsappLink = phone ? `https://wa.me/55${phone}?text=${message}` : '#';
-                                const emailLink = generateEmailLink(student);
-
                                 return (
                                     <TableRow key={student.id} className="cursor-pointer" onClick={() => handleSelectStudent(student.id)}>
                                         <TableCell className="font-medium">
@@ -255,18 +263,14 @@ export default function PlanosVencidosPage() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <a href={whatsappLink} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                                                    <Button size="sm" variant="outline" disabled={!student.phone}>
-                                                        <MessageSquare className="mr-2 h-4 w-4" />
-                                                        WhatsApp
-                                                    </Button>
-                                                </a>
-                                                <a href={emailLink} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                                                    <Button size="sm" variant="outline" disabled={!student.email}>
-                                                        <Mail className="mr-2 h-4 w-4" />
-                                                        Email
-                                                    </Button>
-                                                </a>
+                                                <Button size="sm" variant="outline" disabled={!student.phone || isLoadingTemplates} onClick={(e) => { e.stopPropagation(); handleWhatsApp(student); }}>
+                                                    <MessageSquare className="mr-2 h-4 w-4" />
+                                                    WhatsApp
+                                                </Button>
+                                                <Button size="sm" variant="outline" disabled={!student.email || isLoadingTemplates} onClick={(e) => { e.stopPropagation(); handleEmail(student); }}>
+                                                    <Mail className="mr-2 h-4 w-4" />
+                                                    Email
+                                                </Button>
                                                 <Link href={`/pagamentos/novo/editar?aluno=${student.id}`} passHref>
                                                     <Button size="sm" onClick={(e) => e.stopPropagation()}>
                                                         Registrar Pagamento

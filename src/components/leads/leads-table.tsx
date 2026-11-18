@@ -15,8 +15,7 @@ import { Skeleton } from "../ui/skeleton"
 import { useFirestore, deleteDocumentNonBlocking, updateDocumentNonBlocking, addDocumentNonBlocking, setDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase"
 import { doc, collection } from "firebase/firestore"
 import { MessageTemplate } from "@/lib/types"
-import { DEFAULT_TEMPLATES, getTemplateBody, applyTemplateVars } from "@/lib/message-templates"
-import { useMemo } from "react"
+import { getTemplateBody, applyTemplateVars } from "@/lib/message-templates"
 import { useToast } from "@/hooks/use-toast"
 import { Checkbox } from "../ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card";
@@ -47,12 +46,7 @@ export function LeadsTable({
     if (!firestore) return null;
     return collection(firestore, 'messageTemplates');
   }, [firestore]);
-  const { data: dbTemplates } = useCollection<MessageTemplate>(templatesQuery);
-  const allTemplates = useMemo(() => {
-    const list = [...(dbTemplates || [])];
-    DEFAULT_TEMPLATES.forEach(def => { if (!list.find(t => t.id === def.id)) list.push(def); });
-    return list;
-  }, [dbTemplates]);
+  const { data: dbTemplates, isLoading: isLoadingTemplates } = useCollection<MessageTemplate>(templatesQuery);
 
   const handleInputChange = (leadId: string, field: keyof Lead, value: string) => {
     setLeads(prevLeads => 
@@ -156,10 +150,24 @@ export function LeadsTable({
     return phone.replace(/\D/g, '');
   };
   
-  const generateWhatsAppMessage = (leadName: string) => {
-    const templateBody = getTemplateBody(allTemplates, 'leads_cat_cpkm');
-    const message = applyTemplateVars(templateBody, { nome: leadName.split(' ')[0] });
-    return encodeURIComponent(message);
+  const handleWhatsApp = (lead: Lead) => {
+    if (isLoadingTemplates || lead.isNew) return;
+    const whatsappNumber = cleanPhoneNumber(lead.phone);
+    if (whatsappNumber.length < 10) return;
+
+    const templateBody = getTemplateBody(dbTemplates ?? [], 'leads_cat_cpkm');
+    if (!templateBody) {
+      toast({
+        variant: "destructive",
+        title: "Modelo não disponível",
+        description: 'O modelo "leads_cat_cpkm" não está configurado. Configure-o antes de enviar.'
+      });
+      return;
+    }
+
+    const message = applyTemplateVars(templateBody, { nome: lead.name.split(' ')[0] });
+    const phone = whatsappNumber.startsWith('55') ? whatsappNumber : `55${whatsappNumber}`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   };
 
   const isAllSelected = leads.length > 0 && selectedLeads.length === leads.length;
@@ -199,10 +207,6 @@ export function LeadsTable({
               ))}
               {!isLoading && leads.map((lead: Lead) => {
                 const whatsappNumber = cleanPhoneNumber(lead.phone);
-                const message = generateWhatsAppMessage(lead.name);
-                const whatsappLink = whatsappNumber.length >= 10 
-                    ? `https://wa.me/${whatsappNumber.startsWith('55') ? whatsappNumber : '55' + whatsappNumber}?text=${message}` 
-                    : '#';
 
                 return (
                   <TableRow key={lead.id} data-state={selectedLeads.includes(lead.id) && "selected"} className={cn(lead.isNew && "bg-muted/50")}>
@@ -266,12 +270,16 @@ export function LeadsTable({
                             <Button variant="ghost" size="icon" className="hover:bg-transparent text-muted-foreground hover:text-foreground" onClick={() => handleSave(lead)}>
                                 <Save className="h-4 w-4" />
                             </Button>
-                            <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
-                                <Button variant="secondary" size="sm" disabled={whatsappLink === '#' || lead.isNew} className="bg-green-500 text-white hover:bg-green-600">
-                                    <MessageSquare className="h-4 w-4 mr-2"/>
-                                    WhatsApp
-                                </Button>
-                            </a>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                disabled={whatsappNumber.length < 10 || lead.isNew || isLoadingTemplates}
+                                onClick={() => handleWhatsApp(lead)}
+                                className="bg-green-500 text-white hover:bg-green-600"
+                            >
+                                <MessageSquare className="h-4 w-4 mr-2"/>
+                                WhatsApp
+                            </Button>
                             <Button variant="ghost" size="icon" className="hover:bg-transparent text-muted-foreground hover:text-destructive" onClick={() => handleDelete(lead)}>
                                 <Trash2 className="h-4 w-4" />
                             </Button>

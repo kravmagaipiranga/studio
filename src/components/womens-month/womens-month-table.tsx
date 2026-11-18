@@ -16,8 +16,7 @@ import { Skeleton } from "../ui/skeleton"
 import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, doc } from "firebase/firestore"
 import { MessageTemplate } from "@/lib/types"
-import { DEFAULT_TEMPLATES, getTemplateBody, applyTemplateVars } from "@/lib/message-templates"
-import { useMemo } from "react"
+import { getTemplateBody, applyTemplateVars } from "@/lib/message-templates"
 import { useToast } from "@/hooks/use-toast"
 import { Input } from "../ui/input"
 import { cn } from "@/lib/utils"
@@ -39,12 +38,7 @@ export function WomensMonthTable({ leads, setLeads, isLoading }: WomensMonthTabl
     if (!firestore) return null;
     return collection(firestore, 'messageTemplates');
   }, [firestore]);
-  const { data: dbTemplates } = useCollection<MessageTemplate>(templatesQuery);
-  const allTemplates = useMemo(() => {
-    const list = [...(dbTemplates || [])];
-    DEFAULT_TEMPLATES.forEach(def => { if (!list.find(t => t.id === def.id)) list.push(def); });
-    return list;
-  }, [dbTemplates]);
+  const { data: dbTemplates, isLoading: isLoadingTemplates } = useCollection<MessageTemplate>(templatesQuery);
 
   const handleInputChange = (id: string, field: keyof WomensMonthLead, value: any) => {
     setLeads(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
@@ -101,14 +95,25 @@ export function WomensMonthTable({ leads, setLeads, isLoading }: WomensMonthTabl
     setDocumentNonBlocking(docRef, { attended: newStatus }, { merge: true });
   };
 
-  const getWhatsAppLink = (lead: WomensMonthLead) => {
+  const handleWhatsApp = (lead: WomensMonthLead) => {
+    if (isLoadingTemplates) return;
+    const templateBody = getTemplateBody(dbTemplates ?? [], 'mes_das_mulheres');
+    if (!templateBody) {
+      toast({
+        variant: "destructive",
+        title: "Modelo não disponível",
+        description: 'O modelo "mes_das_mulheres" não está configurado. Configure-o antes de enviar.'
+      });
+      return;
+    }
+
     const phone = lead.whatsapp.replace(/\D/g, '');
-    const templateBody = getTemplateBody(allTemplates, 'mes_das_mulheres');
+    if (!phone) return;
     const message = applyTemplateVars(templateBody, {
       nome: lead.name.split(' ')[0],
       turma: lead.chosenClass,
     });
-    return `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
+    window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   };
 
   if (isLoading) {
@@ -218,16 +223,16 @@ export function WomensMonthTable({ leads, setLeads, isLoading }: WomensMonthTabl
                 >
                   <Save className="h-4 w-4" />
                 </Button>
-                <a href={getWhatsAppLink(lead)} target="_blank" rel="noopener noreferrer">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    disabled={!lead.whatsapp}
-                    className="h-8 w-8 text-green-600"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                  </Button>
-                </a>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  disabled={!lead.whatsapp || isLoadingTemplates}
+                  onClick={() => handleWhatsApp(lead)}
+                  className="h-8 w-8 text-green-600"
+                  title={isLoadingTemplates ? "Carregando modelos" : "Abrir mensagem no WhatsApp"}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                </Button>
                 <Button 
                   variant="ghost" 
                   size="icon" 
