@@ -1,5 +1,23 @@
 import { MessageTemplate } from "./types";
 
+export const MESSAGE_TEMPLATE_IDS_BY_FEATURE = {
+  womensMonth: ["mes_das_mulheres"],
+  leads: ["leads_cat_cpkm"],
+  appointments: [
+    "agendamentos_instrucoes",
+    "agendamentos_faltou",
+    "agendamentos_obrigado",
+  ],
+  overduePlans: ["planos_vencidos", "planos_vencidos_trimestral"],
+} as const;
+
+export const REQUIRED_MESSAGE_TEMPLATE_IDS = [
+  ...MESSAGE_TEMPLATE_IDS_BY_FEATURE.womensMonth,
+  ...MESSAGE_TEMPLATE_IDS_BY_FEATURE.leads,
+  ...MESSAGE_TEMPLATE_IDS_BY_FEATURE.appointments,
+  ...MESSAGE_TEMPLATE_IDS_BY_FEATURE.overduePlans,
+] as const;
+
 export const DEFAULT_TEMPLATES: MessageTemplate[] = [
   {
     id: "vencimento",

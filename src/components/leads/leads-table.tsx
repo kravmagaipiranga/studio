@@ -16,6 +16,8 @@ import { useFirestore, deleteDocumentNonBlocking, updateDocumentNonBlocking, add
 import { doc, collection } from "firebase/firestore"
 import { MessageTemplate } from "@/lib/types"
 import { getTemplateBody, applyTemplateVars } from "@/lib/message-templates"
+import { MESSAGE_TEMPLATE_IDS_BY_FEATURE } from "@/lib/message-templates"
+import { MessageTemplatesWarning } from "@/components/message-templates-warning"
 import { useToast } from "@/hooks/use-toast"
 import { Checkbox } from "../ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card";
@@ -173,6 +175,12 @@ export function LeadsTable({
   const isAllSelected = leads.length > 0 && selectedLeads.length === leads.length;
 
   return (
+    <>
+    <MessageTemplatesWarning
+      requiredIds={MESSAGE_TEMPLATE_IDS_BY_FEATURE.leads}
+      templates={dbTemplates}
+      isLoading={isLoadingTemplates}
+    />
     <Card className="w-full">
         <CardContent className="p-0">
           <Table>
@@ -299,5 +307,6 @@ export function LeadsTable({
           </Table>
         </CardContent>
       </Card>
+    </>
   )
 }

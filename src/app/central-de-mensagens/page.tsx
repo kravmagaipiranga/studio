@@ -5,7 +5,8 @@ import { useState, useMemo, useEffect } from "react";
 import { collection, query, orderBy, doc } from "firebase/firestore";
 import { useCollection, useFirestore, useMemoFirebase, useDoc } from "@/firebase";
 import { Student, GlobalParameters, MessageTemplate } from "@/lib/types";
-import { applyTemplateVars, getTemplate } from "@/lib/message-templates";
+import { applyTemplateVars, getTemplate, REQUIRED_MESSAGE_TEMPLATE_IDS } from "@/lib/message-templates";
+import { MessageTemplatesWarning } from "@/components/message-templates-warning";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, MessageSquare, Mail, UserPlus, Users, Send, Info, CheckCircle2, RotateCcw, AlertCircle } from "lucide-react";
+import { Search, MessageSquare, Mail, UserPlus, Users, Send, Info, CheckCircle2, RotateCcw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -162,12 +163,11 @@ export default function CentralDeMensagensPage() {
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-10">
-      {!isLoadingTemplates && templates.length === 0 && (
-        <div role="alert" className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          Nenhum modelo está configurado. Configure e salve um modelo antes de enviar mensagens.
-        </div>
-      )}
+      <MessageTemplatesWarning
+        requiredIds={REQUIRED_MESSAGE_TEMPLATE_IDS}
+        templates={templates}
+        isLoading={isLoadingTemplates}
+      />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Central de Mensagens</h1>

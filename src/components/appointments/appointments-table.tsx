@@ -15,6 +15,8 @@ import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking, useCol
 import { collection, doc } from "firebase/firestore"
 import { MessageTemplate } from "@/lib/types"
 import { getTemplateBody, applyTemplateVars } from "@/lib/message-templates"
+import { MESSAGE_TEMPLATE_IDS_BY_FEATURE } from "@/lib/message-templates"
+import { MessageTemplatesWarning } from "@/components/message-templates-warning"
 import { Input } from "../ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "../ui/textarea"
@@ -190,6 +192,12 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
   }
 
   return (
+    <>
+        <MessageTemplatesWarning
+          requiredIds={MESSAGE_TEMPLATE_IDS_BY_FEATURE.appointments}
+          templates={dbTemplates}
+          isLoading={isLoadingTemplates}
+        />
     <div className="w-full border rounded-lg overflow-hidden">
         {appointments.length > 0 ? (
           <Accordion type="single" collapsible className="w-full">
@@ -333,5 +341,6 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
             </div>
         )}
     </div>
+    </>
   )
 }

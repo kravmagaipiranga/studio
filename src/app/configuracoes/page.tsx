@@ -23,6 +23,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DEFAULT_PLAN_PRICES, GlobalParameters, PlanType, Student, MessageTemplate, HandbookContent } from "@/lib/types";
 import { DEFAULT_TEMPLATES } from "@/lib/message-templates";
+import { REQUIRED_MESSAGE_TEMPLATE_IDS } from "@/lib/message-templates";
+import { MessageTemplatesWarning } from "@/components/message-templates-warning";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -170,6 +172,7 @@ export default function ConfiguracoesPage() {
   const [newTemplate, setNewTemplate] = useState<Partial<MessageTemplate> | null>(null);
   const [localTemplates, setLocalTemplates] = useState<Record<string, MessageTemplate>>({});
   const [savingTemplateId, setSavingTemplateId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("identidade");
 
   const paramsRef = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -190,10 +193,15 @@ export default function ConfiguracoesPage() {
   const { data: dbTemplates, isLoading: isLoadingTemplates } = useCollection<MessageTemplate>(templatesQuery);
   const { data: dbHandbook, isLoading: isLoadingHandbook } = useCollection<HandbookContent>(handbookQuery);
 
+  useEffect(() => {
+    const requestedTab = new URLSearchParams(window.location.search).get("tab");
+    if (requestedTab === "mensagens") setActiveTab(requestedTab);
+  }, []);
+
   const templates = useMemo(() => {
     const list = [...(dbTemplates || [])];
     DEFAULT_TEMPLATES.forEach(def => {
-      if (!list.find(t => t.id === def.id || t.name === def.name)) {
+      if (!list.find(t => t.id === def.id)) {
         list.push(def);
       }
     });
@@ -582,7 +590,7 @@ export default function ConfiguracoesPage() {
         <p className="text-muted-foreground">Gerencie a identidade da escola, regras acadêmicas e segurança dos dados.</p>
       </div>
 
-      <Tabs defaultValue="identidade" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5 max-w-2xl">
           <TabsTrigger value="identidade">Escola</TabsTrigger>
           <TabsTrigger value="academico">Acadêmico</TabsTrigger>
@@ -737,6 +745,11 @@ export default function ConfiguracoesPage() {
         </TabsContent>
 
         <TabsContent value="mensagens" className="space-y-6 pt-4">
+          <MessageTemplatesWarning
+            requiredIds={REQUIRED_MESSAGE_TEMPLATE_IDS}
+            templates={dbTemplates}
+            isLoading={isLoadingTemplates}
+          />
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold">Modelos de Mensagem</h2>

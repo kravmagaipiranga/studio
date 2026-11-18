@@ -8,6 +8,8 @@ import { Student, Payment, MessageTemplate } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Search, AlertTriangle, MessageSquare, Mail } from "lucide-react";
 import { getTemplate, getTemplateBody, applyTemplateVars } from "@/lib/message-templates";
+import { MESSAGE_TEMPLATE_IDS_BY_FEATURE } from "@/lib/message-templates";
+import { MessageTemplatesWarning } from "@/components/message-templates-warning";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -180,6 +182,11 @@ export default function PlanosVencidosPage() {
 
     return (
         <div className="flex flex-col gap-4">
+            <MessageTemplatesWarning
+                requiredIds={MESSAGE_TEMPLATE_IDS_BY_FEATURE.overduePlans}
+                templates={dbTemplates}
+                isLoading={isLoadingTemplates}
+            />
             <div className="grid gap-4 md:grid-cols-2">
                 <Card className="bg-rose-50 border-rose-200 dark:bg-rose-950 dark:border-rose-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

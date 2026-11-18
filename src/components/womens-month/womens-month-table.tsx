@@ -17,6 +17,8 @@ import { useFirestore, setDocumentNonBlocking, deleteDocumentNonBlocking, useCol
 import { collection, doc } from "firebase/firestore"
 import { MessageTemplate } from "@/lib/types"
 import { getTemplateBody, applyTemplateVars } from "@/lib/message-templates"
+import { MESSAGE_TEMPLATE_IDS_BY_FEATURE } from "@/lib/message-templates"
+import { MessageTemplatesWarning } from "@/components/message-templates-warning"
 import { useToast } from "@/hooks/use-toast"
 import { Input } from "../ui/input"
 import { cn } from "@/lib/utils"
@@ -127,6 +129,12 @@ export function WomensMonthTable({ leads, setLeads, isLoading }: WomensMonthTabl
   }
 
   return (
+    <div className="space-y-4">
+    <MessageTemplatesWarning
+      requiredIds={MESSAGE_TEMPLATE_IDS_BY_FEATURE.womensMonth}
+      templates={dbTemplates}
+      isLoading={isLoadingTemplates}
+    />
     <Table>
       <TableHeader>
         <TableRow>
@@ -254,5 +262,6 @@ export function WomensMonthTable({ leads, setLeads, isLoading }: WomensMonthTabl
         )}
       </TableBody>
     </Table>
+    </div>
   );
 }
