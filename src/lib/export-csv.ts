@@ -9,7 +9,12 @@ export function escapeCSV(value: unknown): string {
     return safeStr;
 }
 
-export function downloadCSV(filenameBase: string, headers: string[], rows: unknown[][]): void {
+export function downloadCSV(
+    filenameBase: string,
+    headers: string[],
+    rows: unknown[][],
+    options: { filename?: string } = {},
+): void {
     const today = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'America/Sao_Paulo',
         year: 'numeric',
@@ -17,7 +22,7 @@ export function downloadCSV(filenameBase: string, headers: string[], rows: unkno
         day: '2-digit',
     }).format(new Date());
     const safeBase = filenameBase.replace(/[^\w-]+/g, '_');
-    const filename = `${safeBase}_${today}.csv`;
+    const filename = options.filename ?? `${safeBase}_${today}.csv`;
 
     const headerLine = headers.map(escapeCSV).join(';');
     const bodyLines = rows.map(row => row.map(escapeCSV).join(';'));

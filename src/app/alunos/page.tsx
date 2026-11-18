@@ -21,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { StudentsByBeltChart } from "@/components/students/students-by-belt-chart";
 import { useToast } from "@/hooks/use-toast";
+import { downloadCSV } from "@/lib/export-csv";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -346,15 +347,6 @@ function AlunosContent() {
             "Valor do Plano", "Último Pagamento", "Validade do Plano"
         ];
         
-        const escapeCSV = (str: any) => {
-            if (str === null || str === undefined) return '';
-            const toStr = String(str);
-            if (toStr.includes(',') || toStr.includes('"') || toStr.includes('\n')) {
-                return `"${toStr.replace(/"/g, '""')}"`;
-            }
-            return toStr;
-        };
-
         const studentRows = filteredStudents.map(s => [
             s.id, s.name, s.email, s.registrationDate, s.status,
             s.paymentStatus, s.dueDate, s.dob, s.cpf,
@@ -363,19 +355,9 @@ function AlunosContent() {
             s.medicalHistory, s.generalNotes, s.fikmAnnuityPaid,
             s.fikmAnnuityPaymentDate, s.fikmAnnuityPaymentMethod, s.planType,
             s.planValue, s.lastPaymentDate, s.planExpirationDate
-        ].map(escapeCSV).join(','));
+        ]);
 
-        const csvContent = [headers.join(','), ...studentRows].join('\n');
-        
-        const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', 'export_alunos.csv');
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        downloadCSV('export_alunos', headers, studentRows, { filename: 'export_alunos.csv' });
 
         toast({
             title: "Exportação Concluída",

@@ -19,6 +19,7 @@ import { parseISO, isAfter, startOfMonth, endOfMonth, isWithinInterval, subMonth
 import { ptBR } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { downloadCSV } from "@/lib/export-csv";
 import {
   Select,
   SelectContent,
@@ -184,31 +185,17 @@ export default function PagamentosPage() {
             "Tipo de Plano", "Valor", "Data de Expiração", "Método de Pagamento", "Observações"
         ];
         
-        const escapeCSV = (str: any) => {
-            if (str === null || str === undefined) return '';
-            const toStr = String(str);
-            if (toStr.includes(',') || toStr.includes('"') || toStr.includes('\n')) {
-                return `"${toStr.replace(/"/g, '""')}"`;
-            }
-            return toStr;
-        };
-
         const paymentRows = filteredPayments.map(p => [
             p.id, p.studentId, p.studentName, p.paymentDate,
             p.planType, p.amount, p.expirationDate, p.paymentMethod, p.notes
-        ].map(escapeCSV).join(','));
+        ]);
 
-        const csvContent = [headers.join(','), ...paymentRows].join('\n');
-        
-        const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `export_pagamentos_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        downloadCSV(
+            'export_pagamentos',
+            headers,
+            paymentRows,
+            { filename: `export_pagamentos_${new Date().toISOString().split('T')[0]}.csv` },
+        );
 
         toast({
             title: "Exportação Concluída!",

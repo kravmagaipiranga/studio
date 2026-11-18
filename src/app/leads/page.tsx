@@ -12,6 +12,7 @@ import { collection, query, orderBy, doc, writeBatch } from "firebase/firestore"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { downloadCSV } from "@/lib/export-csv";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, parseISO, startOfMonth, endOfMonth, format, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -184,12 +185,8 @@ export default function LeadsPage() {
     const handleExportData = () => {
         if (!leads) return;
         const headers = ["Data Contato", "Nome", "Telefone", "Contactado", "Respondeu"];
-        const csvContent = [headers.join(','), ...leads.map(l => [l.contactDate, l.name, l.phone, l.contacted, !!l.responded].join(','))].join('\n');
-        const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.setAttribute('href', URL.createObjectURL(blob));
-        link.setAttribute('download', 'export_leads.csv');
-        link.click();
+        const rows = leads.map(l => [l.contactDate, l.name, l.phone, l.contacted, !!l.responded]);
+        downloadCSV("export_leads", headers, rows, { filename: "export_leads.csv" });
     };
 
     const handleToggleAll = () => {

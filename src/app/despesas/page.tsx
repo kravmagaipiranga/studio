@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { downloadCSV } from "@/lib/export-csv";
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -245,11 +246,6 @@ export default function DespesasPage() {
       toast({ variant: "destructive", title: "Nenhum registro para exportar" });
       return;
     }
-    const esc = (v: any) => {
-      const s = String(v ?? "");
-      return s.includes(",") || s.includes('"') || s.includes("\n")
-        ? `"${s.replace(/"/g, '""')}"` : s;
-    };
     const header = ["Data", "Competência", "Categoria", "Descrição", "Aluno/Fornecedor", "Forma de Pagamento", "Valor (R$)"];
     const rows = filtered.map(e => [
       e.date,
@@ -259,14 +255,9 @@ export default function DespesasPage() {
       e.supplier,
       e.paymentMethod,
       String(e.amount).replace(".", ","),
-    ].map(esc).join(","));
+    ]);
 
-    const csv = [header.join(","), ...rows].join("\n");
-    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "despesas.csv"; a.style.visibility = "hidden";
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    downloadCSV("despesas", header, rows, { filename: "despesas.csv" });
     toast({ title: "Exportação concluída", description: `${filtered.length} registros exportados.` });
   };
 
