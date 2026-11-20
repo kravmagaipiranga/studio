@@ -168,11 +168,11 @@ export function AppointmentsTable({ appointments, setAppointments, isLoading }: 
     }
 
     const templateBody = getTemplateBody(dbTemplates ?? [], templateId);
-    if (!templateBody) {
+    if (!templateBody.trim()) {
       toast({
         variant: "destructive",
         title: "Modelo não disponível",
-        description: `O modelo "${templateId}" não está configurado. Configure-o antes de enviar.`
+        description: `O modelo "${templateId}" não possui conteúdo para envio. Complete-o em Configurações > Mensagens.`
       });
       return;
     }

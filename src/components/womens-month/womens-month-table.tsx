@@ -100,11 +100,11 @@ export function WomensMonthTable({ leads, setLeads, isLoading }: WomensMonthTabl
   const handleWhatsApp = (lead: WomensMonthLead) => {
     if (isLoadingTemplates) return;
     const templateBody = getTemplateBody(dbTemplates ?? [], 'mes_das_mulheres');
-    if (!templateBody) {
+    if (!templateBody.trim()) {
       toast({
         variant: "destructive",
         title: "Modelo não disponível",
-        description: 'O modelo "mes_das_mulheres" não está configurado. Configure-o antes de enviar.'
+        description: 'O modelo "mes_das_mulheres" não possui conteúdo para envio. Complete-o em Configurações > Mensagens.'
       });
       return;
     }

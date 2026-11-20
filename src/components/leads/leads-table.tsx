@@ -158,11 +158,11 @@ export function LeadsTable({
     if (whatsappNumber.length < 10) return;
 
     const templateBody = getTemplateBody(dbTemplates ?? [], 'leads_cat_cpkm');
-    if (!templateBody) {
+    if (!templateBody.trim()) {
       toast({
         variant: "destructive",
         title: "Modelo não disponível",
-        description: 'O modelo "leads_cat_cpkm" não está configurado. Configure-o antes de enviar.'
+        description: 'O modelo "leads_cat_cpkm" não possui conteúdo para envio. Complete-o em Configurações > Mensagens.'
       });
       return;
     }

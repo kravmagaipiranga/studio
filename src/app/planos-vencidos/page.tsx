@@ -123,11 +123,11 @@ export default function PlanosVencidosPage() {
             ? format(parseISO(student.planExpirationDate), 'dd/MM/yyyy') 
             : 'pendente';
         const templateBody = getTemplateBody(templates, 'planos_vencidos');
-        if (!templateBody) {
+        if (!templateBody.trim()) {
             toast({
                 variant: "destructive",
                 title: "Modelo não disponível",
-                description: 'O modelo "planos_vencidos" não está configurado. Configure-o antes de enviar.'
+                description: 'O modelo "planos_vencidos" não possui conteúdo para envio. Complete-o em Configurações > Mensagens.'
             });
             return;
         }

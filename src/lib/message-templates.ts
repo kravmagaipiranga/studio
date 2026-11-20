@@ -207,6 +207,22 @@ export function getTemplateBody(templates: MessageTemplate[], id: string): strin
   return getTemplate(templates, id)?.body ?? "";
 }
 
+export function getEmptyTemplateIds(
+  requiredIds: readonly string[],
+  templates: Pick<MessageTemplate, "id" | "body">[] | null | undefined,
+): string[] {
+  const savedTemplates = new Map(
+    (templates ?? []).map(template => [template.id, template] as const),
+  );
+
+  return requiredIds.filter(id => {
+    const template = savedTemplates.get(id);
+    return template !== undefined && (
+      typeof template.body !== "string" || template.body.trim().length === 0
+    );
+  });
+}
+
 export function applyTemplateVars(body: string, vars: Record<string, string>): string {
   const keys = Object.keys(vars);
   if (keys.length === 0) return body;
