@@ -185,7 +185,7 @@ export default function LeadsPage() {
     const handleExportData = () => {
         if (!leads) return;
         const headers = ["Data Contato", "Nome", "Telefone", "Contactado", "Respondeu"];
-        const rows = leads.map(l => [l.contactDate, l.name, l.phone, l.contacted, !!l.responded]);
+        const rows = filteredLeads.map(l => [l.contactDate, l.name, l.phone, l.contacted, !!l.responded]);
         downloadCSV("export_leads", headers, rows, { filename: "export_leads.csv" });
     };
 
